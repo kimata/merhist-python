@@ -3,6 +3,7 @@
 import pathlib
 import enlighten
 import datetime
+import functools
 
 from selenium.webdriver.support.wait import WebDriverWait
 import openpyxl.styles
@@ -112,6 +113,10 @@ def get_sold_checked_count(handle):
     return handle["trading"]["sold_checked_count"]
 
 
+def get_sold_item_list(handle):
+    return sorted(handle["trading"]["sold_item_list"], key=lambda x: x["completion_date"], reverse=True)
+
+
 def record_bought_item(handle, item):
     if get_bought_item_stat(handle, item):
         return
@@ -145,6 +150,22 @@ def get_bought_item_list(handle):
     return sorted(handle["trading"]["bought_item_list"], key=lambda x: x["purchase_date"], reverse=True)
 
 
+def normalize(handle):
+    handle["trading"]["bought_item_list"] = functools.reduce(
+        lambda x, y: x + [y] if y["id"] not in map(lambda item: item["id"], x) else x,
+        handle["trading"]["bought_item_list"],
+        [],
+    )
+    handle["trading"]["bought_checked_count"] = len(handle["trading"]["bought_item_list"])
+
+    handle["trading"]["sold_item_list"] = functools.reduce(
+        lambda x, y: x + [y] if y["id"] not in map(lambda item: item["id"], x) else x,
+        handle["trading"]["sold_item_list"],
+        [],
+    )
+    handle["trading"]["sold_checked_count"] = len(handle["trading"]["sold_item_list"])
+
+
 def get_thumb_path(handle, item):
 
     return get_thumb_dir_path(handle) / (item["id"] + ".png")
@@ -175,10 +196,9 @@ def set_status(handle, status):
             color="bold_bright_white_on_lightslategray",
             justify=enlighten.Justify.CENTER,
             status=status,
-            force=True,
         )
     else:
-        handle["status"].update(status=status)
+        handle["status"].update(status=status, force=True)
 
 
 def finish(handle):

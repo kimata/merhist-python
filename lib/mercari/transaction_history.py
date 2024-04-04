@@ -22,86 +22,100 @@ import openpyxl.drawing.spreadsheet_drawing
 
 import mercari.handle
 
-TABLE_HEADER = {
-    "row": {
-        "pos": 2,
-        "height": 80,
+
+SHEET_DEF = {
+    "BOUGHT": {
+        "LABEL": "購入",
+        "TABLE_HEADER": {
+            "row": {"pos": 2, "height": 80},
+            "col": {
+                "purchase_date": {
+                    "label": "購入日",
+                    "pos": 2,
+                    "width": 23,
+                    "format": 'yyyy"年"mm"月"dd"日 ("aaa")"',
+                },
+                "name": {"label": "商品名", "pos": 3, "width": 70, "wrap": True, "format": "@"},
+                "image": {"label": "画像", "pos": 4, "width": 12},
+                "price": {
+                    "label": "価格",
+                    "pos": 5,
+                    "width": 16,
+                    "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
+                    "optional": True,
+                },
+                "condition": {"label": "コンディション", "pos": 6, "width": 13, "format": "@", "wrap": True},
+                "postage_charge": {"label": "送料負担", "pos": 7, "width": 10, "format": "@", "wrap": True},
+                "category": {"label": "カテゴリ", "pos": 8, "length": 3, "width": 16, "wrap": True},
+                "shop": {"label": "ショップ", "pos": 11, "width": 13, "format": "@"},
+                "shipping_method": {"label": "配送方法", "pos": 12, "width": 10, "format": "@", "wrap": True},
+                "seller_region": {"label": "発送元の地域", "pos": 13, "width": 16, "format": "@"},
+                "id": {"label": "商品ID", "pos": 14, "width": 13, "format": "@"},
+                "error": {"label": "エラー", "pos": 15, "width": 15, "format": "@", "wrap": True},
+            },
+        },
     },
-    "col": {
-        "purchase_date": {
-            "label": "購入日",
-            "pos": 2,
-            "width": 23,
-            "format": 'yyyy"年"mm"月"dd"日 ("aaa")"',
-        },
-        "name": {
-            "label": "商品名",
-            "pos": 3,
-            "width": 70,
-            "wrap": True,
-            "format": "@",
-        },
-        "image": {
-            "label": "画像",
-            "pos": 4,
-            "width": 12,
-        },
-        "price": {
-            "label": "価格",
-            "pos": 5,
-            "width": 16,
-            "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
-        },
-        "condition": {
-            "label": "コンディション",
-            "pos": 6,
-            "width": 23,
-            "format": "@",
-            "wrap": True,
-        },
-        "postage_charge": {
-            "label": "送料負担",
-            "pos": 7,
-            "width": 23,
-            "format": "@",
-            "wrap": True,
-        },
-        "category": {
-            "label": "カテゴリ",
-            "pos": 8,
-            "length": 3,
-            "width": 20,
-            "wrap": True,
-        },
-        "shop": {
-            "label": "ショップ",
-            "pos": 11,
-            "width": 13,
-            "format": "@",
-        },
-        "shipping_method": {
-            "label": "配送方法",
-            "pos": 12,
-            "width": 20,
-            "format": "@",
-            "wrap": True,
-        },
-        "seller_region": {
-            "label": "発送元の地域",
-            "pos": 13,
-            "width": 16,
-            "format": "@",
-        },
-        "id": {
-            "label": "商品ID",
-            "pos": 14,
-            "width": 17,
-            "format": "@",
+    "SOLD": {
+        "LABEL": "販売",
+        "TABLE_HEADER": {
+            "row": {"pos": 2, "height": 80},
+            "col": {
+                "purchase_date": {
+                    "label": "購入日",
+                    "pos": 2,
+                    "width": 23,
+                    "format": 'yyyy"年"mm"月"dd"日 ("aaa")"',
+                },
+                "name": {"label": "商品名", "pos": 3, "width": 70, "wrap": True, "format": "@"},
+                "image": {"label": "画像", "pos": 4, "width": 12},
+                "price": {
+                    "label": "価格",
+                    "pos": 5,
+                    "width": 16,
+                    "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
+                },
+                "commission": {
+                    "label": "手数料",
+                    "pos": 6,
+                    "width": 10,
+                    "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
+                },
+                "postage": {
+                    "label": "送料",
+                    "pos": 7,
+                    "width": 10,
+                    "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
+                },
+                "profit": {
+                    "label": "回収金額",
+                    "pos": 8,
+                    "width": 16,
+                    "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
+                },
+                "condition": {"label": "コンディション", "pos": 9, "width": 13, "format": "@", "wrap": True},
+                "postage_charge": {"label": "送料負担", "pos": 10, "width": 10, "format": "@", "wrap": True},
+                "shipping_method": {"label": "配送方法", "pos": 11, "width": 10, "format": "@", "wrap": True},
+                "commission_rate": {
+                    "label": "手数料率",
+                    "pos": 12,
+                    "width": 10,
+                    "format": "0%",
+                    "conv_func": lambda x: x / 100,
+                },
+                "category": {"label": "カテゴリ", "pos": 13, "length": 3, "width": 16, "wrap": True},
+                "completion_date": {
+                    "label": "取引完了日",
+                    "pos": 16,
+                    "width": 23,
+                    "format": 'yyyy"年"mm"月"dd"日 ("aaa")"',
+                },
+                "seller_region": {"label": "発送元の地域", "pos": 17, "width": 16, "format": "@"},
+                "id": {"label": "商品ID", "pos": 17, "width": 13, "format": "@"},
+                "error": {"label": "エラー", "pos": 18, "width": 15, "format": "@", "wrap": True},
+            },
         },
     },
 }
-
-TABLE_SHEET_TITLE = "購入アイテム一覧"
 
 STATUS_INSERT_ITEM = "[generate] Insert item"
 STATUS_ALL = "[generate] Excel file"
@@ -134,31 +148,33 @@ def set_item_cell_style(sheet, row, col, value, style):
         sheet.cell(row, col).number_format = style["text_format"]
 
 
-def insert_table_header(handle, sheet, row, style):
+def insert_table_header(handle, mode, sheet, row, style):
     mercari.handle.set_status(handle, "テーブルのヘッダを設定しています...")
 
-    for key in TABLE_HEADER["col"].keys():
-        col = TABLE_HEADER["col"][key]["pos"]
-        if "width" in TABLE_HEADER["col"][key]:
-            width = TABLE_HEADER["col"][key]["width"]
+    for key in SHEET_DEF[mode]["TABLE_HEADER"]["col"].keys():
+        col = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["pos"]
+        if "width" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]:
+            width = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["width"]
         else:
             width = None
 
         if key == "category":
-            for i in range(TABLE_HEADER["col"][key]["length"]):
+            for i in range(SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["length"]):
                 set_header_cell_style(
                     sheet,
                     row,
                     col + i,
-                    TABLE_HEADER["col"][key]["label"] + " ({i})".format(i=i + 1),
+                    SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["label"] + " ({i})".format(i=i + 1),
                     width,
                     style,
                 )
         else:
-            set_header_cell_style(sheet, row, col, TABLE_HEADER["col"][key]["label"], width, style)
+            set_header_cell_style(
+                sheet, row, col, SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["label"], width, style
+            )
 
 
-def insert_table_cell_image(handle, sheet, row, col, item):
+def insert_table_cell_image(handle, mode, sheet, row, col, item):
     thumb_path = mercari.handle.get_thumb_path(handle, item)
 
     if (thumb_path is None) or (not thumb_path.exists()):
@@ -170,8 +186,8 @@ def insert_table_cell_image(handle, sheet, row, col, item):
     # > In all honesty, I cannot tell you how many blogs and stack overflow answers
     # > I read before I stumbled across this magic number: 7.5
     # https://imranhugo.medium.com/how-to-right-align-an-image-in-excel-cell-using-python-and-openpyxl-7ca75a85b13a
-    cell_width_pix = TABLE_HEADER["col"]["image"]["width"] * 8
-    cell_height_pix = openpyxl.utils.units.points_to_pixels(TABLE_HEADER["row"]["height"])
+    cell_width_pix = SHEET_DEF[mode]["TABLE_HEADER"]["col"]["image"]["width"] * 8
+    cell_height_pix = openpyxl.utils.units.points_to_pixels(SHEET_DEF[mode]["TABLE_HEADER"]["row"]["height"])
 
     cell_width_emu = openpyxl.utils.units.pixels_to_EMU(cell_width_pix)
     cell_height_emu = openpyxl.utils.units.pixels_to_EMU(cell_height_pix)
@@ -213,29 +229,28 @@ def insert_table_cell_image(handle, sheet, row, col, item):
     sheet.add_image(img)
 
 
-def gen_item_cell_style(base_style, key):
+def gen_item_cell_style(mode, base_style, key):
     style = base_style.copy()
 
-    if "format" in TABLE_HEADER["col"][key]:
-        style["text_format"] = TABLE_HEADER["col"][key]["format"]
+    if "format" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]:
+        style["text_format"] = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["format"]
 
-    if "wrap" in TABLE_HEADER["col"][key]:
-        style["text_wrap"] = TABLE_HEADER["col"][key]["wrap"]
+    if "wrap" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]:
+        style["text_wrap"] = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["wrap"]
     else:
         style["text_wrap"] = False
 
     return style
 
 
-def insert_table_item(handle, sheet, row, item, style):
-    logging.info(item)
-    for key in TABLE_HEADER["col"].keys():
-        col = TABLE_HEADER["col"][key]["pos"]
+def insert_table_item(handle, mode, sheet, row, item, style):
+    for key in SHEET_DEF[mode]["TABLE_HEADER"]["col"].keys():
+        col = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["pos"]
 
-        cell_style = gen_item_cell_style(style, key)
+        cell_style = gen_item_cell_style(mode, style, key)
 
         if key == "category":
-            for i in range(TABLE_HEADER["col"][key]["length"]):
+            for i in range(SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["length"]):
                 if i < len(item["category"]):
                     value = item[key][i]
                 else:
@@ -243,55 +258,72 @@ def insert_table_item(handle, sheet, row, item, style):
                 set_item_cell_style(sheet, row, col + i, value, cell_style)
         elif key == "image":
             sheet.cell(row, col).border = cell_style["border"]
-            insert_table_cell_image(handle, sheet, row, col, item)
+            insert_table_cell_image(handle, mode, sheet, row, col, item)
         else:
-            set_item_cell_style(sheet, row, col, item[key], cell_style)
+            if (
+                ("optional" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key])
+                and (not SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["optional"])
+            ) or (key in item):
+                value = item[key]
+
+                if "conv_func" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]:
+                    value = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["conv_func"](value)
+            else:
+                value = None
+
+            set_item_cell_style(sheet, row, col, value, cell_style)
 
         if key == "id":
             sheet.cell(row, col).hyperlink = item["url"]
 
 
-def setting_table_view(handle, sheet, row_last):
+def setting_table_view(handle, mode, sheet, row_last):
     mercari.handle.set_status(handle, "テーブルの表示設定しています...")
 
     sheet.column_dimensions.group(
-        openpyxl.utils.get_column_letter(TABLE_HEADER["col"]["image"]["pos"]),
-        openpyxl.utils.get_column_letter(TABLE_HEADER["col"]["image"]["pos"]),
+        openpyxl.utils.get_column_letter(SHEET_DEF[mode]["TABLE_HEADER"]["col"]["image"]["pos"]),
+        openpyxl.utils.get_column_letter(SHEET_DEF[mode]["TABLE_HEADER"]["col"]["image"]["pos"]),
         hidden=False,
     )
 
-    # sheet.freeze_panes = gen_text_pos(TABLE_HEADER["row"]["pos"] + 1, TABLE_HEADER["col"]["count"]["pos"])
+    sheet.freeze_panes = gen_text_pos(
+        SHEET_DEF[mode]["TABLE_HEADER"]["row"]["pos"] + 1,
+        SHEET_DEF[mode]["TABLE_HEADER"]["col"]["price"]["pos"] + 1,
+    )
 
     sheet.auto_filter.ref = "{start}:{end}".format(
         start=gen_text_pos(
-            TABLE_HEADER["row"]["pos"], min(map(lambda x: x["pos"], TABLE_HEADER["col"].values()))
+            SHEET_DEF[mode]["TABLE_HEADER"]["row"]["pos"],
+            min(map(lambda x: x["pos"], SHEET_DEF[mode]["TABLE_HEADER"]["col"].values())),
         ),
-        end=gen_text_pos(row_last, max(map(lambda x: x["pos"], TABLE_HEADER["col"].values()))),
+        end=gen_text_pos(
+            row_last, max(map(lambda x: x["pos"], SHEET_DEF[mode]["TABLE_HEADER"]["col"].values()))
+        ),
     )
     sheet.sheet_view.showGridLines = False
 
 
-def insert_sum_row(handle, sheet, row_last, style):
+def insert_sum_row(handle, mode, sheet, row_last, style):
     logging.info("Insert sum row")
 
     mercari.handle.set_status(handle, "集計行を挿入しています...")
 
-    col = TABLE_HEADER["col"]["price"]["pos"]
+    col = SHEET_DEF[mode]["TABLE_HEADER"]["col"]["price"]["pos"]
     set_item_cell_style(
         sheet,
         row_last + 1,
         col,
         "=sum({cell_first}:{cell_last})".format(
-            cell_first=gen_text_pos(TABLE_HEADER["row"]["pos"] + 1, col),
+            cell_first=gen_text_pos(SHEET_DEF[mode]["TABLE_HEADER"]["row"]["pos"] + 1, col),
             cell_last=gen_text_pos(row_last, col),
         ),
-        gen_item_cell_style(style, "price"),
+        gen_item_cell_style(mode, style, "price"),
     )
 
 
-def generate_list_sheet(handle, book):
-    sheet = book.active
-    sheet.title = TABLE_SHEET_TITLE
+def generate_list_sheet(handle, mode, book, item_list):
+    sheet = book.create_sheet()
+    sheet.title = "{label}アイテム一覧".format(label=SHEET_DEF[mode]["LABEL"])
 
     side = openpyxl.styles.Side(border_style="thin", color="000000")
     border = openpyxl.styles.Border(top=side, left=side, right=side, bottom=side)
@@ -299,20 +331,18 @@ def generate_list_sheet(handle, book):
 
     style = {"border": border, "fill": fill}
 
-    row = TABLE_HEADER["row"]["pos"]
-    insert_table_header(handle, sheet, row, style)
+    row = SHEET_DEF[mode]["TABLE_HEADER"]["row"]["pos"]
+    insert_table_header(handle, mode, sheet, row, style)
 
     mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
 
-    item_list = mercari.handle.get_bought_item_list(handle)
-
     mercari.handle.set_progress_bar(handle, STATUS_INSERT_ITEM, len(item_list))
-    mercari.handle.set_status(handle, "購入商品の記載をしています...")
+    mercari.handle.set_status(handle, "{label}商品の記載をしています...".format(label=SHEET_DEF[mode]["LABEL"]))
 
     row += 1
     for item in item_list:
-        sheet.row_dimensions[row].height = TABLE_HEADER["row"]["height"]
-        insert_table_item(handle, sheet, row, item, style)
+        sheet.row_dimensions[row].height = SHEET_DEF[mode]["TABLE_HEADER"]["row"]["height"]
+        insert_table_item(handle, mode, sheet, row, item, style)
         mercari.handle.get_progress_bar(handle, STATUS_INSERT_ITEM).update()
         row += 1
 
@@ -323,7 +353,7 @@ def generate_list_sheet(handle, book):
 
     # NOTE: 下記を行うと，ピボットテーブルの作成の邪魔になるのでコメントアウト
     # insert_sum_row(sheet, row_last, style)
-    setting_table_view(handle, sheet, row_last)
+    setting_table_view(handle, mode, sheet, row_last)
 
     mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
 
@@ -339,7 +369,15 @@ def generate_table_excel(handle, excel_file):
 
     mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
 
-    generate_list_sheet(handle, book)
+    transaction_list = [
+        {"mode": "BOUGHT", "item_list": mercari.handle.get_bought_item_list(handle)},
+        {"mode": "SOLD", "item_list": mercari.handle.get_sold_item_list(handle)},
+    ]
+
+    mercari.handle.normalize(handle)
+    for transaction_info in transaction_list:
+        generate_list_sheet(handle, transaction_info["mode"], book, transaction_info["item_list"])
+    book.remove_sheet(book.worksheets[0])
 
     mercari.handle.set_status(handle, "エクセルファイルを書き出しています...")
 
@@ -350,6 +388,8 @@ def generate_table_excel(handle, excel_file):
     book.close()
 
     mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
+
+    mercari.handle.set_status(handle, "完了しました！")
 
     logging.info("Complete to Generate excel file")
 
