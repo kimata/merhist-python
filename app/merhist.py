@@ -4,13 +4,13 @@
 メルカリから販売履歴や購入履歴を収集して，Excel ファイルとして出力します．
 
 Usage:
-  merhist.py [-c CONFIG] [-e] [-f | -fB | -fS]
+  merhist.py [-c CONFIG] [-e] [--fA|--fB|--fS]
 
 Options:
   -c CONFIG    : CONFIG を設定ファイルとして読み込んで実行します．[default: config.yaml]
-  -f           : 強制的にデータを収集し直します．(販売履歴も購入履歴も)
-  -fB          : 購入履歴に関し，強制的にデータを収集し直します．
-  -fS          : 購入履歴に関し，強制的にデータを収集し直します．
+  --fA         : 強制的にデータを収集し直します．(販売履歴も購入履歴も)
+  --fB         : 購入履歴に関し，強制的にデータを収集し直します．
+  --fS         : 購入履歴に関し，強制的にデータを収集し直します．
   -e           : データ収集は行わず，Excel ファイルの出力のみ行います．
 """
 
@@ -63,10 +63,13 @@ if __name__ == "__main__":
 
     args = docopt(__doc__)
 
-    local_lib.logger.init("amazhist", level=logging.INFO)
+    local_lib.logger.init("merhist", level=logging.INFO)
 
     config_file = args["-c"]
-    is_continue_mode = {"bought": not (args["-f"] or args["-fB"]), "sold": not (args["-f"] or args["-fS"])}
+    is_continue_mode = {
+        "bought": not (args["--fA"] or args["--fB"]),
+        "sold": not (args["--fA"] or args["--fS"]),
+    }
 
     is_export_mode = args["-e"]
 

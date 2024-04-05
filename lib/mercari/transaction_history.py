@@ -222,7 +222,6 @@ def insert_table_cell_image(handle, mode, sheet, row, col, item):
     marker_2 = openpyxl.drawing.spreadsheet_drawing.AnchorMarker(
         col=col, row=row, colOff=-col_offset_emu, rowOff=-row_offset_emu
     )
-    size = openpyxl.drawing.xdr.XDRPositiveSize2D(image_width_emu, image_height_emu)
 
     img.anchor = openpyxl.drawing.spreadsheet_drawing.TwoCellAnchor(_from=marker_1, to=marker_2)
 
