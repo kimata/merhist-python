@@ -90,9 +90,6 @@ def set_item_id_from_url(item):
         raise Exception("URL の形式が想定と異なります．")
 
 
-# https://mercari-shops.com/orders/GRoFdCGeBqsBN2uJF2D6hH
-
-
 def visit_url(handle, url, xpath='//div[@class="merNavigationTop"]'):
     driver, wait = mercari.handle.get_selenium_driver(handle)
     driver.get(url)
@@ -682,14 +679,6 @@ if __name__ == "__main__":
     driver, wait = mercari.handle.get_selenium_driver(handle)
 
     try:
-        # fetch_item_description(
-        #     handle,
-        #     {
-        #         "name": "",
-        #         "id": "m13245828354",
-        #         "shop": MERCARI_NORMAL,
-        #     },
-        # )
         fetch_sold_item_list(handle, False)
         fetch_bought_item_list(handle)
 

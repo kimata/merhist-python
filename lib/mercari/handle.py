@@ -19,7 +19,7 @@ def create(config):
         "config": config,
     }
 
-    load_order_info(handle)
+    load_trading_info(handle)
 
     prepare_directory(handle)
 
@@ -215,7 +215,7 @@ def store_trading_info(handle):
     local_lib.serializer.store(get_caceh_file_path(handle), handle["trading"])
 
 
-def load_order_info(handle):
+def load_trading_info(handle):
     handle["trading"] = local_lib.serializer.load(
         get_caceh_file_path(handle),
         {
