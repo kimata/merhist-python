@@ -42,7 +42,7 @@ MERCARI_NORMAL = "mercari.com"
 MERCARI_SHOP = "mercari-shops.com"
 
 
-def wait_for_loading(handle, xpath='//div[@class="merNavigationTop"]', sec=2):
+def wait_for_loading(handle, xpath='//div[@class="merNavigationTop"]', sec=1):
     driver, wait = mercari.handle.get_selenium_driver(handle)
 
     wait.until(EC.visibility_of_all_elements_located((By.XPATH, xpath)))
