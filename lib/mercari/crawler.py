@@ -601,7 +601,7 @@ def execute_login(handle):
         wait,
     )
 
-    wait.until(EC.presence_of_element_located((By.XPATH, '//h1[pcontains(text(), "ログイン")]')))
+    wait.until(EC.presence_of_element_located((By.XPATH, '//h1[contains(text(), "ログイン")]')))
 
     driver.find_element(By.XPATH, '//input[@name="emailOrPhone"]').send_keys(
         mercari.handle.get_login_user(handle)
