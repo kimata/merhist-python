@@ -114,7 +114,7 @@ def get_sold_checked_count(handle):
 
 
 def get_sold_item_list(handle):
-    return sorted(handle["trading"]["sold_item_list"], key=lambda x: x["completion_date"], reverse=True)
+    return sorted(handle["trading"]["sold_item_list"], key=lambda x: x["completion_date"])
 
 
 def record_bought_item(handle, item):
@@ -147,7 +147,7 @@ def get_bought_checked_count(handle):
 
 
 def get_bought_item_list(handle):
-    return sorted(handle["trading"]["bought_item_list"], key=lambda x: x["purchase_date"], reverse=True)
+    return sorted(handle["trading"]["bought_item_list"], key=lambda x: x["purchase_date"])
 
 
 def normalize(handle):
