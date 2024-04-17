@@ -397,7 +397,7 @@ def fetch_sold_count(handle):
 
     paging_text = driver.find_element(
         By.XPATH,
-        '//div[contains(@class, "merTabPanel")]/following-sibling::p[contains(@class, "merText")]',
+        '//div[contains(@class, "merTabList")]/following-sibling::p[contains(@class, "merText")]',
     ).text
     sold_count = int(re.match(r".*全(\d+)件", paging_text).group(1))
 
