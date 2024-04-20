@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "Merhist Python"
 version = "0.1.0"
-description = "メルカリの販売履歴と・購入履歴を収集するスクリプトです．"
+description = "メルカリの販売履歴と購入履歴を収集するスクリプトです．"
 authors = ["KIMATA Tetsuya <kimata@green-rabbit.net>"]
 
 packages = [
