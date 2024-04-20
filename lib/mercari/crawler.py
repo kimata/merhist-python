@@ -589,6 +589,24 @@ def fetch_bought_item_list(handle, is_continue_mode=True):
     mercari.handle.set_status(handle, "購入履歴の収集が完了しました．")
 
 
+def fetch_order_item_list(handle, is_continue_mode=True):
+    mercari.handle.set_status(handle, "巡回ロボットの準備をします...")
+    driver, wait = mercari.handle.get_selenium_driver(handle)
+
+    mercari.handle.set_status(handle, "注文履歴の収集を開始します...")
+
+    try:
+        mercari.crawler.fetch_sold_item_list(handle, is_continue_mode)
+        mercari.crawler.fetch_bought_item_list(handle, is_continue_mode)
+    except:
+        local_lib.selenium_util.dump_page(
+            driver, int(random.random() * 100), mercari.handle.get_debug_dir_path(handle)
+        )
+        raise
+
+    mercari.handle.set_status(handle, "注文履歴の収集が完了しました．")
+
+
 def execute_login(handle):
     driver, wait = mercari.handle.get_selenium_driver(handle)
 
