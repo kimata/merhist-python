@@ -23,9 +23,11 @@ import openpyxl.drawing.spreadsheet_drawing
 import mercari.handle
 
 
+DEF_SHOP_NAME = "【メルカリ】"
+
 SHEET_DEF = {
     "BOUGHT": {
-        "LABEL": "購入",
+        "LABEL": DEF_SHOP_NAME + "購入",
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": 80},
             "col": {
@@ -56,7 +58,7 @@ SHEET_DEF = {
         },
     },
     "SOLD": {
-        "LABEL": "販売",
+        "LABEL": DEF_SHOP_NAME + "販売",
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": 80},
             "col": {
