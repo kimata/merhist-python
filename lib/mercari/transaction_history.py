@@ -21,13 +21,17 @@ import openpyxl.drawing.xdr
 import openpyxl.drawing.spreadsheet_drawing
 
 import mercari.handle
+import local_lib.openpyxl_util
+
+STATUS_INSERT_ITEM = "[generate] Insert item"
+STATUS_ALL = "[generate] Excel file"
 
 
 DEF_SHOP_NAME = "【メルカリ】"
 
 SHEET_DEF = {
     "BOUGHT": {
-        "LABEL": DEF_SHOP_NAME + "購入",
+        "SHEET_TITLE": DEF_SHOP_NAME + "購入",
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": 80},
             "col": {
@@ -58,7 +62,7 @@ SHEET_DEF = {
         },
     },
     "SOLD": {
-        "LABEL": DEF_SHOP_NAME + "販売",
+        "SHEET_TITLE": DEF_SHOP_NAME + "販売",
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": 80},
             "col": {
@@ -119,258 +123,31 @@ SHEET_DEF = {
     },
 }
 
-STATUS_INSERT_ITEM = "[generate] Insert item"
-STATUS_ALL = "[generate] Excel file"
-
-
-def gen_text_pos(row, col):
-    return "{col}{row}".format(
-        row=row,
-        col=openpyxl.utils.get_column_letter(col),
-    )
-
-
-def set_header_cell_style(sheet, row, col, value, width, style):
-    sheet.cell(row, col).value = value
-    sheet.cell(row, col).style = "Normal"
-    sheet.cell(row, col).border = style["border"]
-    sheet.cell(row, col).fill = style["fill"]
-
-    if width is not None:
-        sheet.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
-
-
-def set_item_cell_style(sheet, row, col, value, style):
-    sheet.cell(row, col).value = value
-    sheet.cell(row, col).style = "Normal"
-    sheet.cell(row, col).border = style["border"]
-    sheet.cell(row, col).alignment = openpyxl.styles.Alignment(wrap_text=style["text_wrap"], vertical="top")
-
-    if "text_format" in style:
-        sheet.cell(row, col).number_format = style["text_format"]
-
-
-def insert_table_header(handle, mode, sheet, row, style):
-    mercari.handle.set_status(handle, "テーブルのヘッダを設定しています...")
-
-    for key in SHEET_DEF[mode]["TABLE_HEADER"]["col"].keys():
-        col = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["pos"]
-        if "width" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]:
-            width = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["width"]
-        else:
-            width = None
-
-        if key == "category":
-            for i in range(SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["length"]):
-                set_header_cell_style(
-                    sheet,
-                    row,
-                    col + i,
-                    SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["label"] + " ({i})".format(i=i + 1),
-                    width,
-                    style,
-                )
-        else:
-            set_header_cell_style(
-                sheet, row, col, SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["label"], width, style
-            )
-
-
-def insert_table_cell_image(handle, mode, sheet, row, col, item):
-    thumb_path = mercari.handle.get_thumb_path(handle, item)
-
-    if (thumb_path is None) or (not thumb_path.exists()):
-        return
-
-    img = openpyxl.drawing.image.Image(thumb_path)
-
-    # NOTE: マジックナンバー「8」は下記等を参考にして設定．(日本語フォントだと 8 が良さそう)
-    # > In all honesty, I cannot tell you how many blogs and stack overflow answers
-    # > I read before I stumbled across this magic number: 7.5
-    # https://imranhugo.medium.com/how-to-right-align-an-image-in-excel-cell-using-python-and-openpyxl-7ca75a85b13a
-    cell_width_pix = SHEET_DEF[mode]["TABLE_HEADER"]["col"]["image"]["width"] * 8
-    cell_height_pix = openpyxl.utils.units.points_to_pixels(SHEET_DEF[mode]["TABLE_HEADER"]["row"]["height"])
-
-    cell_width_emu = openpyxl.utils.units.pixels_to_EMU(cell_width_pix)
-    cell_height_emu = openpyxl.utils.units.pixels_to_EMU(cell_height_pix)
-
-    margin_pix = 2
-    content_width_pix = cell_width_pix - (margin_pix * 2)
-    content_height_pix = cell_height_pix - (margin_pix * 2)
-
-    content_ratio = content_width_pix / content_height_pix
-    image_ratio = img.width / img.height
-
-    if (img.width > content_width_pix) or (img.height > content_height_pix):
-        if image_ratio > content_ratio:
-            # NOTE: 画像の横幅をセルの横幅に合わせる
-            scale = content_width_pix / img.width
-        else:
-            # NOTE: 画像の高さをセルの高さに合わせる
-            scale = content_height_pix / img.height
-
-        img.width *= scale
-        img.height *= scale
-
-    image_width_emu = openpyxl.utils.units.pixels_to_EMU(img.width)
-    image_height_emu = openpyxl.utils.units.pixels_to_EMU(img.height)
-
-    col_offset_emu = (cell_width_emu - image_width_emu) / 2
-    row_offset_emu = (cell_height_emu - image_height_emu) / 2
-
-    marker_1 = openpyxl.drawing.spreadsheet_drawing.AnchorMarker(
-        col=col - 1, row=row - 1, colOff=col_offset_emu, rowOff=row_offset_emu
-    )
-    marker_2 = openpyxl.drawing.spreadsheet_drawing.AnchorMarker(
-        col=col, row=row, colOff=-col_offset_emu, rowOff=-row_offset_emu
-    )
-
-    img.anchor = openpyxl.drawing.spreadsheet_drawing.TwoCellAnchor(_from=marker_1, to=marker_2)
-
-    sheet.add_image(img)
-
-
-def gen_item_cell_style(mode, base_style, key):
-    style = base_style.copy()
-
-    if "format" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]:
-        style["text_format"] = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["format"]
-
-    if "wrap" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]:
-        style["text_wrap"] = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["wrap"]
-    else:
-        style["text_wrap"] = False
-
-    return style
-
-
-def insert_table_item(handle, mode, sheet, row, item, style):
-    for key in SHEET_DEF[mode]["TABLE_HEADER"]["col"].keys():
-        col = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["pos"]
-
-        cell_style = gen_item_cell_style(mode, style, key)
-
-        if key == "category":
-            for i in range(SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["length"]):
-                if i < len(item["category"]):
-                    value = item[key][i]
-                else:
-                    value = ""
-                set_item_cell_style(sheet, row, col + i, value, cell_style)
-        elif key == "image":
-            sheet.cell(row, col).border = cell_style["border"]
-            insert_table_cell_image(handle, mode, sheet, row, col, item)
-        else:
-            if (
-                ("optional" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key])
-                and (not SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["optional"])
-            ) or (key in item):
-                value = item[key]
-
-                if "conv_func" in SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]:
-                    value = SHEET_DEF[mode]["TABLE_HEADER"]["col"][key]["conv_func"](value)
-            else:
-                value = None
-
-            set_item_cell_style(sheet, row, col, value, cell_style)
-
-        if key == "id":
-            sheet.cell(row, col).hyperlink = item["url"]
-
-
-def setting_table_view(handle, mode, sheet, row_last):
-    mercari.handle.set_status(handle, "テーブルの表示設定しています...")
-
-    sheet.column_dimensions.group(
-        openpyxl.utils.get_column_letter(SHEET_DEF[mode]["TABLE_HEADER"]["col"]["image"]["pos"]),
-        openpyxl.utils.get_column_letter(SHEET_DEF[mode]["TABLE_HEADER"]["col"]["image"]["pos"]),
-        hidden=False,
-    )
-
-    sheet.freeze_panes = gen_text_pos(
-        SHEET_DEF[mode]["TABLE_HEADER"]["row"]["pos"] + 1,
-        SHEET_DEF[mode]["TABLE_HEADER"]["col"]["price"]["pos"] + 1,
-    )
-
-    sheet.auto_filter.ref = "{start}:{end}".format(
-        start=gen_text_pos(
-            SHEET_DEF[mode]["TABLE_HEADER"]["row"]["pos"],
-            min(map(lambda x: x["pos"], SHEET_DEF[mode]["TABLE_HEADER"]["col"].values())),
-        ),
-        end=gen_text_pos(
-            row_last, max(map(lambda x: x["pos"], SHEET_DEF[mode]["TABLE_HEADER"]["col"].values()))
-        ),
-    )
-    sheet.sheet_view.showGridLines = False
-
-
-def insert_sum_row(handle, mode, sheet, row_last, style):
-    logging.info("Insert sum row")
-
-    mercari.handle.set_status(handle, "集計行を挿入しています...")
-
-    col = SHEET_DEF[mode]["TABLE_HEADER"]["col"]["price"]["pos"]
-    set_item_cell_style(
-        sheet,
-        row_last + 1,
-        col,
-        "=sum({cell_first}:{cell_last})".format(
-            cell_first=gen_text_pos(SHEET_DEF[mode]["TABLE_HEADER"]["row"]["pos"] + 1, col),
-            cell_last=gen_text_pos(row_last, col),
-        ),
-        gen_item_cell_style(mode, style, "price"),
-    )
-
-
-def generate_list_sheet(handle, mode, book, item_list):
-    sheet = book.create_sheet()
-    sheet.title = "{label}アイテム一覧".format(label=SHEET_DEF[mode]["LABEL"])
-
-    side = openpyxl.styles.Side(border_style="thin", color="000000")
-    border = openpyxl.styles.Border(top=side, left=side, right=side, bottom=side)
-    fill = openpyxl.styles.PatternFill(patternType="solid", fgColor="F2F2F2")
-
-    style = {"border": border, "fill": fill}
-
-    row = SHEET_DEF[mode]["TABLE_HEADER"]["row"]["pos"]
-    insert_table_header(handle, mode, sheet, row, style)
-
-    mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
-
-    mercari.handle.set_progress_bar(handle, STATUS_INSERT_ITEM, len(item_list))
-    mercari.handle.set_status(handle, "{label}商品の記載をしています...".format(label=SHEET_DEF[mode]["LABEL"]))
-
-    row += 1
-    for item in item_list:
-        sheet.row_dimensions[row].height = SHEET_DEF[mode]["TABLE_HEADER"]["row"]["height"]
-        insert_table_item(handle, mode, sheet, row, item, style)
-        mercari.handle.get_progress_bar(handle, STATUS_INSERT_ITEM).update()
-        row += 1
-
-    row_last = row - 1
-
-    mercari.handle.get_progress_bar(handle, STATUS_INSERT_ITEM).update()
-    mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
-
-    # NOTE: 下記を行うと，ピボットテーブルの作成の邪魔になるのでコメントアウト
-    # insert_sum_row(sheet, row_last, style)
-    setting_table_view(handle, mode, sheet, row_last)
-
-    mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
-
 
 def generate_sheet(handle, book):
     transaction_list = [
         {"mode": "BOUGHT", "item_list": mercari.handle.get_bought_item_list(handle)},
         {"mode": "SOLD", "item_list": mercari.handle.get_sold_item_list(handle)},
     ]
+
     for transaction_info in transaction_list:
-        generate_list_sheet(handle, transaction_info["mode"], book, transaction_info["item_list"])
+        mercari.handle.set_progress_bar(handle, STATUS_INSERT_ITEM, len(transaction_info["item_list"]))
+
+        local_lib.openpyxl_util.generate_list_sheet(
+            handle,
+            book,
+            transaction_info["item_list"],
+            SHEET_DEF[transaction_info["mode"]],
+            lambda item: mercari.handle.get_thumb_path(handle, item),
+            mercari.handle.set_status,
+            lambda: mercari.handle.get_progress_bar(handle, STATUS_ALL).update(),
+            lambda: mercari.handle.get_progress_bar(handle, STATUS_INSERT_ITEM).update(),
+        )
 
 
 def generate_table_excel(handle, excel_file):
     mercari.handle.set_status(handle, "エクセルファイルの作成を開始します...")
-    mercari.handle.set_progress_bar(handle, STATUS_ALL, 5)
+    mercari.handle.set_progress_bar(handle, STATUS_ALL, 3 + 3 * 2)
 
     logging.info("Start to Generate excel file")
 
@@ -383,7 +160,7 @@ def generate_table_excel(handle, excel_file):
 
     generate_sheet(handle, book)
 
-    book.remove_sheet(book.worksheets[0])
+    book.remove(book.worksheets[0])
 
     mercari.handle.set_status(handle, "エクセルファイルを書き出しています...")
 
