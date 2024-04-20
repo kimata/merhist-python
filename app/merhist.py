@@ -48,6 +48,7 @@ def execute(config, is_continue_mode, is_export_mode=False):
 
         mercari.handle.finish(handle)
     except:
+        mercari.handle.set_status(handle, "エラーが発生しました", is_error=True)
         logging.error(traceback.format_exc())
 
     input("完了しました．エンターを押すと終了します．")

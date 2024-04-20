@@ -189,15 +189,21 @@ def set_progress_bar(handle, desc, total):
     )
 
 
-def set_status(handle, status):
+def set_status(handle, status, is_error=False):
+    if is_error:
+        color = "bold_bright_white_on_red"
+    else:
+        color = "bold_bright_white_on_lightslategray"
+
     if "status" not in handle:
         handle["status"] = handle["progress_manager"].status_bar(
             status_format="Merhist{fill}{status}{fill}{elapsed}",
-            color="bold_bright_white_on_lightslategray",
+            color=color,
             justify=enlighten.Justify.CENTER,
             status=status,
         )
     else:
+        handle["status"].color = color
         handle["status"].update(status=status, force=True)
 
 
