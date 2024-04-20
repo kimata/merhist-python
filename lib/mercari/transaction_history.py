@@ -357,6 +357,15 @@ def generate_list_sheet(handle, mode, book, item_list):
     mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
 
 
+def generate_sheet(handle, book):
+    transaction_list = [
+        {"mode": "BOUGHT", "item_list": mercari.handle.get_bought_item_list(handle)},
+        {"mode": "SOLD", "item_list": mercari.handle.get_sold_item_list(handle)},
+    ]
+    for transaction_info in transaction_list:
+        generate_list_sheet(handle, transaction_info["mode"], book, transaction_info["item_list"])
+
+
 def generate_table_excel(handle, excel_file):
     mercari.handle.set_status(handle, "エクセルファイルの作成を開始します...")
     mercari.handle.set_progress_bar(handle, STATUS_ALL, 5)
@@ -368,14 +377,10 @@ def generate_table_excel(handle, excel_file):
 
     mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
 
-    transaction_list = [
-        {"mode": "BOUGHT", "item_list": mercari.handle.get_bought_item_list(handle)},
-        {"mode": "SOLD", "item_list": mercari.handle.get_sold_item_list(handle)},
-    ]
-
     mercari.handle.normalize(handle)
-    for transaction_info in transaction_list:
-        generate_list_sheet(handle, transaction_info["mode"], book, transaction_info["item_list"])
+
+    generate_sheet(handle, book)
+
     book.remove_sheet(book.worksheets[0])
 
     mercari.handle.set_status(handle, "エクセルファイルを書き出しています...")
