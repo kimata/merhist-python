@@ -159,7 +159,7 @@ def generate_sheet(handle, book):
 
 def generate_table_excel(handle, excel_file):
     mercari.handle.set_status(handle, "エクセルファイルの作成を開始します...")
-    mercari.handle.set_progress_bar(handle, STATUS_ALL, 3 + 3 * 2)
+    mercari.handle.set_progress_bar(handle, STATUS_ALL, 2 + 3 * 2)
 
     logging.info("Start to Generate excel file")
 
