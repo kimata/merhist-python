@@ -108,8 +108,8 @@ def insert_table_item(handle, sheet, row, item, thumb_path, sheet_def, base_styl
 
             set_item_cell_style(sheet, row, col, value, cell_style)
 
-        if key == "id":
-            sheet.cell(row, col).hyperlink = item["url"]
+        if "link_func" in sheet_def["TABLE_HEADER"]["col"][key]:
+            sheet.cell(row, col).hyperlink = sheet_def["TABLE_HEADER"]["col"][key]["link_func"](item)
 
 
 def insert_table_cell_image(handle, sheet, row, col, thumb_path, cell_width, cell_height):
