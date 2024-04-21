@@ -39,6 +39,7 @@ def prepare_directory(handle):
     get_debug_dir_path(handle).mkdir(parents=True, exist_ok=True)
     get_thumb_dir_path(handle).mkdir(parents=True, exist_ok=True)
     get_caceh_file_path(handle).parent.mkdir(parents=True, exist_ok=True)
+    get_captcha_file_path(handle).parent.mkdir(parents=True, exist_ok=True)
     get_excel_file_path(handle).parent.mkdir(parents=True, exist_ok=True)
 
 
@@ -65,6 +66,10 @@ def get_selenium_data_dir_path(handle):
 
 def get_debug_dir_path(handle):
     return pathlib.Path(handle["config"]["base_dir"], handle["config"]["data"]["debug"])
+
+
+def get_captcha_file_path(handle):
+    return pathlib.Path(handle["config"]["base_dir"], handle["config"]["output"]["captcha"])
 
 
 def get_selenium_driver(handle):

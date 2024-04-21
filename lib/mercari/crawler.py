@@ -39,7 +39,7 @@ MERCARI_NORMAL = "mercari.com"
 MERCARI_SHOP = "mercari-shops.com"
 
 
-def wait_for_loading(handle, xpath='//div[@class="merNavigationTop"]', sec=1):
+def wait_for_loading(handle, xpath='//div[@class="merNavigationTop"]', sec=2):
     driver, wait = mercari.handle.get_selenium_driver(handle)
 
     wait.until(EC.visibility_of_all_elements_located((By.XPATH, xpath)))
@@ -608,17 +608,8 @@ def fetch_order_item_list(handle, is_continue_mode=True):
     mercari.handle.set_status(handle, "注文履歴の収集が完了しました．")
 
 
-def execute_login(handle):
+def login_impl(handle, is_resolve_img=False):
     driver, wait = mercari.handle.get_selenium_driver(handle)
-
-    local_lib.selenium_util.click_xpath(driver, '//button[contains(text(), "はじめる")]')
-    time.sleep(1)
-
-    local_lib.selenium_util.click_xpath(
-        driver,
-        '//button[contains(text(), "ログイン")]',
-        wait,
-    )
 
     wait.until(EC.presence_of_element_located((By.XPATH, '//h1[contains(text(), "ログイン")]')))
 
@@ -631,10 +622,18 @@ def execute_login(handle):
 
     local_lib.selenium_util.click_xpath(driver, '//button[contains(text(), "ログイン")]', wait)
 
-    time.sleep(2)
+    time.sleep(3)
     if len(driver.find_elements(By.XPATH, '//div[@id="recaptchaV2"]')) != 0:
         logging.warning("画像認証が要求されました．")
-        local_lib.captcha.resolve_mp3(driver, wait)
+
+        if is_resolve_img:
+            local_lib.captcha.resolve_img_console(driver, wait, mercari.handle.get_captcha_file_path(handle))
+        else:
+            if not local_lib.captcha.resolve_mp3(driver, wait):
+                logging.warning("画像認証を自動突破できませんでした．")
+                driver.refresh()
+                return login_impl(handle, True)
+
         logging.warning("画像認証を突破しました．")
         local_lib.selenium_util.click_xpath(driver, '//button[contains(text(), "ログイン")]', wait)
 
@@ -650,6 +649,21 @@ def execute_login(handle):
 
     # NOTE: 稀に正しく表示されないことがあるので，リロードしておく
     driver.refresh()
+
+
+def execute_login(handle):
+    driver, wait = mercari.handle.get_selenium_driver(handle)
+
+    local_lib.selenium_util.click_xpath(driver, '//button[contains(text(), "はじめる")]')
+    time.sleep(3)
+
+    local_lib.selenium_util.click_xpath(
+        driver,
+        '//button[contains(text(), "ログイン")]',
+        wait,
+    )
+
+    login_impl(handle, is_resolve_img=False)
 
 
 def keep_logged_on(handle):
@@ -688,11 +702,7 @@ def warmup(handle):
     logging.info("Warming up...")
     mercari.handle.set_status(handle, "ウォームアップを行います...")
 
-    # NOTE: 自動処理の最初の方にエラーが発生することが多いので，事前にアクセスしておく
-    driver.get(mercari.const.LOGIN_URL)
-    time.sleep(3)
-    driver.refresh()
-    time.sleep(3)
+    local_lib.selenium_util.warmup(driver, "メルカリ", "jp.mercari.com")
 
 
 if __name__ == "__main__":

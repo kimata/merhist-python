@@ -9,6 +9,7 @@ import random
 import subprocess
 import time
 
+
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
@@ -16,6 +17,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 
 WAIT_RETRY_COUNT = 1
@@ -217,6 +219,23 @@ def log_memory_usage(driver):
             memory_total=mem_info["total"], memory_js_heap=mem_info["js_heap"]
         )
     )
+
+
+def warmup(driver, keyword, url_pattern):
+    # NOTE: ダミーアクセスを行って BOT ではないと思わせる．(効果なさそう...)
+    driver.get("https://www.google.com/")
+    time.sleep(3)
+
+    driver.find_element(By.XPATH, '//textarea[@name="q"]').send_keys(keyword)
+    driver.find_element(By.XPATH, '//textarea[@name="q"]').send_keys(Keys.ENTER)
+
+    time.sleep(3)
+
+    driver.find_element(
+        By.XPATH, '//a[contains(@href, "{url_pattern}")]'.format(url_pattern=url_pattern)
+    ).click()
+
+    time.sleep(3)
 
 
 class browser_tab:
