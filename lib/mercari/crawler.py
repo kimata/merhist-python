@@ -35,9 +35,6 @@ STATUS_BOUGHT_ITEM = "[collect] Bought items"
 LOGIN_RETRY_COUNT = 2
 FETCH_RETRY_COUNT = 3
 
-LOGIN_URL = "https://jp.mercari.com"
-ITEM_LIST_XPATH = '//div[@data-testid="listed-item-list"]//div[contains(@class, "merListItem")]'
-
 MERCARI_NORMAL = "mercari.com"
 MERCARI_SHOP = "mercari-shops.com"
 
@@ -407,6 +404,8 @@ def fetch_sold_count(handle):
 
 
 def fetch_sold_item_list(handle, is_continue_mode=True):
+    warmup(handle)
+
     mercari.handle.set_status(handle, "販売履歴の収集を開始します...")
 
     fetch_sold_count(handle)
@@ -565,6 +564,8 @@ def fetch_bought_item_info_list(handle, is_continue_mode):
 def fetch_bought_item_list(handle, is_continue_mode=True):
     driver, wait = mercari.handle.get_selenium_driver(handle)
 
+    warmup(handle)
+
     mercari.handle.set_status(handle, "購入履歴の収集を開始します...")
 
     item_info_list = fetch_bought_item_info_list(handle, is_continue_mode)
@@ -679,6 +680,19 @@ def keep_logged_on(handle):
 
     logging.error("Give up to login")
     raise Exception("ログインに失敗しました．")
+
+
+def warmup(handle):
+    driver, wait = mercari.handle.get_selenium_driver(handle)
+
+    logging.info("Warming up...")
+    mercari.handle.set_status(handle, "ウォームアップを行います...")
+
+    # NOTE: 自動処理の最初の方にエラーが発生することが多いので，事前にアクセスしておく
+    driver.get(mercari.const.LOGIN_URL)
+    time.sleep(3)
+    driver.refresh()
+    time.sleep(3)
 
 
 if __name__ == "__main__":

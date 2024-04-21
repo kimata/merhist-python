@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 SOLD_ITEM_PER_PAGE = 20
+
+LOGIN_URL = "https://jp.mercari.com"
+
 BOUGHT_HIST_URL = "https://jp.mercari.com/mypage/purchases"
 SELL_HIST_URL = "https://jp.mercari.com/mypage/listings/sold?page={page}"
 
