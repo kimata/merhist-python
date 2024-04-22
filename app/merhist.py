@@ -44,7 +44,7 @@ def execute(config, is_continue_mode, is_export_mode=False):
     try:
         if not is_export_mode:
             execute_fetch(handle, is_continue_mode)
-        mercari.transaction_history.generate_table_excel(handle, config["output"]["excel"]["table"])
+        mercari.transaction_history.generate_table_excel(handle, mercari.handle.get_excel_file_path(handle))
 
         mercari.handle.finish(handle)
     except:

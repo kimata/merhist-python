@@ -59,7 +59,7 @@ SHEET_DEF = {
                 "id": {
                     "label": "商品ID",
                     "pos": 14,
-                    "width": 13,
+                    "width": 19,
                     "format": "@",
                     "link_func": lambda item: item["url"],
                 },
@@ -125,7 +125,7 @@ SHEET_DEF = {
                 "id": {
                     "label": "商品ID",
                     "pos": 17,
-                    "width": 13,
+                    "width": 19,
                     "format": "@",
                     "link_func": lambda item: item["url"],
                 },
