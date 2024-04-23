@@ -187,7 +187,7 @@ def fetch_item_normal_transaction(handle, item_info):
         logging.warning("Failed to load page: {url}".format(url=driver.current_url))
         raise Exception("ページの読み込みに失敗しました")
 
-    item = {}
+    item = {"count": 1}
     for i in range(len(driver.find_elements(By.XPATH, INFO_ROW_XPATH))):
         row_xpath = "(" + INFO_ROW_XPATH + ")[{index}]".format(index=i + 1)
 
@@ -230,7 +230,7 @@ def fetch_item_shop_transaction(handle, item_info):
 
     visit_url(handle, gen_item_transaction_url(item_info), '//header[contains(@class, "chakra-stack")]')
 
-    item = {}
+    item = {"count": 1}
     item["price"] = int(
         driver.find_element(By.XPATH, INFO_XPATH + '//p[contains(@class, "chakra-text")][last()]')
         .text.replace("￥", "")
@@ -311,7 +311,7 @@ def fetch_sell_item_list_by_page(handle, page, retry=0):
     for i in range(len(driver.find_elements(By.XPATH, ITEM_XPATH))):
         item_xpath = ITEM_XPATH + "[{index}]".format(index=i + 1)
 
-        item = {}
+        item = {"count": 1}
         for col_def in COL_DEF_LIST:
             if col_def["type"] == "text":
                 item[col_def["name"]] = driver.find_element(
