@@ -28,109 +28,123 @@ STATUS_INSERT_ITEM = "[generate] Insert item"
 STATUS_ALL = "[generate] Excel file"
 
 
-DEF_SHOP_NAME = "【メルカリ】"
+SHOP_NAME = "メルカリ"
 
 SHEET_DEF = {
     "BOUGHT": {
-        "SHEET_TITLE": DEF_SHOP_NAME + "購入",
+        "SHEET_TITLE": "【{shop_name}】購入".format(shop_name=SHOP_NAME),
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": 80},
             "col": {
+                "shop_name": {
+                    "label": "ショップ",
+                    "pos": 2,
+                    "width": 15,
+                    "format": "@",
+                    "value": SHOP_NAME,
+                },
                 "purchase_date": {
                     "label": "購入日",
-                    "pos": 2,
+                    "pos": 3,
                     "width": 23,
                     "format": 'yyyy"年"mm"月"dd"日 ("aaa")"',
                 },
-                "name": {"label": "商品名", "pos": 3, "width": 70, "wrap": True, "format": "@"},
-                "image": {"label": "画像", "pos": 4, "width": 12},
+                "name": {"label": "商品名", "pos": 4, "width": 70, "wrap": True, "format": "@"},
+                "image": {"label": "画像", "pos": 5, "width": 12},
                 "price": {
                     "label": "価格",
-                    "pos": 5,
+                    "pos": 6,
                     "width": 16,
                     "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
                     "optional": True,
                 },
-                "condition": {"label": "コンディション", "pos": 6, "width": 13, "format": "@", "wrap": True},
-                "postage_charge": {"label": "送料負担", "pos": 7, "width": 10, "format": "@", "wrap": True},
-                "category": {"label": "カテゴリ", "pos": 8, "length": 3, "width": 16, "wrap": True},
-                "shop": {"label": "ショップ", "pos": 11, "width": 13, "format": "@"},
-                "shipping_method": {"label": "配送方法", "pos": 12, "width": 10, "format": "@", "wrap": True},
-                "seller_region": {"label": "発送元の地域", "pos": 13, "width": 16, "format": "@"},
+                "condition": {"label": "コンディション", "pos": 7, "width": 13, "format": "@", "wrap": True},
+                "postage_charge": {"label": "送料負担", "pos": 8, "width": 10, "format": "@", "wrap": True},
+                "category": {"label": "カテゴリ", "pos": 9, "length": 3, "width": 16, "wrap": True},
+                "shop": {"label": "ショップ", "pos": 12, "width": 13, "format": "@"},
+                "shipping_method": {"label": "配送方法", "pos": 13, "width": 10, "format": "@", "wrap": True},
+                "seller_region": {"label": "発送元の地域", "pos": 14, "width": 16, "format": "@"},
                 "id": {
                     "label": "商品ID",
-                    "pos": 14,
+                    "pos": 15,
                     "width": 19,
                     "format": "@",
                     "link_func": lambda item: item["url"],
                 },
-                "error": {"label": "エラー", "pos": 15, "width": 15, "format": "@", "wrap": True},
+                "error": {"label": "エラー", "pos": 16, "width": 15, "format": "@", "wrap": True},
             },
         },
     },
     "SOLD": {
-        "SHEET_TITLE": DEF_SHOP_NAME + "販売",
+        "SHEET_TITLE": "【{shop_name}】販売".format(shop_name=SHOP_NAME),
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": 80},
             "col": {
-                "purchase_date": {
-                    "label": "購入日",
+                "shop_name": {
+                    "label": "ショップ",
                     "pos": 2,
+                    "width": 15,
+                    "format": "@",
+                    "value": SHOP_NAME,
+                },
+                "purchase_date": {
+                    "label": "販売日",
+                    "pos": 3,
                     "width": 23,
                     "format": 'yyyy"年"mm"月"dd"日 ("aaa")"',
                 },
-                "name": {"label": "商品名", "pos": 3, "width": 70, "wrap": True, "format": "@"},
-                "image": {"label": "画像", "pos": 4, "width": 12},
+                "name": {"label": "商品名", "pos": 4, "width": 70, "wrap": True, "format": "@"},
+                "image": {"label": "画像", "pos": 5, "width": 12},
                 "price": {
                     "label": "価格",
-                    "pos": 5,
+                    "pos": 6,
                     "width": 16,
                     "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
                 },
                 "commission": {
                     "label": "手数料",
-                    "pos": 6,
+                    "pos": 7,
                     "width": 10,
                     "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
                 },
                 "postage": {
                     "label": "送料",
-                    "pos": 7,
+                    "pos": 8,
                     "width": 10,
                     "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
                 },
                 "profit": {
                     "label": "回収金額",
-                    "pos": 8,
+                    "pos": 9,
                     "width": 16,
                     "format": '_ ¥* #,##0_ ;_ ¥* -#,##0_ ;_ ¥* "-"_ ;_ @_ ',  # NOTE: 末尾の空白要
                 },
-                "condition": {"label": "コンディション", "pos": 9, "width": 13, "format": "@", "wrap": True},
-                "postage_charge": {"label": "送料負担", "pos": 10, "width": 10, "format": "@", "wrap": True},
-                "shipping_method": {"label": "配送方法", "pos": 11, "width": 10, "format": "@", "wrap": True},
+                "condition": {"label": "コンディション", "pos": 10, "width": 13, "format": "@", "wrap": True},
+                "postage_charge": {"label": "送料負担", "pos": 11, "width": 10, "format": "@", "wrap": True},
+                "shipping_method": {"label": "配送方法", "pos": 12, "width": 10, "format": "@", "wrap": True},
                 "commission_rate": {
                     "label": "手数料率",
-                    "pos": 12,
+                    "pos": 13,
                     "width": 10,
                     "format": "0%",
                     "conv_func": lambda x: x / 100,
                 },
-                "category": {"label": "カテゴリ", "pos": 13, "length": 3, "width": 16, "wrap": True},
+                "category": {"label": "カテゴリ", "pos": 14, "length": 3, "width": 16, "wrap": True},
                 "completion_date": {
                     "label": "取引完了日",
-                    "pos": 16,
+                    "pos": 17,
                     "width": 23,
                     "format": 'yyyy"年"mm"月"dd"日 ("aaa")"',
                 },
                 "seller_region": {"label": "発送元の地域", "pos": 17, "width": 16, "format": "@"},
                 "id": {
                     "label": "商品ID",
-                    "pos": 17,
+                    "pos": 18,
                     "width": 19,
                     "format": "@",
                     "link_func": lambda item: item["url"],
                 },
-                "error": {"label": "エラー", "pos": 18, "width": 15, "format": "@", "wrap": True},
+                "error": {"label": "エラー", "pos": 19, "width": 15, "format": "@", "wrap": True},
             },
         },
     },
@@ -147,13 +161,12 @@ def generate_sheet(handle, book, is_need_thumb=True):
         mercari.handle.set_progress_bar(handle, STATUS_INSERT_ITEM, len(transaction_info["item_list"]))
 
         local_lib.openpyxl_util.generate_list_sheet(
-            handle,
             book,
             transaction_info["item_list"],
             SHEET_DEF[transaction_info["mode"]],
             is_need_thumb,
             lambda item: mercari.handle.get_thumb_path(handle, item),
-            mercari.handle.set_status,
+            lambda status: mercari.handle.set_status(handle, status),
             lambda: mercari.handle.get_progress_bar(handle, STATUS_ALL).update(),
             lambda: mercari.handle.get_progress_bar(handle, STATUS_INSERT_ITEM).update(),
         )

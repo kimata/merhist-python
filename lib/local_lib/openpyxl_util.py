@@ -22,7 +22,7 @@ def set_header_cell_style(sheet, row, col, value, width, style):
         sheet.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
 
 
-def insert_table_header(handle, sheet, row, sheet_def, base_style):
+def insert_table_header(sheet, row, sheet_def, base_style):
     for key in sheet_def["TABLE_HEADER"]["col"].keys():
         col = sheet_def["TABLE_HEADER"]["col"][key]["pos"]
         if "width" in sheet_def["TABLE_HEADER"]["col"][key]:
@@ -70,7 +70,7 @@ def set_item_cell_style(sheet, row, col, value, style):
         sheet.cell(row, col).number_format = style["text_format"]
 
 
-def insert_table_item(handle, sheet, row, item, is_need_thumb, thumb_path, sheet_def, base_style):
+def insert_table_item(sheet, row, item, is_need_thumb, thumb_path, sheet_def, base_style):
     for key in sheet_def["TABLE_HEADER"]["col"].keys():
         col = sheet_def["TABLE_HEADER"]["col"][key]["pos"]
 
@@ -87,7 +87,6 @@ def insert_table_item(handle, sheet, row, item, is_need_thumb, thumb_path, sheet
             sheet.cell(row, col).border = cell_style["border"]
             if is_need_thumb:
                 insert_table_cell_image(
-                    handle,
                     sheet,
                     row,
                     col,
@@ -98,14 +97,20 @@ def insert_table_item(handle, sheet, row, item, is_need_thumb, thumb_path, sheet
         else:
             if (
                 ("optional" in sheet_def["TABLE_HEADER"]["col"][key])
-                and (not sheet_def["TABLE_HEADER"]["col"][key]["optional"])
-            ) or (key in item):
-                value = item[key]
+                and sheet_def["TABLE_HEADER"]["col"][key]["optional"]
+                and (key not in item)
+            ):
+                value = None
+            else:
+                if "value" in sheet_def["TABLE_HEADER"]["col"][key]:
+                    value = sheet_def["TABLE_HEADER"]["col"][key]["value"]
+                elif "formal_key" in sheet_def["TABLE_HEADER"]["col"][key]:
+                    value = item[sheet_def["TABLE_HEADER"]["col"][key]["formal_key"]]
+                else:
+                    value = item[key]
 
                 if "conv_func" in sheet_def["TABLE_HEADER"]["col"][key]:
                     value = sheet_def["TABLE_HEADER"]["col"][key]["conv_func"](value)
-            else:
-                value = None
 
             set_item_cell_style(sheet, row, col, value, cell_style)
 
@@ -113,7 +118,7 @@ def insert_table_item(handle, sheet, row, item, is_need_thumb, thumb_path, sheet
             sheet.cell(row, col).hyperlink = sheet_def["TABLE_HEADER"]["col"][key]["link_func"](item)
 
 
-def insert_table_cell_image(handle, sheet, row, col, thumb_path, cell_width, cell_height):
+def insert_table_cell_image(sheet, row, col, thumb_path, cell_width, cell_height):
     if (thumb_path is None) or (not thumb_path.exists()):
         return
 
@@ -165,7 +170,7 @@ def insert_table_cell_image(handle, sheet, row, col, thumb_path, cell_width, cel
     sheet.add_image(img)
 
 
-def setting_table_view(handle, sheet, sheet_def, row_last, is_hidden):
+def setting_table_view(sheet, sheet_def, row_last, is_hidden):
     sheet.column_dimensions.group(
         openpyxl.utils.get_column_letter(sheet_def["TABLE_HEADER"]["col"]["image"]["pos"]),
         openpyxl.utils.get_column_letter(sheet_def["TABLE_HEADER"]["col"]["image"]["pos"]),
@@ -188,7 +193,6 @@ def setting_table_view(handle, sheet, sheet_def, row_last, is_hidden):
 
 
 def generate_list_sheet(
-    handle,
     book,
     item_list,
     sheet_def,
@@ -209,19 +213,17 @@ def generate_list_sheet(
 
     row = sheet_def["TABLE_HEADER"]["row"]["pos"]
 
-    set_status_func(handle, "テーブルのヘッダを設定しています...")
-    insert_table_header(handle, sheet, row, sheet_def, base_style)
+    set_status_func("テーブルのヘッダを設定しています...")
+    insert_table_header(sheet, row, sheet_def, base_style)
 
     update_seq_func()
 
-    set_status_func(handle, "{label} - 商品の記載をしています...".format(label=sheet_def["SHEET_TITLE"]))
+    set_status_func("{label} - 商品の記載をしています...".format(label=sheet_def["SHEET_TITLE"]))
 
     row += 1
     for item in item_list:
         sheet.row_dimensions[row].height = sheet_def["TABLE_HEADER"]["row"]["height"]
-        insert_table_item(
-            handle, sheet, row, item, is_need_thumb, thumb_path_func(item), sheet_def, base_style
-        )
+        insert_table_item(sheet, row, item, is_need_thumb, thumb_path_func(item), sheet_def, base_style)
         update_item_func()
 
         row += 1
@@ -231,7 +233,7 @@ def generate_list_sheet(
     update_item_func()
     update_seq_func()
 
-    set_status_func(handle, "テーブルの表示設定しています...")
-    setting_table_view(handle, sheet, sheet_def, row_last, not is_need_thumb)
+    set_status_func("テーブルの表示設定しています...")
+    setting_table_view(sheet, sheet_def, row_last, not is_need_thumb)
 
     update_seq_func()
