@@ -4,11 +4,12 @@
 メルカリの販売履歴や購入履歴をエクセルファイルに書き出します．
 
 Usage:
-  transaction_history.py [-c CONFIG] [-o EXCEL]
+  transaction_history.py [-c CONFIG] [-o EXCEL] [-N]
 
 Options:
   -c CONFIG     : CONFIG を設定ファイルとして読み込んで実行します．[default: config.yaml]
-  -o EXCEL      : CONFIG を設定ファイルとして読み込んで実行します．[default: merhist.xlsx]
+  -o EXCEL      : 生成する Excel ファイルを指定します．[default: amazhist.xlsx]
+  -N            : サムネイル画像を含めないようにします．
 """
 
 import logging
@@ -136,7 +137,7 @@ SHEET_DEF = {
 }
 
 
-def generate_sheet(handle, book):
+def generate_sheet(handle, book, is_need_thumb=True):
     transaction_list = [
         {"mode": "BOUGHT", "item_list": mercari.handle.get_bought_item_list(handle)},
         {"mode": "SOLD", "item_list": mercari.handle.get_sold_item_list(handle)},
@@ -150,6 +151,7 @@ def generate_sheet(handle, book):
             book,
             transaction_info["item_list"],
             SHEET_DEF[transaction_info["mode"]],
+            is_need_thumb,
             lambda item: mercari.handle.get_thumb_path(handle, item),
             mercari.handle.set_status,
             lambda: mercari.handle.get_progress_bar(handle, STATUS_ALL).update(),
@@ -157,7 +159,7 @@ def generate_sheet(handle, book):
         )
 
 
-def generate_table_excel(handle, excel_file):
+def generate_table_excel(handle, excel_file, is_need_thumb=True):
     mercari.handle.set_status(handle, "エクセルファイルの作成を開始します...")
     mercari.handle.set_progress_bar(handle, STATUS_ALL, 2 + 3 * 2)
 
@@ -170,7 +172,7 @@ def generate_table_excel(handle, excel_file):
 
     mercari.handle.normalize(handle)
 
-    generate_sheet(handle, book)
+    generate_sheet(handle, book, is_need_thumb)
 
     book.remove(book.worksheets[0])
 
@@ -201,9 +203,10 @@ if __name__ == "__main__":
 
     config = local_lib.config.load(args["-c"])
     excel_file = args["-o"]
+    is_need_thumb = not args["-N"]
 
     handle = mercari.handle.create(config)
 
-    generate_table_excel(handle, excel_file)
+    generate_table_excel(handle, excel_file, is_need_thumb)
 
     mercari.handle.finish(handle)

@@ -70,7 +70,7 @@ def set_item_cell_style(sheet, row, col, value, style):
         sheet.cell(row, col).number_format = style["text_format"]
 
 
-def insert_table_item(handle, sheet, row, item, thumb_path, sheet_def, base_style):
+def insert_table_item(handle, sheet, row, item, is_need_thumb, thumb_path, sheet_def, base_style):
     for key in sheet_def["TABLE_HEADER"]["col"].keys():
         col = sheet_def["TABLE_HEADER"]["col"][key]["pos"]
 
@@ -85,15 +85,16 @@ def insert_table_item(handle, sheet, row, item, thumb_path, sheet_def, base_styl
                 set_item_cell_style(sheet, row, col + i, value, cell_style)
         elif key == "image":
             sheet.cell(row, col).border = cell_style["border"]
-            insert_table_cell_image(
-                handle,
-                sheet,
-                row,
-                col,
-                thumb_path,
-                sheet_def["TABLE_HEADER"]["col"]["image"]["width"],
-                sheet_def["TABLE_HEADER"]["row"]["height"],
-            )
+            if is_need_thumb:
+                insert_table_cell_image(
+                    handle,
+                    sheet,
+                    row,
+                    col,
+                    thumb_path,
+                    sheet_def["TABLE_HEADER"]["col"]["image"]["width"],
+                    sheet_def["TABLE_HEADER"]["row"]["height"],
+                )
         else:
             if (
                 ("optional" in sheet_def["TABLE_HEADER"]["col"][key])
@@ -164,11 +165,11 @@ def insert_table_cell_image(handle, sheet, row, col, thumb_path, cell_width, cel
     sheet.add_image(img)
 
 
-def setting_table_view(handle, sheet, sheet_def, row_last):
+def setting_table_view(handle, sheet, sheet_def, row_last, is_hidden):
     sheet.column_dimensions.group(
         openpyxl.utils.get_column_letter(sheet_def["TABLE_HEADER"]["col"]["image"]["pos"]),
         openpyxl.utils.get_column_letter(sheet_def["TABLE_HEADER"]["col"]["image"]["pos"]),
-        hidden=False,
+        hidden=is_hidden,
     )
 
     sheet.freeze_panes = gen_text_pos(
@@ -191,6 +192,7 @@ def generate_list_sheet(
     book,
     item_list,
     sheet_def,
+    is_need_thumb,
     thumb_path_func,
     set_status_func,
     update_seq_func,
@@ -217,7 +219,9 @@ def generate_list_sheet(
     row += 1
     for item in item_list:
         sheet.row_dimensions[row].height = sheet_def["TABLE_HEADER"]["row"]["height"]
-        insert_table_item(handle, sheet, row, item, thumb_path_func(item), sheet_def, base_style)
+        insert_table_item(
+            handle, sheet, row, item, is_need_thumb, thumb_path_func(item), sheet_def, base_style
+        )
         update_item_func()
 
         row += 1
@@ -228,6 +232,6 @@ def generate_list_sheet(
     update_seq_func()
 
     set_status_func(handle, "テーブルの表示設定しています...")
-    setting_table_view(handle, sheet, sheet_def, row_last)
+    setting_table_view(handle, sheet, sheet_def, row_last, not is_need_thumb)
 
     update_seq_func()
