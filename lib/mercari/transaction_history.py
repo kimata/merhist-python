@@ -22,6 +22,7 @@ import openpyxl.drawing.xdr
 import openpyxl.drawing.spreadsheet_drawing
 
 import mercari.handle
+import mercari.crawler
 import local_lib.openpyxl_util
 
 STATUS_INSERT_ITEM = "[generate] Insert item"
@@ -34,7 +35,7 @@ SHEET_DEF = {
     "BOUGHT": {
         "SHEET_TITLE": "【{shop_name}】購入".format(shop_name=SHOP_NAME),
         "TABLE_HEADER": {
-            "row": {"pos": 2, "height": 80},
+            "row": {"pos": 2, "height": {"default": 80, "without_thumb": 25}},
             "col": {
                 "shop_name": {
                     "label": "ショップ",
@@ -79,9 +80,18 @@ SHEET_DEF = {
                     "format": "@",
                     "link_func": lambda item: item["url"],
                 },
+                "no": {
+                    # NOTE: メルカリ向けでは，他のショップで「id」としている内容が独立して存在しないため，読み替える
+                    "formal_key": "id",
+                    "label": "注文番号",
+                    "pos": 17,
+                    "width": 19,
+                    "format": "@",
+                    "link_func": lambda item: item["order_url"],
+                },
                 "error": {
                     "label": "エラー",
-                    "pos": 17,
+                    "pos": 18,
                     "width": 15,
                     "format": "@",
                     "wrap": True,
@@ -93,7 +103,7 @@ SHEET_DEF = {
     "SOLD": {
         "SHEET_TITLE": "【{shop_name}】販売".format(shop_name=SHOP_NAME),
         "TABLE_HEADER": {
-            "row": {"pos": 2, "height": 80},
+            "row": {"pos": 2, "height": {"default": 80, "without_thumb": 25}},
             "col": {
                 "shop_name": {
                     "label": "ショップ",
@@ -166,6 +176,15 @@ SHEET_DEF = {
                     "width": 19,
                     "format": "@",
                     "link_func": lambda item: item["url"],
+                },
+                "no": {
+                    # NOTE: メルカリ向けでは，他のショップで「id」としている内容が独立して存在しないため，読み替える
+                    "formal_key": "id",
+                    "label": "注文番号",
+                    "pos": 17,
+                    "width": 19,
+                    "format": "@",
+                    "link_func": lambda item: mercari.crawler.gen_item_transaction_url(item),
                 },
                 "error": {
                     "label": "エラー",

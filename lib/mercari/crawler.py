@@ -75,15 +75,15 @@ def gen_item_description_url(item_info):
         return mercari.const.ITEM_NORMAL_DESCRIPTION_URL.format(id=item_info["id"])
 
 
-def set_item_id_from_url(item):
-    if re.match(r".*/.*mercari\.com", item["url"]):
-        item["id"] = re.match(r".*/(m\d+)/?", item["url"]).group(1)
+def set_item_id_from_order_url(item):
+    if re.match(r".*/.*mercari\.com", item["order_url"]):
+        item["id"] = re.match(r".*/(m\d+)/?", item["order_url"]).group(1)
         item["shop"] = MERCARI_NORMAL
-    elif re.match(r".*.mercari-shops\.com", item["url"]):
-        item["id"] = re.match(r".*/orders/(\w+)/?", item["url"]).group(1)
+    elif re.match(r".*.mercari-shops\.com", item["order_url"]):
+        item["id"] = re.match(r".*/orders/(\w+)/?", item["order_url"]).group(1)
         item["shop"] = MERCARI_SHOP
     else:
-        logging.error("Unexpected URL format: {url}".format(url=item["url"]))
+        logging.error("Unexpected URL format: {order_url}".format(url=item["order_url"]))
         raise Exception("URL の形式が想定と異なります．")
 
 
@@ -187,7 +187,7 @@ def fetch_item_normal_transaction(handle, item_info):
         logging.warning("Failed to load page: {url}".format(url=driver.current_url))
         raise Exception("ページの読み込みに失敗しました")
 
-    item = {"count": 1}
+    item = {}
     for i in range(len(driver.find_elements(By.XPATH, INFO_ROW_XPATH))):
         row_xpath = "(" + INFO_ROW_XPATH + ")[{index}]".format(index=i + 1)
 
@@ -230,7 +230,7 @@ def fetch_item_shop_transaction(handle, item_info):
 
     visit_url(handle, gen_item_transaction_url(item_info), '//header[contains(@class, "chakra-stack")]')
 
-    item = {"count": 1}
+    item = {}
     item["price"] = int(
         driver.find_element(By.XPATH, INFO_XPATH + '//p[contains(@class, "chakra-text")][last()]')
         .text.replace("￥", "")
@@ -252,6 +252,8 @@ def fetch_item_detail(handle, item_info):
 
         try:
             item = item_info.copy()
+            item["count"] = 1
+            item["url"] = gen_item_description_url(item_info)
             item |= fetch_item_description(handle, item_info)
 
             if item_info["shop"] == MERCARI_SHOP:
@@ -285,7 +287,7 @@ def fetch_item_detail(handle, item_info):
 def fetch_sell_item_list_by_page(handle, page, retry=0):
     ITEM_XPATH = '(//div[contains(@class, "merTable")]/div[contains(@class, "merTableRowGroup")])[2]//div[contains(@class, "merTableRow")]'
     COL_DEF_LIST = [
-        {"index": 1, "type": "text", "name": "name", "link": {"name": "url"}},
+        {"index": 1, "type": "text", "name": "name", "link": {"name": "order_url"}},
         {"index": 2, "type": "price", "name": "price"},
         {"index": 3, "type": "price", "name": "commission"},
         {"index": 4, "type": "price", "name": "postage"},
@@ -361,7 +363,7 @@ def fetch_sell_item_list_by_page(handle, page, retry=0):
                     ).text.replace("%", "")
                 )
 
-        set_item_id_from_url(item)
+        set_item_id_from_order_url(item)
 
         item_list.append(item)
 
@@ -479,7 +481,7 @@ def get_bought_item_info_list(handle, page, offset, item_info_list):
         item_info["name"] = driver.find_element(
             By.XPATH, item_xpath + '//span[contains(@class, "itemLabel")]'
         ).text
-        item_info["url"] = driver.find_element(By.XPATH, item_xpath + "//a").get_attribute("href")
+        item_info["order_url"] = driver.find_element(By.XPATH, item_xpath + "//a").get_attribute("href")
 
         item_info["purchase_date"] = parse_datetime(
             driver.find_element(
@@ -489,7 +491,7 @@ def get_bought_item_info_list(handle, page, offset, item_info_list):
             False,
         )
 
-        set_item_id_from_url(item_info)
+        set_item_id_from_order_url(item_info)
 
         if not mercari.handle.get_bought_item_stat(handle, item_info):
             item_info_list.append(item_info)
@@ -721,8 +723,8 @@ if __name__ == "__main__":
     driver, wait = mercari.handle.get_selenium_driver(handle)
 
     try:
-        fetch_sold_item_list(handle, False)
         fetch_bought_item_list(handle)
+        fetch_sold_item_list(handle, False)
 
     except:
         driver, wait = mercari.handle.get_selenium_driver(handle)

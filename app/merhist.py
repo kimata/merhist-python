@@ -29,8 +29,8 @@ VERSION = "0.1.0"
 
 def execute_fetch(handle, is_continue_mode):
     try:
-        mercari.crawler.fetch_sold_item_list(handle, is_continue_mode["sold"])
         mercari.crawler.fetch_bought_item_list(handle, is_continue_mode["bought"])
+        mercari.crawler.fetch_sold_item_list(handle, is_continue_mode["sold"])
     except:
         driver, wait = mercari.handle.get_selenium_driver(handle)
         local_lib.selenium_util.dump_page(

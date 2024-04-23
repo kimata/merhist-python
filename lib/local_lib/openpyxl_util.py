@@ -92,7 +92,7 @@ def insert_table_item(sheet, row, item, is_need_thumb, thumb_path, sheet_def, ba
                     col,
                     thumb_path,
                     sheet_def["TABLE_HEADER"]["col"]["image"]["width"],
-                    sheet_def["TABLE_HEADER"]["row"]["height"],
+                    sheet_def["TABLE_HEADER"]["row"]["height"]["default"],
                 )
         else:
             if (
@@ -220,9 +220,14 @@ def generate_list_sheet(
 
     set_status_func("{label} - 商品の記載をしています...".format(label=sheet_def["SHEET_TITLE"]))
 
+    if is_need_thumb:
+        cell_height = sheet_def["TABLE_HEADER"]["row"]["height"]["default"]
+    else:
+        cell_height = sheet_def["TABLE_HEADER"]["row"]["height"]["without_thumb"]
+
     row += 1
     for item in item_list:
-        sheet.row_dimensions[row].height = sheet_def["TABLE_HEADER"]["row"]["height"]
+        sheet.row_dimensions[row].height = cell_height
         insert_table_item(sheet, row, item, is_need_thumb, thumb_path_func(item), sheet_def, base_style)
         update_item_func()
 
