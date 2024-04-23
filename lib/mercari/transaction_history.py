@@ -43,7 +43,9 @@ SHEET_DEF = {
                     "format": "@",
                     "value": SHOP_NAME,
                 },
-                "purchase_date": {
+                "date": {
+                    # NOTE: メルカリの購入では，他のショップで「date」としている内容を「purchase_date」としているので，読み替える
+                    "formal_key": "purchase_date",
                     "label": "購入日",
                     "pos": 3,
                     "width": 23,
@@ -87,7 +89,9 @@ SHEET_DEF = {
                     "format": "@",
                     "value": SHOP_NAME,
                 },
-                "purchase_date": {
+                "date": {
+                    # NOTE: メルカリの購入では，他のショップで「date」としている内容を「purchase_date」としているので，読み替える
+                    "formal_key": "purchase_date",
                     "label": "販売日",
                     "pos": 3,
                     "width": 23,
