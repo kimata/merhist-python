@@ -242,3 +242,5 @@ def generate_list_sheet(
     setting_table_view(sheet, sheet_def, row_last, not is_need_thumb)
 
     update_seq_func()
+
+    return sheet

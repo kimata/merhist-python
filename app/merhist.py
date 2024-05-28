@@ -80,7 +80,4 @@ if __name__ == "__main__":
 
     config = local_lib.config.load(args["-c"])
 
-    try:
-        execute(config, is_continue_mode, is_export_mode, is_need_thumb)
-    except:
-        logging.error(traceback.format_exc())
+    execute(config, is_continue_mode, is_export_mode, is_need_thumb)
