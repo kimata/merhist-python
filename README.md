@@ -35,7 +35,7 @@ sudo apt install docker-compose
 
 ```
 docker-compose build
-docker-compose run --rm merhist
+docker-compose run --build --rm merhist
 ```
 
 取引履歴の数が沢山ある場合，1時間以上がかかりますので，放置しておくのがオススメです．
