@@ -1,8 +1,9 @@
 # データを収集するための，メルカリのログイン情報
 login:
-    mercari:
-        user: メルカリのユーザ名
-        pass: メルカリのパスワード
+    line:
+        user: LINE のユーザ ID
+        pass: LINE のログインパスワード
+
 
 # データ収集で使用する一時ファイルの置き場所
 data:
