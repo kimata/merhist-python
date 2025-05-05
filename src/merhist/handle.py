@@ -246,7 +246,7 @@ def load_trading_info(handle):
             "bought_item_id_stat": {},
             "bought_total_count": 0,
             "bought_checked_count": 0,
-            "last_modified": datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo")),
+            "last_modified": datetime.datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo")),
         },
     )
 

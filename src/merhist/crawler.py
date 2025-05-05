@@ -503,7 +503,7 @@ def get_bought_item_info_list(handle, page, offset, item_info_list):
     if list_length < offset:
         raise Exception("購入履歴の読み込みが正常にできていません．")  # noqa: EM101, TRY002
 
-    logging.info("There are %s items in page %s", f"{list_length - offset:.}", f"{page:,}")
+    logging.info("There are %d items in page %s", list_length - offset, f"{page:,}")
 
     is_found_new = False
     for i in range(offset, list_length):

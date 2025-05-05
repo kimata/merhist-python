@@ -230,10 +230,7 @@ def generate_table_excel(handle, excel_file, is_need_thumb=True):
     logging.info("Start to Generate excel file")
 
     book = openpyxl.Workbook()
-
-    normal_style = next((style for style in book.named_styles if style.name == "Normal"), None)
-    if normal_style is not None:
-        normal_style.font = merhist.handle.get_excel_font(handle)
+    book._named_styles["Normal"].font = merhist.handle.get_excel_font(handle)  # noqa: SLF001
 
     merhist.handle.get_progress_bar(handle, STATUS_ALL).update()
 
