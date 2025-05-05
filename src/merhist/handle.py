@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import pathlib
-import enlighten
 import datetime
 import functools
+import pathlib
 
-from selenium.webdriver.support.wait import WebDriverWait
+import enlighten
+import my_lib.selenium_util
+import my_lib.serializer
 import openpyxl.styles
-
-import local_lib.serializer
-import local_lib.selenium_util
+import selenium.webdriver.support.wait
+import zoneinfo
 
 
 def create(config):
@@ -32,6 +31,18 @@ def get_login_user(handle):
 
 def get_login_pass(handle):
     return handle["config"]["login"]["mercari"]["pass"]
+
+
+def get_line_user(handle):
+    return handle["config"]["login"]["line"]["user"]
+
+
+def get_line_pass(handle):
+    return handle["config"]["login"]["line"]["pass"]
+
+
+def get_slack_config(handle):
+    return handle["config"]["slack"]
 
 
 def prepare_directory(handle):
@@ -76,10 +87,10 @@ def get_selenium_driver(handle):
     if "selenium" in handle:
         return (handle["selenium"]["driver"], handle["selenium"]["wait"])
     else:
-        driver = local_lib.selenium_util.create_driver("Merhist", get_selenium_data_dir_path(handle))
-        wait = WebDriverWait(driver, 5)
+        driver = my_lib.selenium_util.create_driver("Merhist", get_selenium_data_dir_path(handle))
+        wait = selenium.webdriver.support.wait.WebDriverWait(driver, 20)
 
-        local_lib.selenium_util.clear_cache(driver)
+        my_lib.selenium_util.clear_cache(driver)
 
         handle["selenium"] = {
             "driver": driver,
@@ -157,14 +168,15 @@ def get_bought_item_list(handle):
 
 def normalize(handle):
     handle["trading"]["bought_item_list"] = functools.reduce(
-        lambda x, y: x + [y] if y["id"] not in map(lambda item: item["id"], x) else x,
+        lambda x, y: [*x, y] if y["id"] not in (item["id"] for item in x) else x,
         handle["trading"]["bought_item_list"],
         [],
     )
+
     handle["trading"]["bought_checked_count"] = len(handle["trading"]["bought_item_list"])
 
     handle["trading"]["sold_item_list"] = functools.reduce(
-        lambda x, y: x + [y] if y["id"] not in map(lambda item: item["id"], x) else x,
+        lambda x, y: [*x, y] if y["id"] not in (item["id"] for item in x) else x,
         handle["trading"]["sold_item_list"],
         [],
     )
@@ -172,7 +184,6 @@ def normalize(handle):
 
 
 def get_thumb_path(handle, item):
-
     return get_thumb_dir_path(handle) / (item["id"] + ".png")
 
 
@@ -183,7 +194,7 @@ def get_cache_last_modified(handle):
 def set_progress_bar(handle, desc, total):
     BAR_FORMAT = (
         "{desc:31s}{desc_pad}{percentage:3.0f}% |{bar}| {count:5d} / {total:5d} "
-        + "[{elapsed}<{eta}, {rate:6.2f}{unit_pad}{unit}/s]"
+        "[{elapsed}<{eta}, {rate:6.2f}{unit_pad}{unit}/s]"
     )
     COUNTER_FORMAT = (
         "{desc:30s}{desc_pad}{count:5d} {unit}{unit_pad}[{elapsed}, {rate:6.2f}{unit_pad}{unit}/s]{fill}"
@@ -195,10 +206,7 @@ def set_progress_bar(handle, desc, total):
 
 
 def set_status(handle, status, is_error=False):
-    if is_error:
-        color = "bold_bright_white_on_red"
-    else:
-        color = "bold_bright_white_on_lightslategray"
+    color = "bold_bright_white_on_red" if is_error else "bold_bright_white_on_lightslategray"
 
     if "status" not in handle:
         handle["status"] = handle["progress_manager"].status_bar(
@@ -221,13 +229,13 @@ def finish(handle):
 
 
 def store_trading_info(handle):
-    handle["trading"]["last_modified"] = datetime.datetime.now()
+    handle["trading"]["last_modified"] = datetime.datetime.now(tz=zoneinfo.ZoneInfo("Asia/Tokyo"))
 
-    local_lib.serializer.store(get_caceh_file_path(handle), handle["trading"])
+    my_lib.serializer.store(get_caceh_file_path(handle), handle["trading"])
 
 
 def load_trading_info(handle):
-    handle["trading"] = local_lib.serializer.load(
+    handle["trading"] = my_lib.serializer.load(
         get_caceh_file_path(handle),
         {
             "sold_item_list": [],
@@ -238,7 +246,7 @@ def load_trading_info(handle):
             "bought_item_id_stat": {},
             "bought_total_count": 0,
             "bought_checked_count": 0,
-            "last_modified": datetime.datetime(1994, 7, 5),
+            "last_modified": datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo")),
         },
     )
 

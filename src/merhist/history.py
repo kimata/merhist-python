@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-メルカリの販売履歴や購入履歴をエクセルファイルに書き出します．
+メルカリの販売履歴や購入履歴をエクセルファイルに書き出します。
 
 Usage:
   transaction_history.py [-c CONFIG] [-o EXCEL] [-N]
 
 Options:
-  -c CONFIG     : CONFIG を設定ファイルとして読み込んで実行します．[default: config.yaml]
-  -o EXCEL      : 生成する Excel ファイルを指定します．[default: amazhist.xlsx]
-  -N            : サムネイル画像を含めないようにします．
+  -c CONFIG     : CONFIG を設定ファイルとして読み込んで実行します。[default: config.yaml]
+  -o EXCEL      : 生成する Excel ファイルを指定します。 [default: amazhist.xlsx]
+  -N            : サムネイル画像を含めないようにします。
 """
 
 import logging
 
+import merhist.crawler
+import merhist.handle
+import my_lib.openpyxl_util
 import openpyxl
-import openpyxl.utils
-import openpyxl.styles
 import openpyxl.drawing.image
-import openpyxl.drawing.xdr
 import openpyxl.drawing.spreadsheet_drawing
-
-import mercari.handle
-import mercari.crawler
-import local_lib.openpyxl_util
+import openpyxl.drawing.xdr
+import openpyxl.styles
+import openpyxl.utils
 
 STATUS_INSERT_ITEM = "[generate] Insert item"
 STATUS_ALL = "[generate] Excel file"
@@ -33,7 +31,7 @@ SHOP_NAME = "メルカリ"
 
 SHEET_DEF = {
     "BOUGHT": {
-        "SHEET_TITLE": "【{shop_name}】購入".format(shop_name=SHOP_NAME),
+        "SHEET_TITLE": f"【{SHOP_NAME}】購入",
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": {"default": 80, "without_thumb": 25}},
             "col": {
@@ -45,7 +43,8 @@ SHEET_DEF = {
                     "value": SHOP_NAME,
                 },
                 "date": {
-                    # NOTE: メルカリ向けでは，他のショップで「date」としている内容を「purchase_date」としているので，読み替える
+                    # NOTE: メルカリ向けでは，他のショップで「date」としている内容を
+                    # 「purchase_date」としているので，読み替える
                     "formal_key": "purchase_date",
                     "label": "購入日",
                     "pos": 3,
@@ -81,7 +80,8 @@ SHEET_DEF = {
                     "link_func": lambda item: item["url"],
                 },
                 "no": {
-                    # NOTE: メルカリ向けでは，他のショップで「id」としている内容が独立して存在しないため，読み替える
+                    # NOTE: メルカリ向けでは，他のショップで「id」としている内容が独立して存在しないため，
+                    # 読み替える
                     "formal_key": "id",
                     "label": "注文番号",
                     "pos": 17,
@@ -101,7 +101,7 @@ SHEET_DEF = {
         },
     },
     "SOLD": {
-        "SHEET_TITLE": "【{shop_name}】販売".format(shop_name=SHOP_NAME),
+        "SHEET_TITLE": f"【{SHOP_NAME}】販売",
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": {"default": 80, "without_thumb": 25}},
             "col": {
@@ -113,7 +113,8 @@ SHEET_DEF = {
                     "value": SHOP_NAME,
                 },
                 "date": {
-                    # NOTE: メルカリ向けでは，他のショップで「date」としている内容を「purchase_date」としているので，読み替える
+                    # NOTE: メルカリ向けでは，他のショップで「date」としている内容を「purchase_date」
+                    # としているので，読み替える
                     "formal_key": "purchase_date",
                     "label": "販売日",
                     "pos": 3,
@@ -178,13 +179,14 @@ SHEET_DEF = {
                     "link_func": lambda item: item["url"],
                 },
                 "no": {
-                    # NOTE: メルカリ向けでは，他のショップで「id」としている内容が独立して存在しないため，読み替える
+                    # NOTE: メルカリ向けでは，他のショップで「id」としている内容が独立して存在しないため，
+                    # 読み替える
                     "formal_key": "id",
                     "label": "注文番号",
                     "pos": 17,
                     "width": 19,
                     "format": "@",
-                    "link_func": lambda item: mercari.crawler.gen_item_transaction_url(item),
+                    "link_func": lambda item: merhist.crawler.gen_item_transaction_url(item),
                 },
                 "error": {
                     "label": "エラー",
@@ -202,62 +204,64 @@ SHEET_DEF = {
 
 def generate_sheet(handle, book, is_need_thumb=True):
     transaction_list = [
-        {"mode": "BOUGHT", "item_list": mercari.handle.get_bought_item_list(handle)},
-        {"mode": "SOLD", "item_list": mercari.handle.get_sold_item_list(handle)},
+        {"mode": "BOUGHT", "item_list": merhist.handle.get_bought_item_list(handle)},
+        {"mode": "SOLD", "item_list": merhist.handle.get_sold_item_list(handle)},
     ]
 
     for transaction_info in transaction_list:
-        mercari.handle.set_progress_bar(handle, STATUS_INSERT_ITEM, len(transaction_info["item_list"]))
+        merhist.handle.set_progress_bar(handle, STATUS_INSERT_ITEM, len(transaction_info["item_list"]))
 
-        local_lib.openpyxl_util.generate_list_sheet(
+        my_lib.openpyxl_util.generate_list_sheet(
             book,
             transaction_info["item_list"],
             SHEET_DEF[transaction_info["mode"]],
             is_need_thumb,
-            lambda item: mercari.handle.get_thumb_path(handle, item),
-            lambda status: mercari.handle.set_status(handle, status),
-            lambda: mercari.handle.get_progress_bar(handle, STATUS_ALL).update(),
-            lambda: mercari.handle.get_progress_bar(handle, STATUS_INSERT_ITEM).update(),
+            lambda item: merhist.handle.get_thumb_path(handle, item),
+            lambda status: merhist.handle.set_status(handle, status),
+            lambda: merhist.handle.get_progress_bar(handle, STATUS_ALL).update(),
+            lambda: merhist.handle.get_progress_bar(handle, STATUS_INSERT_ITEM).update(),
         )
 
 
 def generate_table_excel(handle, excel_file, is_need_thumb=True):
-    mercari.handle.set_status(handle, "エクセルファイルの作成を開始します...")
-    mercari.handle.set_progress_bar(handle, STATUS_ALL, 2 + 3 * 2)
+    merhist.handle.set_status(handle, "エクセルファイルの作成を開始します...")
+    merhist.handle.set_progress_bar(handle, STATUS_ALL, 2 + 3 * 2)
 
     logging.info("Start to Generate excel file")
 
     book = openpyxl.Workbook()
-    book._named_styles["Normal"].font = mercari.handle.get_excel_font(handle)
 
-    mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
+    normal_style = next((style for style in book.named_styles if style.name == "Normal"), None)
+    if normal_style is not None:
+        normal_style.font = merhist.handle.get_excel_font(handle)
 
-    mercari.handle.normalize(handle)
+    merhist.handle.get_progress_bar(handle, STATUS_ALL).update()
+
+    merhist.handle.normalize(handle)
 
     generate_sheet(handle, book, is_need_thumb)
 
     book.remove(book.worksheets[0])
 
-    mercari.handle.set_status(handle, "エクセルファイルを書き出しています...")
+    merhist.handle.set_status(handle, "エクセルファイルを書き出しています...")
 
     book.save(excel_file)
 
-    mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
+    merhist.handle.get_progress_bar(handle, STATUS_ALL).update()
 
     book.close()
 
-    mercari.handle.get_progress_bar(handle, STATUS_ALL).update()
+    merhist.handle.get_progress_bar(handle, STATUS_ALL).update()
 
-    mercari.handle.set_status(handle, "完了しました！")
+    merhist.handle.set_status(handle, "完了しました！")
 
     logging.info("Complete to Generate excel file")
 
 
 if __name__ == "__main__":
-    from docopt import docopt
-
-    import local_lib.logger
     import local_lib.config
+    import local_lib.logger
+    from docopt import docopt
 
     args = docopt(__doc__)
 
@@ -267,8 +271,8 @@ if __name__ == "__main__":
     excel_file = args["-o"]
     is_need_thumb = not args["-N"]
 
-    handle = mercari.handle.create(config)
+    handle = merhist.handle.create(config)
 
     generate_table_excel(handle, excel_file, is_need_thumb)
 
-    mercari.handle.finish(handle)
+    merhist.handle.finish(handle)

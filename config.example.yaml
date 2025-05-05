@@ -1,36 +1,34 @@
 # データを収集するための，メルカリのログイン情報
 login:
-  mercari:
-    user: メルカリのユーザ名
-    pass: メルカリのパスワード
+    mercari:
+        user: メルカリのユーザ名
+        pass: メルカリのパスワード
 
 # データ収集で使用する一時ファイルの置き場所
 data:
-  # Web ブラウザの作業フォルダ
-  selenium: data
+    # Web ブラウザの作業フォルダ
+    selenium: data
 
-  # デバッグ用のファイルを生成するフォルダ
-  debug: data/debug
+    # デバッグ用のファイルを生成するフォルダ
+    debug: data/debug
 
-  # 購入履歴関係のデータ
-  mercari:
-    cache:
-      # 収集した購入履歴情報 (どこまで取集したかの管理データ含む)
-      order: data/mercari/cache.dat
-      # サムネイル画像
-      thumb: data/mercari/thumb
+    # 購入履歴関係のデータ
+    mercari:
+        cache:
+            # 収集した購入履歴情報 (どこまで取集したかの管理データ含む)
+            order: data/mercari/cache.dat
+            # サムネイル画像
+            thumb: data/mercari/thumb
 
 # 出力ファイルの置き場所
 output:
-  # 画像認証画像
-  captcha: output/captcha.png
+    # 画像認証画像
+    captcha: output/captcha.png
 
-  excel:
-    # フォント
-    font:
-      name: BIZ UDGothic
-      size: 12
-    # 購入履歴が記載されたファイル
-    table: output/merhist.xlsx
-
-
+    excel:
+        # フォント
+        font:
+            name: BIZ UDGothic
+            size: 12
+        # 購入履歴が記載されたファイル
+        table: output/merhist.xlsx
