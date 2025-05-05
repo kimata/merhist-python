@@ -53,7 +53,7 @@ def execute(config, is_continue_mode, is_export_mode=False, is_need_thumb=True):
         merhist.handle.finish(handle)
     except Exception:
         merhist.handle.set_status(handle, "エラーが発生しました", is_error=True)
-        logging.exception("Failed to fetch data")
+        logging.exception("Failed")
 
     input("完了しました．エンターを押すと終了します．")
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     debug_mode = args["-d"]
 
-    my_lib.logger.init("hems.rasp-water", level=logging.DEBUG if debug_mode else logging.INFO)
+    my_lib.logger.init("bot.merhist", level=logging.DEBUG if debug_mode else logging.INFO)
 
     config = my_lib.config.load(config_file, pathlib.Path(SCHEMA_CONFIG))
 
