@@ -335,7 +335,7 @@ def fetch_item_detail(handle, item_info):
     return item
 
 
-def fetch_sell_item_list_by_page(handle, page):
+def fetch_sold_item_list_by_page(handle, page, debug_mode):
     ITEM_XPATH = (
         '(//div[contains(@class, "merTable")]/div[contains(@class, "merTableRowGroup")])[2]'
         '//div[contains(@class, "merTableRow")]'
@@ -415,6 +415,9 @@ def fetch_sell_item_list_by_page(handle, page):
 
         item_list.append(item)
 
+        if debug_mode:
+            break
+
     is_found_new = False
     for item_info in item_list:
         if not merhist.handle.get_sold_item_stat(handle, item_info):
@@ -471,7 +474,7 @@ def fetch_sold_item_list(handle, continue_mode=True, debug_mode=False):
                 logging.info("No new items")
             break
 
-        is_found_new = fetch_sell_item_list_by_page(handle, page)
+        is_found_new = fetch_sold_item_list_by_page(handle, page, debug_mode)
 
         if continue_mode and (not is_found_new):
             logging.info("Leaving as it seems there are no more new items...")
