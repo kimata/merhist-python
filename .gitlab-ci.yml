@@ -1,0 +1,50 @@
+image: registry.green-rabbit.net:5000/kimata/local_ubuntu:241105B
+
+stages:
+    - test
+    - renovate
+
+test-normal:
+    stage: test
+
+    cache:
+        key: $CI_JOB_NAME
+        paths:
+            - data
+
+    script:
+        - export GIT_SSL_NO_VERIFY=1
+        - git clone https://gitlab.green-rabbit.net/kimata/bot_config.git
+        - mv bot_config/merhist.yaml config.yaml
+        - git clone https://gitlab.green-rabbit.net/kimata/font.git private_font
+        - mv private_font/* font
+
+        - apt-get update
+
+        - export PATH=/root/.rye/shims/:$PATH
+        - curl -sSf https://rye.astral.sh/get | RYE_NO_AUTO_INSTALL=1 RYE_INSTALL_OPTION="--yes" bash
+        - rye sync
+
+        - export LANG=ja_JP.UTF-8
+        - export LANGUAGE=ja_JP:ja
+        - export LC_ALL=ja_JP.UTF-8
+        - eport TERM=xterm-256color
+
+        - rye run python src/app.py -d
+
+renovate:
+    stage: renovate
+    image:
+        name: registry.green-rabbit.net:5000/kimata/local_renovate:36
+
+        entrypoint: [""]
+    script:
+        - renovate --platform gitlab --token ${RENOVATE_TOKEN} --endpoint ${CI_SERVER_URL}/api/v4 ${CI_PROJECT_PATH}
+        # # NOTE: ついでにお掃除
+        #  - docker rm $(docker ps -a --filter "status=exited" -q) || true
+    rules:
+        - if: '$CI_COMMIT_BRANCH != "master"'
+          when: never
+        - if: '$CI_PIPELINE_SOURCE == "schedule"'
+        - changes:
+            - renovate.json
