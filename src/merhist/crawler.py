@@ -43,6 +43,19 @@ MERCARI_SHOP = "mercari-shops.com"
 TIMEZONE = zoneinfo.ZoneInfo("Asia/Tokyo")
 
 
+def execute_login(handle):
+    driver, wait = merhist.handle.get_selenium_driver(handle)
+
+    my_lib.store.mercari.login.execute(
+        driver,
+        wait,
+        merhist.handle.get_line_user(handle),
+        merhist.handle.get_line_pass(handle),
+        merhist.handle.get_slack_config(handle),
+        merhist.handle.get_debug_dir_path(handle),
+    )
+
+
 def wait_for_loading(
     handle, xpath='//button[contains(@class, "iconButton") and @aria-label="お知らせ"]', sec=1
 ):
@@ -441,7 +454,7 @@ def fetch_sold_count(handle):
     merhist.handle.set_sold_total_count(handle, sold_count)
 
 
-def fetch_sold_item_list(handle, is_continue_mode=True):
+def fetch_sold_item_list(handle, continue_mode=True, debug_mode=False):
     merhist.handle.set_status(handle, "販売履歴の収集を開始します...")
 
     fetch_sold_count(handle)
@@ -463,12 +476,15 @@ def fetch_sold_item_list(handle, is_continue_mode=True):
 
         is_found_new = fetch_sell_item_list_by_page(handle, page)
 
-        if is_continue_mode and (not is_found_new):
+        if continue_mode and (not is_found_new):
             logging.info("Leaving as it seems there are no more new items...")
             break
         merhist.handle.get_progress_bar(handle, STATUS_SOLD_PAGE).update()
 
         if page == total_page:
+            break
+
+        if debug_mode:
             break
 
         page += 1
@@ -536,7 +552,7 @@ def get_bought_item_info_list(handle, page, offset, item_info_list):
     return (list_length, is_found_new)
 
 
-def fetch_bought_item_info_list_impl(handle, is_continue_mode):
+def fetch_bought_item_info_list_impl(handle, continue_mode):
     MORE_BUTTON_XPATH = '//div[contains(@class, "merButton")]/button[contains(text(), "もっと見る")]'
 
     driver, wait = merhist.handle.get_selenium_driver(handle)
@@ -552,7 +568,7 @@ def fetch_bought_item_info_list_impl(handle, is_continue_mode):
         offset, is_found_new = get_bought_item_info_list(handle, page, offset, item_info_list)
         page += 1
 
-        if is_continue_mode and (not is_found_new):
+        if continue_mode and (not is_found_new):
             logging.info("Leaving as it seems there are no more new items...")
             break
 
@@ -572,7 +588,7 @@ def fetch_bought_item_info_list_impl(handle, is_continue_mode):
     return item_info_list
 
 
-def fetch_bought_item_info_list(handle, is_continue_mode):
+def fetch_bought_item_info_list(handle, continue_mode):
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
     merhist.handle.set_status(handle, "購入履歴の件数を確認しています...")
@@ -583,27 +599,23 @@ def fetch_bought_item_info_list(handle, is_continue_mode):
             time.sleep(5)
 
         try:
-            return fetch_bought_item_info_list_impl(handle, is_continue_mode)
+            return fetch_bought_item_info_list_impl(handle, continue_mode)
         except Exception:
-            my_lib.selenium_util.dump_page(
-                driver,
-                int(random.random() * 100),  # noqa: S311
-                merhist.handle.get_debug_dir_path(handle),
-            )
+            if i == FETCH_RETRY_COUNT - 1:
+                logging.error("Give up to fetch %s", driver.current_url)
+                raise
+            else:
+                logging.exception("Failed to fetch %s", driver.current_url)
 
-            logging.exception("Failed to fetch %s", driver.current_url)
-
-    logging.error("Give up to fetch %s", driver.current_url)
-
-    return []
+    return []  # NOTE: ここには来ない
 
 
-def fetch_bought_item_list(handle, is_continue_mode=True):
+def fetch_bought_item_list(handle, continue_mode=True, debug_mode=False):
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
     merhist.handle.set_status(handle, "購入履歴の収集を開始します...")
 
-    item_info_list = fetch_bought_item_info_list(handle, is_continue_mode)
+    item_info_list = fetch_bought_item_info_list(handle, continue_mode)
 
     merhist.handle.set_status(handle, "購入履歴の詳細情報を収集しています...")
 
@@ -618,42 +630,24 @@ def fetch_bought_item_list(handle, is_continue_mode=True):
 
         merhist.handle.store_trading_info(handle)
 
+        if debug_mode:
+            break
+
     merhist.handle.get_progress_bar(handle, STATUS_BOUGHT_ITEM).update()
 
     merhist.handle.set_status(handle, "購入履歴の収集が完了しました．")
 
 
-def fetch_order_item_list(handle, is_continue_mode=True):
+def fetch_order_item_list(handle, continue_mode, debug_mode=False):
     merhist.handle.set_status(handle, "巡回ロボットの準備をします...")
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
     merhist.handle.set_status(handle, "注文履歴の収集を開始します...")
 
-    try:
-        merhist.crawler.fetch_sold_item_list(handle, is_continue_mode)
-        merhist.crawler.fetch_bought_item_list(handle, is_continue_mode)
-    except:
-        my_lib.selenium_util.dump_page(
-            driver,
-            int(random.random() * 100),  # noqa: S311
-            merhist.handle.get_debug_dir_path(handle),
-        )
-        raise
+    fetch_sold_item_list(handle, continue_mode["sold"], debug_mode)
+    fetch_bought_item_list(handle, continue_mode["bought"], debug_mode)
 
     merhist.handle.set_status(handle, "注文履歴の収集が完了しました．")
-
-
-def execute_login(handle):
-    driver, wait = merhist.handle.get_selenium_driver(handle)
-
-    my_lib.store.mercari.login.execute(
-        driver,
-        wait,
-        merhist.handle.get_line_user(handle),
-        merhist.handle.get_line_pass(handle),
-        merhist.handle.get_slack_config(handle),
-        merhist.handle.get_debug_dir_path(handle),
-    )
 
 
 if __name__ == "__main__":

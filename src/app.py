@@ -26,10 +26,10 @@ import merhist.history
 SCHEMA_CONFIG = "config.schema"
 
 
-def execute_fetch(handle, is_continue_mode):
+def execute_fetch(handle, continue_mode, debug_mode):
     try:
-        merhist.crawler.fetch_bought_item_list(handle, is_continue_mode["bought"])
-        merhist.crawler.fetch_sold_item_list(handle, is_continue_mode["sold"])
+        merhist.crawler.execute_login(handle)
+        merhist.crawler.fetch_order_item_list(handle, continue_mode, debug_mode)
     except:
         driver, wait = merhist.handle.get_selenium_driver(handle)
         my_lib.selenium_util.dump_page(
@@ -40,15 +40,13 @@ def execute_fetch(handle, is_continue_mode):
         raise
 
 
-def execute(config, is_continue_mode, is_export_mode=False, is_need_thumb=True):
+def execute(config, continue_mode, export_mode=False, need_thumb=True, debug_mode=False):
     handle = merhist.handle.create(config)
 
     try:
-        if not is_export_mode:
-            execute_fetch(handle, is_continue_mode)
-        merhist.history.generate_table_excel(
-            handle, merhist.handle.get_excel_file_path(handle), is_need_thumb
-        )
+        if not export_mode:
+            execute_fetch(handle, continue_mode, debug_mode)
+        merhist.history.generate_table_excel(handle, merhist.handle.get_excel_file_path(handle), need_thumb)
 
         merhist.handle.finish(handle)
     except Exception:
@@ -72,8 +70,8 @@ if __name__ == "__main__":
         "sold": not (args["--fA"] or args["--fS"]),
     }
 
-    is_export_mode = args["-e"]
-    is_need_thumb = not args["-N"]
+    export_mode = args["-e"]
+    need_thumb = not args["-N"]
 
     debug_mode = args["-d"]
 
@@ -81,4 +79,4 @@ if __name__ == "__main__":
 
     config = my_lib.config.load(config_file, pathlib.Path(SCHEMA_CONFIG))
 
-    execute(config, is_continue_mode, is_export_mode, is_need_thumb)
+    execute(config, is_continue_mode, export_mode, need_thumb, debug_mode)
