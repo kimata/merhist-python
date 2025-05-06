@@ -13,29 +13,42 @@ merhist-python は，メルカリの販売履歴や購入履歴を収集し，
 
 ## 設定
 
-同封されている `config.example.yaml` を `config.yaml` に名前変更して，下記の部分を書き換えます．
+同封されている `config.example.yaml` を `config.yaml` に名前変更して，下記の部分を書き換えます。
 
 ```yaml:config.yaml
-  user: メルカリのユーザ名
-  pass: メルカリのパスワード
+    line:
+        user: LINE のユーザ ID
+        pass: LINE のログインパスワード
 ```
+
+メルカリに LINE アカウントでログインするため、LINE にログインするのに必要な情報を指定します。
+(一度パスコードでログインできるようにした場合、メルカリにメールアドレスとパスワードではログインできなくなります)
+
+ログインに関する認証コードのやり取りを Slack で行いたい場合は、下記の部分もコメントアウトを解除した上で書き換えてください。
+コメントアウトしたままだと、標準入出力経由でやり取りする動作になります。
+
+```yaml:config.yaml
+slack:
+    bot_token: xoxp-XXXXXXXXXXXX-XXXXXXXXXXXX-XXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    from: Mercari Bot
+    captcha:
+        channel:
+            name: "#captcha"
+            id: XXXXXXXXXXX
+```
+
 ## Linux での動かし方
 
-### 必要なパッケージのインストール
+### 準備
 
-実行に際して `docker-compose` を使用しますので，インストールします．
-Ubuntu の場合，以下のようにします．
+```bash:bash
+sudo apt install docker
+```
 
-```
-sudo apt install docker-compose
-```
 ### 実行
 
-以下のようにします．`build` は一回だけ実行すればOKです．
-
-```
-docker-compose build
-docker-compose run --build --rm merhist
+```bash:bash
+docker compose run --build --rm merhist
 ```
 
 取引履歴の数が沢山ある場合，1時間以上がかかりますので，放置しておくのがオススメです．
@@ -45,12 +58,12 @@ docker-compose run --build --rm merhist
 
 ### Docker を使いたくない場合
 
-[Poetry](https://python-poetry.org/) と Google Chrome がインストールされた環境であれば，
-下記のようにして Docker を使わずに実行することもできます．
+[Rye](https://rye.astral.sh/) と Google Chrome がインストールされた環境であれば，
+下記のようにして Docker を使わずに実行できます．
 
 ```
-poetry install
-poetry run app/merhist.py
+rye sync
+rye run python src/app.py
 ```
 
 ## Windows での動かし方

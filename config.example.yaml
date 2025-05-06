@@ -4,7 +4,15 @@ login:
         user: LINE のユーザ ID
         pass: LINE のログインパスワード
 
-
+# Slack 経由で認証コードを入力したい場合，以下を設定
+# slack:
+#     bot_token: xoxp-XXXXXXXXXXXX-XXXXXXXXXXXX-XXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#     from: Mercari Bot
+#     captcha:
+#         channel:
+#             name: "#captcha"
+#             id: XXXXXXXXXXX
+        
 # データ収集で使用する一時ファイルの置き場所
 data:
     # Web ブラウザの作業フォルダ
