@@ -48,7 +48,7 @@ jobs:
 
             - name: Install Dependencies
               run: |
-                pip install --break-system-packages --no-cache-dir -r requirements.lock
+                pip install --break-system-packages --no-cache-dir -r requirements-dev.lock
 
             - name: Build Executable
               uses: Nuitka/Nuitka-Action@main
