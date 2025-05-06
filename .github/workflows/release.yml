@@ -160,7 +160,7 @@ jobs:
                 chmod -f +x ${{ env.ARCHIVE_NAME }}/*.bin || true
 
             - name: Archive binary
-              run: zip --junk-paths --recurse-paths ${{ env.ARCHIVE_NAME }}.zip ${{ env.ARCHIVE_NAME }}
+              run: zip --recurse-paths ${{ env.ARCHIVE_NAME }}.zip ${{ env.ARCHIVE_NAME }}
 
             - name: Upload Release Asset
               id: upload-release-asset
