@@ -65,9 +65,6 @@ jobs:
                 macos-app-name: ${{ env.PROJECT_NAME }}
                 macos-create-app-bundle: false
 
-                standalone: true
-                onefile: true
-
                 no-deployment-flag: self-execution
 
             - name: Check if secret exists
