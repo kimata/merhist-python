@@ -58,7 +58,8 @@ def execute(config, continue_mode, export_mode=False, need_thumb=True, debug_mod
         merhist.handle.set_status(handle, "エクセルファイルの生成中にエラーが発生しました", is_error=True)
         logging.exception("Failed to generate Excel file.")
 
-    input("完了しました．エンターを押すと終了します．")
+    if not debug_mode:
+        input("完了しました．エンターを押すと終了します．")
 
 
 ######################################################################
