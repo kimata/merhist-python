@@ -37,7 +37,6 @@ jobs:
 
             - name: Setup Python
               uses: actions/setup-python@v4
-              with:
 
             - name: Install Rye
               uses: eifinger/setup-rye@v4
