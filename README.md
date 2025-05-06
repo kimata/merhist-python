@@ -82,7 +82,7 @@ rye run python src/app.py
 
 ### 実行
 
-`merhist.exe` をダブルクリックすればOKです．
+`app.exe` をダブルクリックすれば OK です．
 
 ## ライセンス
 
