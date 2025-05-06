@@ -41,14 +41,9 @@ jobs:
             - name: Install Rye
               uses: eifinger/setup-rye@v4
 
-            - name: Generate requirements.lock
-              run: |
-                rye lock
-
-
             - name: Install Dependencies
               run: |
-                pip install --break-system-packages --no-cache-dir -r requirements-dev.lock
+                rye sync
 
             - name: Build Executable
               uses: Nuitka/Nuitka-Action@main
