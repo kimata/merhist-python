@@ -32,9 +32,6 @@ jobs:
 
         runs-on: ${{ matrix.os }}
 
-        env:
-            APP_NAME: ${{ runner.os == 'Linux' && 'merhist' || runner.os == 'Windows' && 'merhist.exe' || 'merhist.app' }}
-
         steps:
             - name: Check-out repository
               uses: actions/checkout@v3
@@ -71,8 +68,6 @@ jobs:
                 macos-create-app-bundle: false
 
                 no-deployment-flag: self-execution
-
-                output-file: ${{ env.APP_NAME }}
 
             - name: Check if secret exists
               id: check_secret
