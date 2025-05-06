@@ -3,12 +3,12 @@
 メルカリの販売履歴や購入履歴をエクセルファイルに書き出します。
 
 Usage:
-  transaction_history.py [-c CONFIG] [-o EXCEL] [-N]
+  history.py [-c CONFIG] [-o EXCEL] [-N]
 
 Options:
-  -c CONFIG     : CONFIG を設定ファイルとして読み込んで実行します。[default: config.yaml]
-  -o EXCEL      : 生成する Excel ファイルを指定します。 [default: amazhist.xlsx]
-  -N            : サムネイル画像を含めないようにします。
+  -c CONFIG         : CONFIG を設定ファイルとして読み込んで実行します。[default: config.yaml]
+  -o EXCEL          : 生成する Excel ファイルを指定します。 [default: merhist.xlsx]
+  -N                : サムネイル画像を含めないようにします。
 """
 
 import logging
@@ -256,20 +256,22 @@ def generate_table_excel(handle, excel_file, is_need_thumb=True):
 
 
 if __name__ == "__main__":
-    import local_lib.config
-    import local_lib.logger
-    from docopt import docopt
+    import docopt
+    import my_lib.config
+    import my_lib.logger
 
-    args = docopt(__doc__)
+    args = docopt.docopt(__doc__)
 
-    local_lib.logger.init("test", level=logging.INFO)
+    my_lib.logger.init("test", level=logging.INFO)
 
-    config = local_lib.config.load(args["-c"])
+    config_file = args["-c"]
     excel_file = args["-o"]
-    is_need_thumb = not args["-N"]
+    need_thumb = not args["-N"]
+
+    config = my_lib.config.load(config_file)
 
     handle = merhist.handle.create(config)
 
-    generate_table_excel(handle, excel_file, is_need_thumb)
+    generate_table_excel(handle, excel_file, need_thumb)
 
     merhist.handle.finish(handle)
