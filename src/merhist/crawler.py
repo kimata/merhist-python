@@ -27,7 +27,6 @@ import my_lib.selenium_util
 import my_lib.store.mercari.login
 import selenium.webdriver.common.by
 import selenium.webdriver.support
-import zoneinfo
 
 STATUS_SOLD_ITEM = "[collect] Sold items"
 STATUS_SOLD_PAGE = "[collect] Sold pages"
@@ -39,8 +38,6 @@ FETCH_RETRY_COUNT = 3
 
 MERCARI_NORMAL = "mercari.com"
 MERCARI_SHOP = "mercari-shops.com"
-
-TIMEZONE = zoneinfo.ZoneInfo("Asia/Tokyo")
 
 
 def execute_login(handle):
@@ -70,14 +67,14 @@ def wait_for_loading(
 
 
 def parse_date(date_text):
-    return datetime.datetime.strptime(date_text, "%Y/%m/%d").replace(tzinfo=TIMEZONE)
+    return datetime.datetime.strptime(date_text, "%Y/%m/%d")
 
 
 def parse_datetime(datetime_text, is_japanese=True):
     if is_japanese:
-        return datetime.datetime.strptime(datetime_text, "%Y年%m月%d日 %H:%M").replace(tzinfo=TIMEZONE)
+        return datetime.datetime.strptime(datetime_text, "%Y年%m月%d日 %H:%M")
     else:
-        return datetime.datetime.strptime(datetime_text, "%Y/%m/%d %H:%M").replace(tzinfo=TIMEZONE)
+        return datetime.datetime.strptime(datetime_text, "%Y/%m/%d %H:%M")
 
 
 def gen_sell_hist_url(page):
