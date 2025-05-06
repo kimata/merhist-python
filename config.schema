@@ -5,7 +5,7 @@
         "login": {
             "type": "object",
             "properties": {
-                "mercari": {
+                "line": {
                     "type": "object",
                     "properties": {
                         "user": {
@@ -22,7 +22,46 @@
                 }
             },
             "required": [
-                "mercari"
+                "line"
+            ]
+        },
+        "slack": {
+            "type": "object",
+            "properties": {
+                "bot_token": {
+                    "type": "string"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "captcha": {
+                    "type": "object",
+                    "properties": {
+                        "channel": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "name"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "channel"
+                    ]
+                }
+            },
+            "required": [
+                "bot_token",
+                "captcha",
+                "from"
             ]
         },
         "data": {
@@ -107,6 +146,7 @@
     "required": [
         "data",
         "login",
-        "output"
+        "output",
+        "slack"
     ]
 }
