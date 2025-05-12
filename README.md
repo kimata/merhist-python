@@ -8,7 +8,7 @@ merhist-python は，メルカリの販売履歴や購入履歴を収集し，
 基本的には，Python と Selenium が動作する環境であれば動作します．
 下記の環境での動作を確認しています．
 
-- Linux (Ubuntu 22.04)
+- Linux (Ubuntu 24.04)
 - Windows 11
 
 ## 設定
@@ -37,15 +37,13 @@ slack:
             id: XXXXXXXXXXX
 ```
 
-## Linux での動かし方
-
-### 準備
+## 準備
 
 ```bash:bash
 sudo apt install docker
 ```
 
-### 実行
+## 実行 (Docker 使用)
 
 ```bash:bash
 docker compose run --build --rm merhist
@@ -56,22 +54,20 @@ docker compose run --build --rm merhist
 なお，何らかの事情で中断した場合，再度実行することで，途中から再開できます．
 コマンドを実行した後に注文履歴が増えた場合も，再度実行することで前回以降のデータからデータ収集を再開できます．
 
-### Docker を使いたくない場合
+## 実行 (Docker 不使用)
 
 [Rye](https://rye.astral.sh/) と Google Chrome がインストールされた環境であれば，
 下記のようにして Docker を使わずに実行できます．
 
-```
+```bash:bash
 rye sync
 rye run python src/app.py
 ```
 
-## Windows での動かし方
-
-### 準備
+## 実行 (Windows)
 
 [リリースページ](https://github.com/kimata/merhist-python/releases) から「merhist-windows_x64-binary-*.zip」を
-ダウンロードします．
+ダウンロードし、中に入っている `app.exe` をダブルクリックすれば OK です．
 
 #### 注意
 
@@ -79,10 +75,6 @@ rye run python src/app.py
 これは，Python スクリプトを [Nuitka](https://nuitka.net/) を使って実行ファイルを生成していることが原因です．
 
 ウィルス判定されてしまった場合は，検疫されないように Windows Defender の設定を一時的に変更お願いします．
-
-### 実行
-
-`app.exe` をダブルクリックすれば OK です．
 
 ## ライセンス
 
