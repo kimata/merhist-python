@@ -204,23 +204,19 @@ def fetch_item_transaction_normal(handle, item_info):
     ROW_DEF_LIST = [
         {"title": "購入日時", "type": "datetime", "name": "purchase_date"},
         {"title": "商品代金", "type": "price", "name": "price"},
-        {"title": "送料", "type": "postage", "name": "postage"},
+        {"title": "配送料", "type": "price", "name": "postage"},
     ]
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
     visit_url(
         handle,
         gen_item_transaction_url(item_info),
-        '//div[contains(@data-testid, "transaction")]//div[contains(@class, "merListItem")][1]',
+        '//div[contains(@data-testid, "transaction:information-for-")]//div[contains(@class, "merDisplayRow")]',
     )
 
     if my_lib.selenium_util.xpath_exists(
         driver,
-        (
-            '//div[contains(@class, "merEmptyState")]'
-            '//div[contains(@class, "titleContainer")]'
-            '/p[contains(text(), "ページの読み込みに失敗")]'
-        ),
+        '//div[contains(@class, "merEmptyState")]//p[contains(text(), "ページの読み込みに失敗")]',
     ):
         logging.warning("Failed to load page: %s", driver.current_url)
         raise Exception("ページの読み込みに失敗しました")  # noqa: TRY002, EM101
@@ -230,7 +226,7 @@ def fetch_item_transaction_normal(handle, item_info):
         row_xpath = f"({INFO_ROW_XPATH})[{i + 1}]"
 
         row_title = driver.find_element(
-            selenium.webdriver.common.by.By.XPATH, row_xpath + '//div[contains(@class, "title")]'
+            selenium.webdriver.common.by.By.XPATH, row_xpath + '//div[contains(@class, "title")]/span'
         ).text
         for row_def in ROW_DEF_LIST:
             if row_def["title"] != row_title:
@@ -246,12 +242,14 @@ def fetch_item_transaction_normal(handle, item_info):
             elif row_def["type"] == "datetime":
                 item[row_def["name"]] = parse_datetime(
                     driver.find_element(
-                        selenium.webdriver.common.by.By.XPATH, row_xpath + '//div[contains(@class, "body")]'
+                        selenium.webdriver.common.by.By.XPATH,
+                        row_xpath + '//div[contains(@class, "body")]/span',
                     ).text
                 )
 
     thumb_url = driver.find_element(
-        selenium.webdriver.common.by.By.XPATH, '//div[contains(@class, "merItemThumbnail")]//picture/img'
+        selenium.webdriver.common.by.By.XPATH,
+        '//img[contains(@alt, "サムネイル")]',
     ).get_attribute("src")
 
     save_thumbnail(handle, item_info, thumb_url)
@@ -336,10 +334,8 @@ def fetch_item_detail(handle, item_info):
 
 
 def fetch_sold_item_list_by_page(handle, page, debug_mode):
-    ITEM_XPATH = (
-        '(//div[contains(@class, "merTable")]/div[contains(@class, "merTableRowGroup")])[2]'
-        '//div[contains(@class, "merTableRow")]'
-    )
+    ITEM_XPATH = '//div[@data-testid="listing-container"]//table//tbody/tr'
+
     COL_DEF_LIST = [
         {"index": 1, "type": "text", "name": "name", "link": {"name": "order_url"}},
         {"index": 2, "type": "price", "name": "price"},
@@ -366,29 +362,20 @@ def fetch_sold_item_list_by_page(handle, page, debug_mode):
         item = {"count": 1}
         for col_def in COL_DEF_LIST:
             if col_def["type"] == "text":
-                item[col_def["name"]] = driver.find_element(
+                link_elem = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
-                    (
-                        f'({item_xpath}//div[contains(@class, "merTableCell")])'
-                        f'[{col_def["index"]}]//span[contains(@class, "merTextLink")]//a'
-                    ),
-                ).text
+                    f'({item_xpath}//td)[{col_def["index"]}]//a[@data-testid="sold-item-link"]',
+                )
+                item[col_def["name"]] = link_elem.text
                 if "link" in col_def:
-                    item[col_def["link"]["name"]] = driver.find_element(
-                        selenium.webdriver.common.by.By.XPATH,
-                        (
-                            f'({item_xpath}//div[contains(@class, "merTableCell")])'
-                            f'[{col_def["index"]}]//span[contains(@class, "merTextLink")]//a'
-                        ),
-                    ).get_attribute("href")
+                    item[col_def["link"]["name"]] = link_elem.get_attribute("href")
             elif col_def["type"] == "price":
                 item[col_def["name"]] = int(
                     driver.find_element(
                         selenium.webdriver.common.by.By.XPATH,
                         (
-                            f'({item_xpath}//div[contains(@class, "merTableCell")])'
-                            f'[{col_def["index"]}]//span[contains(@class, "merPrice")]'
-                            f'/span[contains(@class, "number")]'
+                            f"({item_xpath}//td)[{col_def['index']}]"
+                            f'//span[contains(text(), "¥")]/following-sibling::span'
                         ),
                     ).text.replace(",", "")
                 )
@@ -396,18 +383,14 @@ def fetch_sold_item_list_by_page(handle, page, debug_mode):
                 item[col_def["name"]] = int(
                     driver.find_element(
                         selenium.webdriver.common.by.By.XPATH,
-                        "("
-                        + item_xpath
-                        + "//div[contains(@class, 'merTableCell')])[{index}]".format(index=col_def["index"]),
+                        "(" + item_xpath + "//td)[{index}]".format(index=col_def["index"]),
                     ).text.replace("%", "")
                 )
             elif col_def["type"] == "date":
                 item[col_def["name"]] = parse_date(
                     driver.find_element(
                         selenium.webdriver.common.by.By.XPATH,
-                        "("
-                        + item_xpath
-                        + "//div[contains(@class, 'merTableCell')])[{index}]".format(index=col_def["index"]),
+                        "(" + item_xpath + "//td)[{index}]".format(index=col_def["index"]),
                     ).text.replace("%", "")
                 )
 
@@ -626,7 +609,7 @@ def fetch_bought_item_list(handle, continue_mode=True, debug_mode=False):
             merhist.handle.record_bought_item(handle, fetch_item_detail(handle, item_info))
             merhist.handle.get_progress_bar(handle, STATUS_BOUGHT_ITEM).update()
         else:
-            logging.info("%s %s円 [cached]", item_info["name"], f"{item_info["price"]:,}")
+            logging.info("%s %s円 [cached]", item_info["name"], f"{item_info['price']:,}")
 
         merhist.handle.store_trading_info(handle)
 
