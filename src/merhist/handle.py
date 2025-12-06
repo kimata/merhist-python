@@ -2,13 +2,13 @@
 import datetime
 import functools
 import pathlib
+import zoneinfo
 
 import enlighten
 import my_lib.selenium_util
 import my_lib.serializer
 import openpyxl.styles
 import selenium.webdriver.support.wait
-import zoneinfo
 
 
 def create(config):
@@ -87,7 +87,9 @@ def get_selenium_driver(handle):
     if "selenium" in handle:
         return (handle["selenium"]["driver"], handle["selenium"]["wait"])
     else:
-        driver = my_lib.selenium_util.create_driver("Merhist", get_selenium_data_dir_path(handle))
+        driver = my_lib.selenium_util.create_driver(
+            "Merhist", get_selenium_data_dir_path(handle), clean_profile=True
+        )
         wait = selenium.webdriver.support.wait.WebDriverWait(driver, 20)
 
         my_lib.selenium_util.clear_cache(driver)
