@@ -43,20 +43,24 @@ def execute_fetch(handle, continue_mode, debug_mode):
 def execute(config, continue_mode, export_mode=False, need_thumb=True, debug_mode=False):
     handle = merhist.handle.create(config)
 
-    if not export_mode:
-        try:
-            execute_fetch(handle, continue_mode, debug_mode)
-        except Exception:
-            driver, _ = merhist.handle.get_selenium_driver(handle)
-            logging.exception("Failed to fetch data: %s", driver.current_url)
-            merhist.handle.set_status(handle, "データの収集中にエラーが発生しました", is_error=True)
-
     try:
-        merhist.history.generate_table_excel(handle, merhist.handle.get_excel_file_path(handle), need_thumb)
+        if not export_mode:
+            try:
+                execute_fetch(handle, continue_mode, debug_mode)
+            except Exception:
+                driver, _ = merhist.handle.get_selenium_driver(handle)
+                logging.exception("Failed to fetch data: %s", driver.current_url)
+                merhist.handle.set_status(handle, "データの収集中にエラーが発生しました", is_error=True)
+
+        try:
+            merhist.history.generate_table_excel(
+                handle, merhist.handle.get_excel_file_path(handle), need_thumb
+            )
+        except Exception:
+            merhist.handle.set_status(handle, "エクセルファイルの生成中にエラーが発生しました", is_error=True)
+            logging.exception("Failed to generate Excel file.")
+    finally:
         merhist.handle.finish(handle)
-    except Exception:
-        merhist.handle.set_status(handle, "エクセルファイルの生成中にエラーが発生しました", is_error=True)
-        logging.exception("Failed to generate Excel file.")
 
     if not debug_mode:
         input("完了しました．エンターを押すと終了します．")
