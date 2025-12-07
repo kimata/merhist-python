@@ -602,11 +602,12 @@ def fetch_bought_item_list(handle, continue_mode=True, debug_mode=False):
     merhist.handle.set_progress_bar(handle, STATUS_BOUGHT_ITEM, len(item_info_list))
 
     for item_info in item_info_list:
-        if not merhist.handle.get_bought_item_stat(handle, item_info):
+        if not continue_mode or not merhist.handle.get_bought_item_stat(handle, item_info):
+            # 強制取得モードまたは未キャッシュの場合は取得
             merhist.handle.record_bought_item(handle, fetch_item_detail(handle, item_info))
             merhist.handle.get_progress_bar(handle, STATUS_BOUGHT_ITEM).update()
         else:
-            logging.info("%s %s円 [cached]", item_info["name"], f"{item_info['price']:,}")
+            logging.info("%s [cached]", item_info["name"])
 
         merhist.handle.store_trading_info(handle)
 
