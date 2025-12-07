@@ -327,8 +327,8 @@ def fetch_item_detail(handle, item_info, debug_mode):
 
             return item
         except Exception as e:
-            logging.warning(str(e))
-            error_message = str(e)
+            error_message = getattr(e, "msg", None) or str(e) or repr(e)
+            logging.warning("%s: %s", type(e).__name__, error_message.rstrip())
             error_detail = traceback.format_exc()
 
         logging.warning("Failed to fetch %s", gen_item_transaction_url(item_info))
