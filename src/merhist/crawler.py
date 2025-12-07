@@ -336,7 +336,7 @@ def fetch_item_detail(handle, item_info):
     return item
 
 
-def fetch_sold_item_list_by_page(handle, page, debug_mode):
+def fetch_sold_item_list_by_page(handle, page, continue_mode, debug_mode):
     ITEM_XPATH = '//div[@data-testid="listing-container"]//table//tbody/tr'
 
     COL_DEF_LIST = [
@@ -406,7 +406,8 @@ def fetch_sold_item_list_by_page(handle, page, debug_mode):
 
     is_found_new = False
     for item_info in item_list:
-        if not merhist.handle.get_sold_item_stat(handle, item_info):
+        if not continue_mode or not merhist.handle.get_sold_item_stat(handle, item_info):
+            # 強制取得モードまたは未キャッシュの場合は取得
             merhist.handle.record_sold_item(handle, fetch_item_detail(handle, item_info))
 
             merhist.handle.get_progress_bar(handle, STATUS_SOLD_ITEM).update()
@@ -455,12 +456,12 @@ def fetch_sold_item_list(handle, continue_mode=True, debug_mode=False):
 
     page = 1
     while True:
-        if merhist.handle.get_sold_checked_count(handle) >= merhist.handle.get_sold_total_count(handle):
+        if continue_mode and merhist.handle.get_sold_checked_count(handle) >= merhist.handle.get_sold_total_count(handle):
             if page == 1:
                 logging.info("No new items")
             break
 
-        is_found_new = fetch_sold_item_list_by_page(handle, page, debug_mode)
+        is_found_new = fetch_sold_item_list_by_page(handle, page, continue_mode, debug_mode)
 
         if continue_mode and (not is_found_new):
             logging.info("Leaving as it seems there are no more new items...")
