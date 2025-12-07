@@ -224,7 +224,12 @@ def set_status(handle, status, is_error=False):
 
 def finish(handle):
     if "selenium" in handle:
-        handle["selenium"]["driver"].quit()
+        driver = handle["selenium"]["driver"]
+        driver.quit()
+        # NOTE: undetected_chromedriver の __del__ がシャットダウン時に
+        # service.process.kill() を呼んでエラーになるのを防ぐ
+        if hasattr(driver, "service") and driver.service is not None:
+            driver.service.process = None
         handle.pop("selenium")
 
     handle["progress_manager"].stop()
