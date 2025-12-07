@@ -1,0 +1,8 @@
+chrome_data/
+log/
+debug/
+.DS_Store
+config.yaml
+data/
+font/
+__pycache__/
