@@ -299,7 +299,7 @@ def fetch_item_transaction(handle, item_info):
         return fetch_item_transaction_normal(handle, item_info)
 
 
-def fetch_item_detail(handle, item_info):
+def fetch_item_detail(handle, item_info, debug_mode):
     error_message = ""
     for i in range(FETCH_RETRY_COUNT):
         if i != 0:
@@ -313,12 +313,17 @@ def fetch_item_detail(handle, item_info):
             item |= fetch_item_description(handle, item_info)
             item |= fetch_item_transaction(handle, item_info)
 
-            logging.info(
-                "%s %s %s円",
-                item["purchase_date"].strftime("%Y年%m月%d日"),
-                item["name"],
-                f"{item['price']:,}",
-            )
+            if debug_mode:
+                import my_lib.pretty
+
+                logging.debug(my_lib.pretty.format(item))
+            else:
+                logging.info(
+                    "%s %s %s円",
+                    item["purchase_date"].strftime("%Y年%m月%d日"),
+                    item["name"],
+                    f"{item['price']:,}",
+                )
 
             return item
         except Exception as e:
@@ -408,7 +413,7 @@ def fetch_sold_item_list_by_page(handle, page, continue_mode, debug_mode):
     for item_info in item_list:
         if not continue_mode or not merhist.handle.get_sold_item_stat(handle, item_info):
             # 強制取得モードまたは未キャッシュの場合は取得
-            merhist.handle.record_sold_item(handle, fetch_item_detail(handle, item_info))
+            merhist.handle.record_sold_item(handle, fetch_item_detail(handle, item_info, debug_mode))
 
             merhist.handle.get_progress_bar(handle, STATUS_SOLD_ITEM).update()
             is_found_new = True
@@ -456,7 +461,9 @@ def fetch_sold_item_list(handle, continue_mode=True, debug_mode=False):
 
     page = 1
     while True:
-        if continue_mode and merhist.handle.get_sold_checked_count(handle) >= merhist.handle.get_sold_total_count(handle):
+        if continue_mode and merhist.handle.get_sold_checked_count(
+            handle
+        ) >= merhist.handle.get_sold_total_count(handle):
             if page == 1:
                 logging.info("No new items")
             break
@@ -496,7 +503,7 @@ def fetch_sold_item_list(handle, continue_mode=True, debug_mode=False):
 
 
 def get_bought_item_info_list(handle, page, offset, item_info_list, continue_mode=True):
-    ITEM_XPATH = merhist.const.BOUGHT_HIST_ITEM_XPATH + '/li'
+    ITEM_XPATH = merhist.const.BOUGHT_HIST_ITEM_XPATH + "/li"
 
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
@@ -614,7 +621,7 @@ def fetch_bought_item_list(handle, continue_mode=True, debug_mode=False):
     for item_info in item_info_list:
         if not continue_mode or not merhist.handle.get_bought_item_stat(handle, item_info):
             # 強制取得モードまたは未キャッシュの場合は取得
-            merhist.handle.record_bought_item(handle, fetch_item_detail(handle, item_info))
+            merhist.handle.record_bought_item(handle, fetch_item_detail(handle, item_info, debug_mode))
             merhist.handle.get_progress_bar(handle, STATUS_BOUGHT_ITEM).update()
         else:
             logging.info("%s [cached]", item_info["name"])
