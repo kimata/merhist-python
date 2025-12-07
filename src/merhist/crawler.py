@@ -3,7 +3,7 @@
 メルカリから販売履歴や購入履歴を収集します。
 
 Usage:
-  crawler.py [-c CONFIG] [-o BOUGHT_ID] [-B] [-S] [--fB] [--fS]
+  crawler.py [-c CONFIG] [-o BOUGHT_ID] [-B] [-S] [--fB] [--fS] [-D]
 
 Options:
   -c CONFIG         : CONFIG を設定ファイルとして読み込んで実行します。[default: config.yaml]
@@ -12,6 +12,7 @@ Options:
   -S                : 販売商品リストを取得します。
   --fB              : 購入履歴を強制的に再取得します。
   --fS              : 販売履歴を強制的に再取得します。
+  -D                : デバッグモードで動作します。
 """
 
 import datetime
@@ -198,7 +199,7 @@ def fetch_item_transaction_normal(handle, item_info):
     ROW_DEF_LIST = [
         {"title": "購入日時", "type": "datetime", "name": "purchase_date"},
         {"title": "商品代金", "type": "price", "name": "price"},
-        {"title": "配送料", "type": "price", "name": "postage"},
+        {"title": "送料", "type": "price", "name": "postage"},
     ]
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
@@ -220,24 +221,32 @@ def fetch_item_transaction_normal(handle, item_info):
         row_xpath = f"({INFO_ROW_XPATH})[{i + 1}]"
 
         row_title = driver.find_element(
-            selenium.webdriver.common.by.By.XPATH, row_xpath + '//div[contains(@class, "title")]/span'
+            selenium.webdriver.common.by.By.XPATH, row_xpath + '//div[contains(@class, "title__")]/span'
         ).text
         for row_def in ROW_DEF_LIST:
             if row_def["title"] != row_title:
                 continue
 
             if row_def["type"] == "price":
-                item[row_def["name"]] = int(
-                    driver.find_element(
-                        selenium.webdriver.common.by.By.XPATH,
-                        row_xpath + '//div[contains(@class, "body")]//span[contains(@class, "number")]',
-                    ).text.replace(",", "")
+                body_elem = driver.find_element(
+                    selenium.webdriver.common.by.By.XPATH,
+                    row_xpath + '//div[contains(@class, "body__")]',
                 )
+                body_text = body_elem.text
+                if "送料込み" in body_text:
+                    item[row_def["name"]] = 0
+                else:
+                    item[row_def["name"]] = int(
+                        body_elem.find_element(
+                            selenium.webdriver.common.by.By.XPATH,
+                            './/span[contains(@class, "number__")]',
+                        ).text.replace(",", "")
+                    )
             elif row_def["type"] == "datetime":
                 item[row_def["name"]] = parse_datetime(
                     driver.find_element(
                         selenium.webdriver.common.by.By.XPATH,
-                        row_xpath + '//div[contains(@class, "body")]/span',
+                        row_xpath + '//div[contains(@class, "body__")]/span',
                     ).text
                 )
 
@@ -638,14 +647,15 @@ if __name__ == "__main__":
 
     args = docopt.docopt(__doc__)
 
-    my_lib.logger.init("test", level=logging.INFO)
-
     config_file = args["-c"]
     order_id = args["-o"]
     bought_list = args["-B"]
     sold_list = args["-S"]
     force_bought = args["--fB"]
     force_sold = args["--fS"]
+    debug_mode = args["-D"]
+
+    my_lib.logger.init("test", level=logging.DEBUG if debug_mode else logging.INFO)
 
     config = my_lib.config.load(config_file)
     handle = merhist.handle.create(config)
@@ -665,9 +675,9 @@ if __name__ == "__main__":
             item = fetch_item_transaction(handle, item_info)
             logging.info(item)
         elif bought_list or force_bought:
-            fetch_bought_item_list(handle, continue_mode=not force_bought)
+            fetch_bought_item_list(handle, continue_mode=not force_bought, debug_mode=debug_mode)
         elif sold_list or force_sold:
-            fetch_sold_item_list(handle, continue_mode=not force_sold)
+            fetch_sold_item_list(handle, continue_mode=not force_sold, debug_mode=debug_mode)
         else:
             logging.warning("No command found to execute")
 
