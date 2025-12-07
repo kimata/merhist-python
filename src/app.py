@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-メルカリから販売履歴や購入履歴を収集して，Excel ファイルとして出力します．
+メルカリから販売履歴や購入履歴を収集して、Excel ファイルとして出力します。
 
 Usage:
-  merhist.py [-c CONFIG] [-e] [--fA|--fB|--fS] [-N] [-d]
+  merhist.py [-c CONFIG] [-e] [--fA|--fB|--fS] [-N] [-D]
 
 Options:
-  -c CONFIG         : CONFIG を設定ファイルとして読み込んで実行します．[default: config.yaml]
-  --fA              : 強制的にデータを収集し直します．(販売履歴も購入履歴も)
-  --fB              : 購入履歴に関し，強制的にデータを収集し直します．
-  --fS              : 購入履歴に関し，強制的にデータを収集し直します．
-  -e                : データ収集は行わず，Excel ファイルの出力のみ行います．
-  -N                : サムネイル画像を含めないようにします．
-  -d                : デバッグモードで動作します．
+  -c CONFIG         : CONFIG を設定ファイルとして読み込んで実行します。[default: config.yaml]
+  --fA              : 強制的にデータを収集し直します。(販売履歴も購入履歴も)
+  --fB              : 購入履歴に関し、強制的にデータを収集し直します。
+  --fS              : 購入履歴に関し、強制的にデータを収集し直します。
+  -e                : データ収集は行わず、Excel ファイルの出力のみ行います。
+  -N                : サムネイル画像を含めないようにします。
+  -D                : デバッグモードで動作します。
 """
 
 import logging
@@ -63,7 +63,7 @@ def execute(config, continue_mode, export_mode=False, need_thumb=True, debug_mod
         merhist.handle.finish(handle)
 
     if not debug_mode:
-        input("完了しました．エンターを押すと終了します．")
+        input("完了しました。エンターを押すと終了します。")
 
 
 ######################################################################
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     export_mode = args["-e"]
     need_thumb = not args["-N"]
 
-    debug_mode = args["-d"]
+    debug_mode = args["-D"]
 
     my_lib.logger.init("bot.merhist", level=logging.DEBUG if debug_mode else logging.INFO)
 
