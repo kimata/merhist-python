@@ -11,7 +11,7 @@ requires-python = ">= 3.10"
 
 dependencies = [
     "docopt-ng>=0.9.0",
-    "my-lib @ git+https://github.com/kimata/my-py-lib@ddb05567f32812ebb9e8c560563073d5c16607cb",
+    "my-lib @ git+https://github.com/kimata/my-py-lib@f7d9cda34e5a7f46ac8d54e25848b436858cd04d",
     "selenium>=4.31.0",
     "pydub>=0.25.1",
     "speechrecognition>=3.14.2",
