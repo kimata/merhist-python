@@ -3,13 +3,15 @@
 メルカリから販売履歴や購入履歴を収集します。
 
 Usage:
-  crawler.py [-c CONFIG] [-o BOUGHT_ID] [-B] [-S]
+  crawler.py [-c CONFIG] [-o BOUGHT_ID] [-B] [-S] [--fB] [--fS]
 
 Options:
   -c CONFIG         : CONFIG を設定ファイルとして読み込んで実行します。[default: config.yaml]
   -o ORDER_ID       : 商品データを取得します。
   -B                : 購入商品リストを取得します。
   -S                : 販売商品リストを取得します。
+  --fB              : 購入履歴を強制的に再取得します。
+  --fS              : 販売履歴を強制的に再取得します。
 """
 
 import datetime
@@ -126,7 +128,7 @@ def save_thumbnail(handle, item, thumb_url):
 
 def fetch_item_description(handle, item_info):
     INFO_ROW_XPATH = (
-        '//div[contains(@class, "merHeading") and div[h2[contains(text(), "商品の情報")]]]'
+        '//div[contains(@class, "merHeading") and .//h2[contains(text(), "商品の情報")]]'
         '/following-sibling::div//div[contains(@class, "merDisplayRow")]'
     )
     ROW_DEF_LIST = [
@@ -152,21 +154,14 @@ def fetch_item_description(handle, item_info):
 
         if my_lib.selenium_util.xpath_exists(
             driver,
-            (
-                '//div[contains(@class, "merEmptyState")]'
-                '//div[contains(@class, "titleContainer")]'
-                '/p[contains(text(), "見つかりません")]'
-            ),
+            '//div[contains(@class, "merEmptyState")]//p[contains(text(), "見つかりません")]',
         ):
             logging.warning("Description page not found: %s", driver.current_url)
             item["error"] = "商品情報ページが見つかりませんでした．"
             return item
         elif my_lib.selenium_util.xpath_exists(
             driver,
-            (
-                '//div[contains(@class, "merEmptyState")]//div[contains(@class, "titleContainer")]'
-                '/p[contains(text(), "削除されました")]'
-            ),
+            '//div[contains(@class, "merEmptyState")]//p[contains(text(), "削除されました")]',
         ):
             logging.warning("Description page has been deleted: %s", driver.current_url)
             item["error"] = "商品情報ページが削除されています．"
@@ -189,8 +184,7 @@ def fetch_item_description(handle, item_info):
                 elif row_def["type"] == "category":
                     breadcrumb_list = driver.find_elements(
                         selenium.webdriver.common.by.By.XPATH,
-                        row_xpath
-                        + '//div[contains(@class, "body")]//span[contains(@class, "merTextLink")]/a',
+                        row_xpath + '//div[contains(@class, "body")]//a',
                     )
                     item[row_def["name"]] = [x.text for x in breadcrumb_list]
         return item
@@ -491,8 +485,8 @@ def fetch_sold_item_list(handle, continue_mode=True, debug_mode=False):
     merhist.handle.set_status(handle, "販売履歴の収集が完了しました．")
 
 
-def get_bought_item_info_list(handle, page, offset, item_info_list):
-    ITEM_XPATH = merhist.const.BOUGHT_HIST_ITEM_XPATH + '/div[contains(@class, "content")]'
+def get_bought_item_info_list(handle, page, offset, item_info_list, continue_mode=True):
+    ITEM_XPATH = merhist.const.BOUGHT_HIST_ITEM_XPATH + '/li'
 
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
@@ -510,25 +504,28 @@ def get_bought_item_info_list(handle, page, offset, item_info_list):
         item_xpath = f"({ITEM_XPATH})[{i + 1}]"
 
         item_info["name"] = driver.find_element(
-            selenium.webdriver.common.by.By.XPATH, item_xpath + '//span[contains(@class, "itemLabel")]'
+            selenium.webdriver.common.by.By.XPATH, item_xpath + '//p[@data-testid="item-label"]'
         ).text
         item_info["order_url"] = driver.find_element(
             selenium.webdriver.common.by.By.XPATH, item_xpath + "//a"
         ).get_attribute("href")
 
-        item_info["purchase_date"] = parse_datetime(
-            driver.find_element(
-                selenium.webdriver.common.by.By.XPATH,
-                item_xpath + '//div[contains(@class, "metaContainer")]//span[contains(@class, "iconText")]',
-            ).text,
-            False,
-        )
+        # 日時テキストを取得（例: "2025/12/05 21:44"）
+        datetime_text = driver.find_element(
+            selenium.webdriver.common.by.By.XPATH,
+            item_xpath + '//span[contains(text(), "/") and contains(text(), ":")]',
+        ).text
+
+        item_info["purchase_date"] = parse_datetime(datetime_text, False)
 
         set_item_id_from_order_url(item_info)
 
         if not merhist.handle.get_bought_item_stat(handle, item_info):
             item_info_list.append(item_info)
             is_found_new = True
+        elif not continue_mode:
+            # 強制取得モードの場合はキャッシュ済みでもリストに追加
+            item_info_list.append(item_info)
 
     logging.info("Found %d new items in page %s", len(item_info_list) - prev_length, f"{page:,}")
 
@@ -548,7 +545,7 @@ def fetch_bought_item_info_list_impl(handle, continue_mode):
     page = 1
     offset = 0
     while True:
-        offset, is_found_new = get_bought_item_info_list(handle, page, offset, item_info_list)
+        offset, is_found_new = get_bought_item_info_list(handle, page, offset, item_info_list, continue_mode)
         page += 1
 
         if continue_mode and (not is_found_new):
@@ -646,6 +643,8 @@ if __name__ == "__main__":
     order_id = args["-o"]
     bought_list = args["-B"]
     sold_list = args["-S"]
+    force_bought = args["--fB"]
+    force_sold = args["--fS"]
 
     config = my_lib.config.load(config_file)
     handle = merhist.handle.create(config)
@@ -664,10 +663,10 @@ if __name__ == "__main__":
 
             item = fetch_item_transaction(handle, item_info)
             logging.info(item)
-        elif bought_list:
-            fetch_bought_item_list(handle)
-        elif sold_list:
-            fetch_sold_item_list(handle, False)
+        elif bought_list or force_bought:
+            fetch_bought_item_list(handle, continue_mode=not force_bought)
+        elif sold_list or force_sold:
+            fetch_sold_item_list(handle, continue_mode=not force_sold)
         else:
             logging.warning("No command found to execute")
 
@@ -679,3 +678,5 @@ if __name__ == "__main__":
             int(random.random() * 100),  # noqa: S311
             merhist.handle.get_debug_dir_path(handle),
         )
+    finally:
+        merhist.handle.finish(handle)
