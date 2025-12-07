@@ -15,6 +15,10 @@ Options:
   -D                : デバッグモードで動作します。
 """
 
+import warnings
+
+warnings.filterwarnings("ignore", message="Couldn't find ffmpeg or avconv")
+
 import datetime
 import logging
 import math
