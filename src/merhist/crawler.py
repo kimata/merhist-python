@@ -550,7 +550,7 @@ def get_bought_item_info_list(handle, page, offset, item_info_list, continue_mod
 
 
 def fetch_bought_item_info_list_impl(handle, continue_mode):
-    MORE_BUTTON_XPATH = '//div[contains(@class, "merButton")]/button[contains(text(), "もっと見る")]'
+    MORE_BUTTON_XPATH = '//button[span[contains(normalize-space(), "もっと見る")]]'
 
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
