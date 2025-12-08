@@ -203,7 +203,7 @@ def fetch_item_transaction_normal(handle, item_info):
     ROW_DEF_LIST = [
         {"title": "購入日時", "type": "datetime", "name": "purchase_date"},
         {"title": "商品代金", "type": "price", "name": "price"},
-        {"title": "送料", "type": "price", "name": "postage"},
+        {"title": "配送料", "type": "price", "name": "postage"},
     ]
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
