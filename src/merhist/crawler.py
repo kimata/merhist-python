@@ -585,6 +585,7 @@ def fetch_bought_item_info_list_impl(handle, continue_mode):
                 (selenium.webdriver.common.by.By.XPATH, merhist.const.LOADING_BUTTON_XPATH)
             )
         )
+        time.sleep(3)
 
     return item_info_list
 
