@@ -48,6 +48,8 @@ MERCARI_SHOP = "mercari-shops.com"
 
 
 def execute_login(handle):
+    merhist.handle.set_status(handle, "メルカリにログインします...")
+
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
     my_lib.store.mercari.login.execute(
