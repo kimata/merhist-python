@@ -555,7 +555,7 @@ def get_bought_item_info_list(handle, page, offset, item_info_list, continue_mod
     return (list_length, is_found_new)
 
 
-def fetch_bought_item_info_list_impl(handle, continue_mode):
+def fetch_bought_item_info_list_impl(handle, continue_mode, debug_mode):
     MORE_BUTTON_XPATH = '//button[span[contains(normalize-space(), "もっと見る")]]'
 
     driver, wait = merhist.handle.get_selenium_driver(handle)
@@ -587,12 +587,16 @@ def fetch_bought_item_info_list_impl(handle, continue_mode):
                 (selenium.webdriver.common.by.By.XPATH, merhist.const.LOADING_BUTTON_XPATH)
             )
         )
+
+        if debug_mode:
+            break
+
         time.sleep(3)
 
     return item_info_list
 
 
-def fetch_bought_item_info_list(handle, continue_mode):
+def fetch_bought_item_info_list(handle, continue_mode, debug_mode):
     driver, wait = merhist.handle.get_selenium_driver(handle)
 
     merhist.handle.set_status(handle, "購入履歴の件数を確認しています...")
@@ -603,7 +607,7 @@ def fetch_bought_item_info_list(handle, continue_mode):
             time.sleep(5)
 
         try:
-            return fetch_bought_item_info_list_impl(handle, continue_mode)
+            return fetch_bought_item_info_list_impl(handle, continue_mode, debug_mode)
         except Exception:
             if i == FETCH_RETRY_COUNT - 1:
                 logging.error("Give up to fetch %s", driver.current_url)
@@ -619,7 +623,7 @@ def fetch_bought_item_list(handle, continue_mode=True, debug_mode=False):
 
     merhist.handle.set_status(handle, "購入履歴の収集を開始します...")
 
-    item_info_list = fetch_bought_item_info_list(handle, continue_mode)
+    item_info_list = fetch_bought_item_info_list(handle, continue_mode, debug_mode)
 
     merhist.handle.set_status(handle, "購入履歴の詳細情報を収集しています...")
 
