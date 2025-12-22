@@ -1,81 +1,142 @@
-# merhist-python
+# 📊 merhist-python
 
-merhist-python は，メルカリの販売履歴や購入履歴を収集し，
-サムネイル付きの Excel 形式で出力するソフトウェアです．
+メルカリの販売履歴・購入履歴を収集し、サムネイル付きの Excel ファイルとして出力するツール
 
-## 動作環境
+## 📋 概要
 
-基本的には，Python と Selenium が動作する環境であれば動作します．
-下記の環境での動作を確認しています．
+メルカリの取引履歴を自動的に収集し、見やすい Excel 形式で出力します。
+
+### 主な特徴
+
+- 📦 **販売履歴の収集** - 出品して売れた商品の履歴を取得
+- 🛒 **購入履歴の収集** - 購入した商品の履歴を取得
+- 🖼️ **サムネイル付き出力** - 商品画像付きの Excel ファイルを生成
+- 🔄 **途中再開対応** - 中断しても途中から再開可能
+- 🔐 **LINE認証対応** - LINE経由の安全なログイン処理
+- 📱 **Slack連携** - 認証コードのやり取りを Slack 経由で実施可能
+
+## 🖥️ 動作環境
+
+Python と Selenium が動作する環境で動作します。
 
 - Linux (Ubuntu 24.04)
 - Windows 11
 
-## 設定
+## 🚀 セットアップ
 
-同封されている `config.example.yaml` を `config.yaml` に名前変更して，下記の部分を書き換えます。
+### 1. 設定ファイルの準備
 
-```yaml:config.yaml
+```bash
+cp config.example.yaml config.yaml
+```
+
+`config.yaml` を編集して、LINE のログイン情報を設定：
+
+```yaml
+login:
     line:
         user: LINE のユーザ ID
         pass: LINE のログインパスワード
 ```
 
-メルカリに LINE アカウントでログインするため、LINE にログインするのに必要な情報を指定します。
-(一度パスコードでログインできるようにした場合、メルカリにメールアドレスとパスワードではログインできなくなります)
+メルカリに LINE アカウントでログインするため、LINE の認証情報が必要です。
 
-ログインに関する認証コードのやり取りを Slack で行いたい場合は、下記の部分もコメントアウトを解除した上で書き換えてください。
-コメントアウトしたままだと、標準入出力経由でやり取りする動作になります。
+### 2. Slack 連携（オプション）
 
-```yaml:config.yaml
+認証コードのやり取りを Slack で行いたい場合は、以下を設定：
+
+```yaml
 slack:
     bot_token: xoxp-XXXXXXXXXXXX-XXXXXXXXXXXX-XXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    from: Mercari Bot
+    from: Mercari History
+    info:
+        channel:
+            name: "#mercari"
+    error:
+        channel:
+            name: "#error"
+            id: XXXXXXXXXXX
+        interval_min: 180
     captcha:
         channel:
             name: "#captcha"
             id: XXXXXXXXXXX
 ```
 
-## 準備
+設定しない場合は、標準入出力経由で認証コードをやり取りします。
 
-```bash:bash
-sudo apt install docker
-```
+## 💻 実行方法
 
-## 実行 (Docker 使用)
+### Docker を使用する場合（推奨）
 
-```bash:bash
+```bash
+# Docker のインストール（未インストールの場合）
+sudo apt install docker.io docker-compose-v2
+
+# 実行
 docker compose run --build --rm merhist
 ```
 
-取引履歴の数が沢山ある場合，1時間以上がかかりますので，放置しておくのがオススメです．
+### Docker を使用しない場合
 
-なお，何らかの事情で中断した場合，再度実行することで，途中から再開できます．
-コマンドを実行した後に注文履歴が増えた場合も，再度実行することで前回以降のデータからデータ収集を再開できます．
+#### uv を使用（推奨）
 
-## 実行 (Docker 不使用)
+```bash
+# uv のインストール（未インストールの場合）
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-[Rye](https://rye.astral.sh/) と Google Chrome がインストールされた環境であれば，
-下記のようにして Docker を使わずに実行できます．
-
-```bash:bash
-rye sync
-rye run python src/app.py
+# 依存関係のインストールと実行
+uv sync
+uv run python src/app.py
 ```
 
-## 実行 (Windows)
+### Windows で実行する場合
 
-[リリースページ](https://github.com/kimata/merhist-python/releases) から「merhist-windows_x64-binary-*.zip」を
-ダウンロードし、中に入っている `app.exe` をダブルクリックすれば OK です．
+[リリースページ](https://github.com/kimata/merhist-python/releases) から `merhist-windows_x64-binary-*.zip` をダウンロードし、中に入っている `app.exe` を実行してください。
 
-#### 注意
+> ⚠️ **注意**: 環境によってはウィルス判定されることがあります。これは Python スクリプトを [Nuitka](https://nuitka.net/) で実行ファイルに変換していることが原因です。検疫されてしまった場合は、Windows Defender の設定を一時的に変更してください。
 
-環境によってはファイルがウィルス判定されることがあります．
-これは，Python スクリプトを [Nuitka](https://nuitka.net/) を使って実行ファイルを生成していることが原因です．
+### コマンドラインオプション
 
-ウィルス判定されてしまった場合は，検疫されないように Windows Defender の設定を一時的に変更お願いします．
+```bash
+# 設定ファイルを指定
+uv run python src/app.py -c custom-config.yaml
 
-## ライセンス
+# データ収集せず Excel 出力のみ
+uv run python src/app.py -e
 
-Apache License Version 2.0 を適用します．
+# 強制的に全データを再収集
+uv run python src/app.py --fA
+
+# 購入履歴のみ強制再収集
+uv run python src/app.py --fB
+
+# 販売履歴のみ強制再収集
+uv run python src/app.py --fS
+
+# サムネイル画像なしで出力
+uv run python src/app.py -N
+
+# デバッグモード
+uv run python src/app.py -D
+```
+
+## ⏱️ 実行時間について
+
+取引履歴の数が多い場合、1時間以上かかることがあります。放置しておくことをお勧めします。
+
+中断した場合でも、再度実行することで途中から再開できます。また、新しい取引が増えた場合も、前回以降のデータのみを収集します。
+
+## 📝 ライセンス
+
+Apache License Version 2.0
+
+---
+
+<div align="center">
+
+**⭐ このプロジェクトが役に立った場合は、Star をお願いします！**
+
+[🐛 Issue 報告](https://github.com/kimata/merhist-python/issues)
+
+</div>
