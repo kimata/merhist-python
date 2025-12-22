@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field, fields
-from typing import Any, Self
+from typing import Any
 
 
 @dataclass
@@ -40,13 +40,6 @@ class ItemBase:
             result[f.name] = value
         return result
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Self:
-        """辞書から生成"""
-        valid_fields = {f.name for f in fields(cls)}
-        kwargs = {k: v for k, v in data.items() if k in valid_fields}
-        return cls(**kwargs)
-
     def __getitem__(self, key: str) -> Any:
         """dict 互換のキーアクセスをサポート"""
         return getattr(self, key)
@@ -61,6 +54,13 @@ class ItemBase:
         if isinstance(value, list) and len(value) == 0:
             return False
         return True
+
+    def set_field(self, name: str, value: Any) -> None:
+        """フィールド名を検証して値を設定する（タイポ防止）"""
+        valid_fields = {f.name for f in fields(self)}
+        if name not in valid_fields:
+            raise ValueError(f"Unknown field: {name} (valid: {', '.join(sorted(valid_fields))})")
+        setattr(self, name, value)
 
 
 @dataclass
@@ -80,7 +80,3 @@ class BoughtItem(ItemBase):
     """購入アイテム"""
 
     price: int | None = None
-
-
-# 型エイリアス（後方互換性用、段階的に移行）
-ItemDict = dict[str, Any]
