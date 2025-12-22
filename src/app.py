@@ -65,6 +65,8 @@ def execute(
                 driver, _ = handle.get_selenium_driver()
                 logging.exception("Failed to fetch data: %s", driver.current_url)
                 handle.set_status("データの収集中にエラーが発生しました", is_error=True)
+            finally:
+                handle.quit_selenium()
 
         try:
             merhist.history.generate_table_excel(handle, handle.config.excel_file_path, need_thumb)
