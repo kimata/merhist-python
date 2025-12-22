@@ -39,12 +39,12 @@ jobs:
             - name: Setup Python
               uses: actions/setup-python@v4
 
-            - name: Install Rye
-              uses: eifinger/setup-rye@v4
+            - name: Install uv
+              uses: astral-sh/setup-uv@v4
 
             - name: Install Dependencies
               run: |
-                rye sync
+                uv sync
 
             - name: Build Executable
               uses: Nuitka/Nuitka-Action@main
