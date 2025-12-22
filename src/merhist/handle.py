@@ -1,262 +1,220 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import datetime
-import functools
 import pathlib
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
 import zoneinfo
 
 import enlighten
 import my_lib.selenium_util
 import my_lib.serializer
-import openpyxl.styles
 import selenium.webdriver.support.wait
 
+if TYPE_CHECKING:
+    from selenium.webdriver.remote.webdriver import WebDriver
+    from selenium.webdriver.support.wait import WebDriverWait
 
-def create(config):
-    handle = {
-        "progress_manager": enlighten.get_manager(),
-        "progress_bar": {},
-        "config": config,
-    }
-
-    load_trading_info(handle)
-
-    prepare_directory(handle)
-
-    return handle
+import merhist.config
+import merhist.item
 
 
-def get_login_user(handle):
-    return handle["config"]["login"]["mercari"]["user"]
+@dataclass
+class TradingInfo:
+    sold_item_list: list[merhist.item.SoldItem] = field(default_factory=list)
+    sold_item_id_stat: dict[str, bool] = field(default_factory=dict)
+    sold_total_count: int = 0
+    sold_checked_count: int = 0
+    bought_item_list: list[merhist.item.BoughtItem] = field(default_factory=list)
+    bought_item_id_stat: dict[str, bool] = field(default_factory=dict)
+    bought_total_count: int = 0
+    bought_checked_count: int = 0
+    last_modified: datetime.datetime = field(
+        default_factory=lambda: datetime.datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo"))
+    )
 
 
-def get_login_pass(handle):
-    return handle["config"]["login"]["mercari"]["pass"]
+@dataclass
+class SeleniumInfo:
+    driver: selenium.webdriver.remote.webdriver.WebDriver
+    wait: selenium.webdriver.support.wait.WebDriverWait
 
 
-def get_line_user(handle):
-    return handle["config"]["login"]["line"]["user"]
+@dataclass
+class Handle:
+    config: merhist.config.Config
+    progress_manager: enlighten.Manager = field(default_factory=enlighten.get_manager)
+    progress_bar: dict[str, enlighten.Counter] = field(default_factory=dict)
+    trading: TradingInfo = field(default_factory=TradingInfo)
+    selenium: SeleniumInfo | None = None
+    status: enlighten.StatusBar | None = None
 
+    def __post_init__(self) -> None:
+        self._load_trading_info()
+        self._prepare_directory()
 
-def get_line_pass(handle):
-    return handle["config"]["login"]["line"]["pass"]
+    # --- Selenium 関連 ---
+    def get_selenium_driver(
+        self,
+    ) -> tuple[WebDriver, WebDriverWait]:
+        if self.selenium is not None:
+            return (self.selenium.driver, self.selenium.wait)
 
-
-def get_slack_config(handle):
-    return handle["config"]["slack"]
-
-
-def prepare_directory(handle):
-    get_selenium_data_dir_path(handle).mkdir(parents=True, exist_ok=True)
-    get_debug_dir_path(handle).mkdir(parents=True, exist_ok=True)
-    get_thumb_dir_path(handle).mkdir(parents=True, exist_ok=True)
-    get_caceh_file_path(handle).parent.mkdir(parents=True, exist_ok=True)
-    get_captcha_file_path(handle).parent.mkdir(parents=True, exist_ok=True)
-    get_excel_file_path(handle).parent.mkdir(parents=True, exist_ok=True)
-
-
-def get_excel_font(handle):
-    font_config = handle["config"]["output"]["excel"]["font"]
-    return openpyxl.styles.Font(name=font_config["name"], size=font_config["size"])
-
-
-def get_caceh_file_path(handle):
-    return pathlib.Path(handle["config"]["base_dir"], handle["config"]["data"]["mercari"]["cache"]["order"])
-
-
-def get_excel_file_path(handle):
-    return pathlib.Path(handle["config"]["base_dir"], handle["config"]["output"]["excel"]["table"])
-
-
-def get_thumb_dir_path(handle):
-    return pathlib.Path(handle["config"]["base_dir"], handle["config"]["data"]["mercari"]["cache"]["thumb"])
-
-
-def get_selenium_data_dir_path(handle):
-    return pathlib.Path(handle["config"]["base_dir"], handle["config"]["data"]["selenium"])
-
-
-def get_debug_dir_path(handle):
-    return pathlib.Path(handle["config"]["base_dir"], handle["config"]["data"]["debug"])
-
-
-def get_captcha_file_path(handle):
-    return pathlib.Path(handle["config"]["base_dir"], handle["config"]["output"]["captcha"])
-
-
-def get_selenium_driver(handle):
-    if "selenium" in handle:
-        return (handle["selenium"]["driver"], handle["selenium"]["wait"])
-    else:
         driver = my_lib.selenium_util.create_driver(
-            "Merhist", get_selenium_data_dir_path(handle), clean_profile=True
+            "Merhist", self.config.selenium_data_dir_path, clean_profile=True
         )
         wait = selenium.webdriver.support.wait.WebDriverWait(driver, 5)
 
         my_lib.selenium_util.clear_cache(driver)
 
-        handle["selenium"] = {
-            "driver": driver,
-            "wait": wait,
-        }
+        self.selenium = SeleniumInfo(driver=driver, wait=wait)
 
         return (driver, wait)
 
+    # --- 販売アイテム関連 ---
+    def record_sold_item(self, item: merhist.item.SoldItem) -> None:
+        if self.get_sold_item_stat(item):
+            return
+        self.trading.sold_item_list.append(item)
+        self.trading.sold_item_id_stat[item.id] = True
+        self.trading.sold_checked_count += 1
 
-def record_sold_item(handle, item):
-    if get_sold_item_stat(handle, item):
-        return
+    def get_sold_item_stat(self, item: merhist.item.SoldItem | merhist.item.ItemDict) -> bool:
+        item_id = item.id if isinstance(item, merhist.item.SoldItem) else item["id"]
+        return item_id in self.trading.sold_item_id_stat
 
-    handle["trading"]["sold_item_list"].append(item)
-    handle["trading"]["sold_item_id_stat"][item["id"]] = True
-    handle["trading"]["sold_checked_count"] += 1
+    def get_sold_item_list(self) -> list[merhist.item.SoldItem]:
+        return sorted(self.trading.sold_item_list, key=lambda x: x.completion_date or datetime.datetime.min)
 
+    # --- 購入アイテム関連 ---
+    def record_bought_item(self, item: merhist.item.BoughtItem) -> None:
+        if self.get_bought_item_stat(item):
+            return
+        self.trading.bought_item_list.append(item)
+        self.trading.bought_item_id_stat[item.id] = True
+        self.trading.bought_checked_count += 1
 
-def get_sold_item_stat(handle, item):
-    return item["id"] in handle["trading"]["sold_item_id_stat"]
+    def get_bought_item_stat(self, item: merhist.item.BoughtItem | merhist.item.ItemDict) -> bool:
+        item_id = item.id if isinstance(item, merhist.item.BoughtItem) else item["id"]
+        return item_id in self.trading.bought_item_id_stat
 
+    def get_bought_item_list(self) -> list[merhist.item.BoughtItem]:
+        return sorted(self.trading.bought_item_list, key=lambda x: x.purchase_date or datetime.datetime.min)
 
-def set_sold_total_count(handle, sold_count):
-    handle["trading"]["sold_total_count"] = sold_count
-
-
-def get_sold_total_count(handle):
-    return handle["trading"]["sold_total_count"]
-
-
-def set_sold_checked_count(handle, sold_count):
-    handle["trading"]["sold_checked_count"] = sold_count
-
-
-def get_sold_checked_count(handle):
-    return handle["trading"]["sold_checked_count"]
-
-
-def get_sold_item_list(handle):
-    return sorted(handle["trading"]["sold_item_list"], key=lambda x: x["completion_date"])
-
-
-def record_bought_item(handle, item):
-    if get_bought_item_stat(handle, item):
-        return
-
-    handle["trading"]["bought_item_list"].append(item)
-    handle["trading"]["bought_item_id_stat"][item["id"]] = True
-    handle["trading"]["bought_checked_count"] += 1
-
-
-def get_bought_item_stat(handle, item):
-    return item["id"] in handle["trading"]["bought_item_id_stat"]
-
-
-def set_bought_total_count(handle, bought_count):
-    handle["trading"]["bought_total_count"] = bought_count
-
-
-def get_bought_total_count(handle):
-    return handle["trading"]["bought_total_count"]
-
-
-def set_bought_checked_count(handle, bought_count):
-    handle["trading"]["bought_checked_count"] = bought_count
-
-
-def get_bought_checked_count(handle):
-    return handle["trading"]["bought_checked_count"]
-
-
-def get_bought_item_list(handle):
-    return sorted(handle["trading"]["bought_item_list"], key=lambda x: x["purchase_date"])
-
-
-def normalize(handle):
-    handle["trading"]["bought_item_list"] = functools.reduce(
-        lambda x, y: [*x, y] if y["id"] not in (item["id"] for item in x) else x,
-        handle["trading"]["bought_item_list"],
-        [],
-    )
-
-    handle["trading"]["bought_checked_count"] = len(handle["trading"]["bought_item_list"])
-
-    handle["trading"]["sold_item_list"] = functools.reduce(
-        lambda x, y: [*x, y] if y["id"] not in (item["id"] for item in x) else x,
-        handle["trading"]["sold_item_list"],
-        [],
-    )
-    handle["trading"]["sold_checked_count"] = len(handle["trading"]["sold_item_list"])
-
-
-def get_thumb_path(handle, item):
-    return get_thumb_dir_path(handle) / (item["id"] + ".png")
-
-
-def get_cache_last_modified(handle):
-    return handle["trading"]["last_modified"]
-
-
-def set_progress_bar(handle, desc, total):
-    BAR_FORMAT = (
-        "{desc:31s}{desc_pad}{percentage:3.0f}% |{bar}| {count:5d} / {total:5d} "
-        "[{elapsed}<{eta}, {rate:6.2f}{unit_pad}{unit}/s]"
-    )
-    COUNTER_FORMAT = (
-        "{desc:30s}{desc_pad}{count:5d} {unit}{unit_pad}[{elapsed}, {rate:6.2f}{unit_pad}{unit}/s]{fill}"
-    )
-
-    handle["progress_bar"][desc] = handle["progress_manager"].counter(
-        total=total, desc=desc, bar_format=BAR_FORMAT, counter_format=COUNTER_FORMAT
-    )
-
-
-def set_status(handle, status, is_error=False):
-    color = "bold_bright_white_on_red" if is_error else "bold_bright_white_on_lightslategray"
-
-    if "status" not in handle:
-        handle["status"] = handle["progress_manager"].status_bar(
-            status_format="メルカリ{fill}{status}{fill}{elapsed}",
-            color=color,
-            justify=enlighten.Justify.CENTER,
-            status=status,
+    # --- 正規化 ---
+    def normalize(self) -> None:
+        self.trading.bought_item_list = list(
+            {item.id: item for item in self.trading.bought_item_list}.values()
         )
-    else:
-        handle["status"].color = color
-        handle["status"].update(status=status, force=True)
+        self.trading.bought_checked_count = len(self.trading.bought_item_list)
 
+        self.trading.sold_item_list = list(
+            {item.id: item for item in self.trading.sold_item_list}.values()
+        )
+        self.trading.sold_checked_count = len(self.trading.sold_item_list)
 
-def finish(handle):
-    if "selenium" in handle:
-        driver = handle["selenium"]["driver"]
-        driver.quit()
-        # NOTE: undetected_chromedriver の __del__ がシャットダウン時に
-        # service.process.kill() を呼んでエラーになるのを防ぐ
-        if hasattr(driver, "service") and driver.service is not None:
-            driver.service.process = None
-        handle.pop("selenium")
+    # --- サムネイル ---
+    def get_thumb_path(self, item: merhist.item.ItemBase | merhist.item.ItemDict) -> pathlib.Path:
+        item_id = item.id if isinstance(item, merhist.item.ItemBase) else item["id"]
+        return self.config.thumb_dir_path / (item_id + ".png")
 
-    handle["progress_manager"].stop()
+    # --- プログレスバー ---
+    def set_progress_bar(self, desc: str, total: int) -> None:
+        BAR_FORMAT = (
+            "{desc:31s}{desc_pad}{percentage:3.0f}% |{bar}| {count:5d} / {total:5d} "
+            "[{elapsed}<{eta}, {rate:6.2f}{unit_pad}{unit}/s]"
+        )
+        COUNTER_FORMAT = (
+            "{desc:30s}{desc_pad}{count:5d} {unit}{unit_pad}[{elapsed}, {rate:6.2f}{unit_pad}{unit}/s]{fill}"
+        )
+        self.progress_bar[desc] = self.progress_manager.counter(
+            total=total, desc=desc, bar_format=BAR_FORMAT, counter_format=COUNTER_FORMAT
+        )
 
+    def set_status(self, status: str, is_error: bool = False) -> None:
+        color = "bold_bright_white_on_red" if is_error else "bold_bright_white_on_lightslategray"
 
-def store_trading_info(handle):
-    handle["trading"]["last_modified"] = datetime.datetime.now(tz=zoneinfo.ZoneInfo("Asia/Tokyo"))
+        if self.status is None:
+            self.status = self.progress_manager.status_bar(
+                status_format="メルカリ{fill}{status}{fill}{elapsed}",
+                color=color,
+                justify=enlighten.Justify.CENTER,
+                status=status,
+            )
+        else:
+            self.status.color = color
+            self.status.update(status=status, force=True)
 
-    my_lib.serializer.store(get_caceh_file_path(handle), handle["trading"])
+    # --- 終了処理 ---
+    def finish(self) -> None:
+        if self.selenium is not None:
+            my_lib.selenium_util.quit_driver_gracefully(self.selenium.driver, wait_sec=1)
+            self.selenium = None
 
+        self.progress_manager.stop()
 
-def load_trading_info(handle):
-    handle["trading"] = my_lib.serializer.load(
-        get_caceh_file_path(handle),
-        {
-            "sold_item_list": [],
-            "sold_item_id_stat": {},
-            "sold_total_count": 0,
-            "sold_checked_count": 0,
-            "bought_item_list": [],
-            "bought_item_id_stat": {},
-            "bought_total_count": 0,
-            "bought_checked_count": 0,
-            "last_modified": datetime.datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo")),
-        },
-    )
+    # --- シリアライズ ---
+    def store_trading_info(self) -> None:
+        self.trading.last_modified = datetime.datetime.now(tz=zoneinfo.ZoneInfo("Asia/Tokyo"))
+        my_lib.serializer.store(self.config.cache_file_path, self.trading)
 
+    def _load_trading_info(self) -> None:
+        loaded = my_lib.serializer.load(self.config.cache_file_path, TradingInfo())
+        # NOTE: 古いバージョンで保存された TradingInfo (dict) を読み込む場合の対応
+        if isinstance(loaded, dict):
+            self.trading = self._convert_legacy_trading_info(loaded)
+        elif isinstance(loaded, TradingInfo):
+            # NOTE: 古いバージョンで保存されたアイテムリスト (list[dict]) を変換
+            self.trading = self._convert_legacy_trading_info_items(loaded)
+        else:
+            self.trading = loaded
 
-def get_progress_bar(handle, desc):
-    return handle["progress_bar"][desc]
+    def _convert_legacy_trading_info(self, data: dict[str, Any]) -> TradingInfo:
+        """古い dict 形式の TradingInfo を変換"""
+        sold_items = [
+            merhist.item.SoldItem.from_dict(item) if isinstance(item, dict) else item
+            for item in data.get("sold_item_list", [])
+        ]
+        bought_items = [
+            merhist.item.BoughtItem.from_dict(item) if isinstance(item, dict) else item
+            for item in data.get("bought_item_list", [])
+        ]
+        return TradingInfo(
+            sold_item_list=sold_items,
+            sold_item_id_stat=data.get("sold_item_id_stat", {}),
+            sold_total_count=data.get("sold_total_count", 0),
+            sold_checked_count=data.get("sold_checked_count", 0),
+            bought_item_list=bought_items,
+            bought_item_id_stat=data.get("bought_item_id_stat", {}),
+            bought_total_count=data.get("bought_total_count", 0),
+            bought_checked_count=data.get("bought_checked_count", 0),
+            last_modified=data.get(
+                "last_modified",
+                datetime.datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo")),
+            ),
+        )
+
+    def _convert_legacy_trading_info_items(self, trading: TradingInfo) -> TradingInfo:
+        """TradingInfo 内の古い dict 形式アイテムを変換"""
+        # sold_item_list 内に dict が含まれている場合は変換
+        if trading.sold_item_list and isinstance(trading.sold_item_list[0], dict):
+            trading.sold_item_list = [
+                merhist.item.SoldItem.from_dict(item)  # type: ignore[arg-type]
+                for item in trading.sold_item_list
+            ]
+        # bought_item_list 内に dict が含まれている場合は変換
+        if trading.bought_item_list and isinstance(trading.bought_item_list[0], dict):
+            trading.bought_item_list = [
+                merhist.item.BoughtItem.from_dict(item)  # type: ignore[arg-type]
+                for item in trading.bought_item_list
+            ]
+        return trading
+
+    def _prepare_directory(self) -> None:
+        self.config.selenium_data_dir_path.mkdir(parents=True, exist_ok=True)
+        self.config.debug_dir_path.mkdir(parents=True, exist_ok=True)
+        self.config.thumb_dir_path.mkdir(parents=True, exist_ok=True)
+        self.config.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
+        self.config.captcha_file_path.parent.mkdir(parents=True, exist_ok=True)
+        self.config.excel_file_path.parent.mkdir(parents=True, exist_ok=True)
