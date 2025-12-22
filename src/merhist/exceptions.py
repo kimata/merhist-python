@@ -12,28 +12,29 @@ class LoginError(MerhisError):
     """ログイン失敗"""
 
 
-class PageLoadError(MerhisError):
+class PageError(MerhisError):
+    """ページ関連エラーの基底クラス"""
+
+    def __init__(self, message: str, url: str = "") -> None:
+        super().__init__(message)
+        self.url = url
+
+    def __str__(self) -> str:
+        if self.url:
+            return f"{self.args[0]} (URL: {self.url})"
+        return str(self.args[0])
+
+
+class PageLoadError(PageError):
     """ページ読み込み失敗"""
 
-    def __init__(self, message: str, url: str = "") -> None:
-        super().__init__(message)
-        self.url = url
 
-
-class InvalidURLFormatError(MerhisError):
+class InvalidURLFormatError(PageError):
     """URL形式が不正"""
 
-    def __init__(self, message: str, url: str = "") -> None:
-        super().__init__(message)
-        self.url = url
 
-
-class InvalidPageFormatError(MerhisError):
+class InvalidPageFormatError(PageError):
     """ページ形式が不正"""
-
-    def __init__(self, message: str, url: str = "") -> None:
-        super().__init__(message)
-        self.url = url
 
 
 class ItemFetchError(MerhisError):
@@ -42,6 +43,11 @@ class ItemFetchError(MerhisError):
     def __init__(self, message: str, item_id: str = "") -> None:
         super().__init__(message)
         self.item_id = item_id
+
+    def __str__(self) -> str:
+        if self.item_id:
+            return f"{self.args[0]} (ID: {self.item_id})"
+        return str(self.args[0])
 
 
 class HistoryFetchError(MerhisError):
