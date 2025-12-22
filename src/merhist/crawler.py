@@ -39,6 +39,7 @@ T = TypeVar("T", bound=merhist.item.ItemBase)
 
 import my_lib.selenium_util
 import my_lib.store.mercari.login
+import selenium.common.exceptions
 import selenium.webdriver.common.by
 import selenium.webdriver.support
 
@@ -78,14 +79,23 @@ def wait_for_loading(
     handle: merhist.handle.Handle,
     xpath: str = '//button[contains(@class, "iconButton") and @aria-label="お知らせ"]',
     sec: float = 1,
+    retry: bool = True,
 ) -> None:
     driver, wait = handle.get_selenium_driver()
 
-    wait.until(
-        selenium.webdriver.support.expected_conditions.presence_of_all_elements_located(
-            (selenium.webdriver.common.by.By.XPATH, xpath)
+    try:
+        wait.until(
+            selenium.webdriver.support.expected_conditions.presence_of_all_elements_located(
+                (selenium.webdriver.common.by.By.XPATH, xpath)
+            )
         )
-    )
+    except selenium.common.exceptions.TimeoutException:
+        if retry:
+            logging.warning("Timeout waiting for element, retrying: %s", xpath)
+            driver.refresh()
+            wait_for_loading(handle, xpath, sec, retry=False)
+        else:
+            raise
     time.sleep(sec)
 
 
@@ -193,8 +203,7 @@ def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.Ite
                     continue
 
                 if row_def["type"] == "text":
-                    setattr(
-                        item,
+                    item.set_field(
                         row_def["name"],
                         driver.find_element(
                             selenium.webdriver.common.by.By.XPATH, row_xpath + '//div[contains(@class, "body")]'
@@ -205,7 +214,7 @@ def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.Ite
                         selenium.webdriver.common.by.By.XPATH,
                         row_xpath + '//div[contains(@class, "body")]//a',
                     )
-                    setattr(item, row_def["name"], [x.text for x in breadcrumb_list])
+                    item.set_field(row_def["name"], [x.text for x in breadcrumb_list])
 
 
 def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
@@ -246,8 +255,7 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
                 continue
 
             if row_def["type"] == "datetime":
-                setattr(
-                    item,
+                item.set_field(
                     row_def["name"],
                     parse_datetime(
                         driver.find_element(
@@ -266,10 +274,9 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
                 )
                 body_text = body_elem.text
                 if "送料込み" in body_text:
-                    setattr(item, row_def["name"], 0)
+                    item.set_field(row_def["name"], 0)
                 else:
-                    setattr(
-                        item,
+                    item.set_field(
                         row_def["name"],
                         int(
                             body_elem.find_element(
@@ -406,12 +413,11 @@ def fetch_sold_item_list_by_page(
                     selenium.webdriver.common.by.By.XPATH,
                     f'({item_xpath}//td)[{col_def["index"]}]//a[@data-testid="sold-item-link"]',
                 )
-                setattr(item, col_def["name"], link_elem.text)
+                item.set_field(col_def["name"], link_elem.text)
                 if "link" in col_def:
-                    setattr(item, col_def["link"]["name"], link_elem.get_attribute("href"))
+                    item.set_field(col_def["link"]["name"], link_elem.get_attribute("href"))
             elif col_def["type"] == "price":
-                setattr(
-                    item,
+                item.set_field(
                     col_def["name"],
                     int(
                         driver.find_element(
@@ -424,8 +430,7 @@ def fetch_sold_item_list_by_page(
                     ),
                 )
             elif col_def["type"] == "rate":
-                setattr(
-                    item,
+                item.set_field(
                     col_def["name"],
                     int(
                         driver.find_element(
@@ -435,8 +440,7 @@ def fetch_sold_item_list_by_page(
                     ),
                 )
             elif col_def["type"] == "date":
-                setattr(
-                    item,
+                item.set_field(
                     col_def["name"],
                     parse_date(
                         driver.find_element(
