@@ -49,7 +49,7 @@ jobs:
             - name: Build Executable
               shell: bash
               run: |
-                COMMON_OPTS="--mode=app --product-name=${{ env.PROJECT_NAME }} --file-version=${{ needs.prepare.outputs.version }} --product-version=${{ needs.prepare.outputs.version }} --include-package-data=selenium --include-package=jinxed --no-deployment-flag=self-execution --assume-yes-for-downloads --output-dir=build"
+                COMMON_OPTS="--mode=app --product-name=${{ env.PROJECT_NAME }} --file-version=${{ needs.prepare.outputs.version }} --product-version=${{ needs.prepare.outputs.version }} --include-package-data=selenium --include-package=jinxed --nofollow-import-to=*.tests --no-deployment-flag=self-execution --assume-yes-for-downloads --output-dir=build"
 
                 if [ "$RUNNER_OS" == "Windows" ]; then
                   uv run python -m nuitka $COMMON_OPTS --windows-icon-from-ico=img/icon.png ${{ env.SCRIPT_NAME }}
