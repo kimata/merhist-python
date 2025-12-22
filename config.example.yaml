@@ -4,6 +4,11 @@ login:
         user: LINE のユーザ ID
         pass: LINE のログインパスワード
 
+    mercari:
+        user: ダミー(現在使っていない)
+        pass: ダミー(現在使っていない)
+
+        
 # データ収集で使用する一時ファイルの置き場所
 data:
     # Web ブラウザの作業フォルダ
@@ -36,9 +41,19 @@ output:
 # Slack 経由で認証コードを入力したい場合、以下を設定
 # slack:
 #     bot_token: xoxp-XXXXXXXXXXXX-XXXXXXXXXXXX-XXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
+#
 #     from: Mercari History
-
+#
+#     info:
+#         channel:
+#             name: "#mercari"
+# 
+#     error:
+#         channel:
+#             name: "#error"
+#             id: C04Q1CEGW9K
+#         interval_min: 180
+#
 #     captcha:
 #         channel:
 #             name: "#captcha"

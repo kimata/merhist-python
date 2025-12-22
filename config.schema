@@ -1,10 +1,25 @@
 {
-    "$schema": "http://json-schema.org/schema#",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
         "login": {
             "type": "object",
             "properties": {
+                "mercari": {
+                    "type": "object",
+                    "properties": {
+                        "user": {
+                            "type": "string"
+                        },
+                        "pass": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "pass",
+                        "user"
+                    ]
+                },
                 "line": {
                     "type": "object",
                     "properties": {
@@ -22,46 +37,8 @@
                 }
             },
             "required": [
-                "line"
-            ]
-        },
-        "slack": {
-            "type": "object",
-            "properties": {
-                "bot_token": {
-                    "type": "string"
-                },
-                "from": {
-                    "type": "string"
-                },
-                "captcha": {
-                    "type": "object",
-                    "properties": {
-                        "channel": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string"
-                                },
-                                "id": {
-                                    "type": "string"
-                                }
-                            },
-                            "required": [
-                                "id",
-                                "name"
-                            ]
-                        }
-                    },
-                    "required": [
-                        "channel"
-                    ]
-                }
-            },
-            "required": [
-                "bot_token",
-                "captcha",
-                "from"
+                "line",
+                "mercari"
             ]
         },
         "data": {
@@ -141,12 +118,98 @@
                 "captcha",
                 "excel"
             ]
+        },
+        "slack": {
+            "type": "object",
+            "properties": {
+                "bot_token": {
+                    "type": "string"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "info": {
+                    "type": "object",
+                    "properties": {
+                        "channel": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "channel"
+                    ]
+                },
+                "error": {
+                    "type": "object",
+                    "properties": {
+                        "channel": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "name"
+                            ]
+                        },
+                        "interval_min": {
+                            "type": "integer"
+                        }
+                    },
+                    "required": [
+                        "channel",
+                        "interval_min"
+                    ]
+                },
+                "captcha": {
+                    "type": "object",
+                    "properties": {
+                        "channel": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "name"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "channel"
+                    ]
+                }
+            },
+            "required": [
+                "bot_token",
+                "captcha",
+                "error",
+                "from",
+                "info"
+            ]
         }
     },
     "required": [
         "data",
         "login",
-        "output",
-        "slack"
+        "output"
     ]
 }
