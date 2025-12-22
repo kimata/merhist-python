@@ -10,8 +10,11 @@ Options:
   -o EXCEL          : 生成する Excel ファイルを指定します。 [default: merhist.xlsx]
   -N                : サムネイル画像を含めないようにします。
 """
+from __future__ import annotations
 
 import logging
+import pathlib
+from typing import Any
 
 import merhist.crawler
 import merhist.handle
@@ -23,11 +26,11 @@ import openpyxl.drawing.xdr
 import openpyxl.styles
 import openpyxl.utils
 
-STATUS_INSERT_ITEM = "[generate] Insert item"
-STATUS_ALL = "[generate] Excel file"
+STATUS_INSERT_ITEM: str = "[generate] Insert item"
+STATUS_ALL: str = "[generate] Excel file"
 
 
-SHOP_NAME = "メルカリ"
+SHOP_NAME: str = "メルカリ"
 
 SHEET_DEF = {
     "BOUGHT": {
@@ -202,55 +205,63 @@ SHEET_DEF = {
 }
 
 
-def generate_sheet(handle, book, is_need_thumb=True):
-    transaction_list = [
-        {"mode": "BOUGHT", "item_list": merhist.handle.get_bought_item_list(handle)},
-        {"mode": "SOLD", "item_list": merhist.handle.get_sold_item_list(handle)},
+def generate_sheet(
+    handle: merhist.handle.Handle,
+    book: openpyxl.Workbook,
+    is_need_thumb: bool = True,
+) -> None:
+    transaction_list: list[dict[str, Any]] = [
+        {"mode": "BOUGHT", "item_list": handle.get_bought_item_list()},
+        {"mode": "SOLD", "item_list": handle.get_sold_item_list()},
     ]
 
     for transaction_info in transaction_list:
-        merhist.handle.set_progress_bar(handle, STATUS_INSERT_ITEM, len(transaction_info["item_list"]))
+        handle.set_progress_bar(STATUS_INSERT_ITEM, len(transaction_info["item_list"]))
 
         my_lib.openpyxl_util.generate_list_sheet(
             book,
             transaction_info["item_list"],
             SHEET_DEF[transaction_info["mode"]],
             is_need_thumb,
-            lambda item: merhist.handle.get_thumb_path(handle, item),
-            lambda status: merhist.handle.set_status(handle, status),
-            lambda: merhist.handle.get_progress_bar(handle, STATUS_ALL).update(),
-            lambda: merhist.handle.get_progress_bar(handle, STATUS_INSERT_ITEM).update(),
+            lambda item: handle.get_thumb_path(item),
+            lambda status: handle.set_status(status),
+            lambda: handle.progress_bar[STATUS_ALL].update(),
+            lambda: handle.progress_bar[STATUS_INSERT_ITEM].update(),
         )
 
 
-def generate_table_excel(handle, excel_file, is_need_thumb=True):
-    merhist.handle.set_status(handle, "エクセルファイルの作成を開始します...")
-    merhist.handle.set_progress_bar(handle, STATUS_ALL, 2 + 3 * 2)
+def generate_table_excel(
+    handle: merhist.handle.Handle,
+    excel_file: pathlib.Path,
+    is_need_thumb: bool = True,
+) -> None:
+    handle.set_status("エクセルファイルの作成を開始します...")
+    handle.set_progress_bar(STATUS_ALL, 2 + 3 * 2)
 
     logging.info("Start to Generate excel file")
 
     book = openpyxl.Workbook()
-    book._named_styles["Normal"].font = merhist.handle.get_excel_font(handle)  # noqa: SLF001
+    book._named_styles["Normal"].font = handle.config.excel_font  # type: ignore[attr-defined] # noqa: SLF001
 
-    merhist.handle.get_progress_bar(handle, STATUS_ALL).update()
+    handle.progress_bar[STATUS_ALL].update()
 
-    merhist.handle.normalize(handle)
+    handle.normalize()
 
     generate_sheet(handle, book, is_need_thumb)
 
     book.remove(book.worksheets[0])
 
-    merhist.handle.set_status(handle, "エクセルファイルを書き出しています...")
+    handle.set_status("エクセルファイルを書き出しています...")
 
     book.save(excel_file)
 
-    merhist.handle.get_progress_bar(handle, STATUS_ALL).update()
+    handle.progress_bar[STATUS_ALL].update()
 
     book.close()
 
-    merhist.handle.get_progress_bar(handle, STATUS_ALL).update()
+    handle.progress_bar[STATUS_ALL].update()
 
-    merhist.handle.set_status(handle, "完了しました！")
+    handle.set_status("完了しました！")
 
     logging.info("Complete to Generate excel file")
 
@@ -260,18 +271,20 @@ if __name__ == "__main__":
     import my_lib.config
     import my_lib.logger
 
+    import merhist.config
+
     args = docopt.docopt(__doc__)
 
     my_lib.logger.init("test", level=logging.INFO)
 
-    config_file = args["-c"]
-    excel_file = args["-o"]
-    need_thumb = not args["-N"]
+    config_file: str = args["-c"]
+    excel_file: pathlib.Path = pathlib.Path(args["-o"])
+    need_thumb: bool = not args["-N"]
 
-    config = my_lib.config.load(config_file)
+    config = merhist.config.Config.load(my_lib.config.load(config_file))
 
-    handle = merhist.handle.create(config)
+    handle = merhist.handle.Handle(config)
 
     generate_table_excel(handle, excel_file, need_thumb)
 
-    merhist.handle.finish(handle)
+    handle.finish()
