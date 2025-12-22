@@ -49,27 +49,17 @@ jobs:
                 uv sync
 
             - name: Build Executable
-              uses: Nuitka/Nuitka-Action@main
-              with:
-                mode: app
+              shell: bash
+              run: |
+                COMMON_OPTS="--mode=app --product-name=${{ env.PROJECT_NAME }} --file-version=${{ needs.prepare.outputs.version }} --product-version=${{ needs.prepare.outputs.version }} --include-package-data=selenium --include-package=jinxed --no-deployment-flag=self-execution --assume-yes-for-downloads --output-dir=build"
 
-                nuitka-version: main
-                script-name: ${{ env.SCRIPT_NAME }}
-
-                product-name: ${{ env.PROJECT_NAME }}
-                file-version: ${{ needs.prepare.outputs.version }}
-                product-version: ${{ needs.prepare.outputs.version }}
-
-                include-package-data: selenium
-                # NOTE: Windows 向けで必要．動的に import しているモジュールがあるので，明示的に取り込む．
-                include-package: jinxed
-
-                windows-icon-from-ico: img/icon.png
-                macos-app-icon: img/icon.png
-                macos-app-name: ${{ env.PROJECT_NAME }}
-                macos-create-app-bundle: false
-
-                no-deployment-flag: self-execution
+                if [ "$RUNNER_OS" == "Windows" ]; then
+                  python -m nuitka $COMMON_OPTS --windows-icon-from-ico=img/icon.png ${{ env.SCRIPT_NAME }}
+                elif [ "$RUNNER_OS" == "macOS" ]; then
+                  python -m nuitka $COMMON_OPTS --macos-app-icon=img/icon.png --macos-app-name=${{ env.PROJECT_NAME }} --macos-create-app-bundle=false ${{ env.SCRIPT_NAME }}
+                else
+                  python -m nuitka $COMMON_OPTS ${{ env.SCRIPT_NAME }}
+                fi
 
             - name: Check if secret exists
               id: check_secret
