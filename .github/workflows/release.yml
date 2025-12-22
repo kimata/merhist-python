@@ -43,9 +43,10 @@ jobs:
               uses: astral-sh/setup-uv@v4
 
             - name: Install Dependencies
+              env:
+                UV_SYSTEM_PYTHON: 1
               run: |
                 uv sync
-                pip install imageio
 
             - name: Build Executable
               uses: Nuitka/Nuitka-Action@main
