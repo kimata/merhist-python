@@ -14,53 +14,65 @@ Options:
   -N                : サムネイル画像を含めないようにします。
   -D                : デバッグモードで動作します。
 """
+from __future__ import annotations
 
 import logging
 import pathlib
 import random
+from typing import Any
 
+import merhist.config
 import merhist.crawler
 import merhist.handle
 import merhist.history
+import my_lib.selenium_util
 
-SCHEMA_CONFIG = "config.schema"
+SCHEMA_CONFIG: str = "config.schema"
 
 
-def execute_fetch(handle, continue_mode, debug_mode):
+def execute_fetch(
+    handle: merhist.handle.Handle,
+    continue_mode: merhist.crawler.ContinueMode,
+    debug_mode: bool,
+) -> None:
     try:
         merhist.crawler.execute_login(handle)
         merhist.crawler.fetch_order_item_list(handle, continue_mode, debug_mode)
-    except:
-        driver, wait = merhist.handle.get_selenium_driver(handle)
+    except Exception:
+        driver, _ = handle.get_selenium_driver()
         my_lib.selenium_util.dump_page(
             driver,
             int(random.random() * 100),  # noqa: S311
-            merhist.handle.get_debug_dir_path(handle),
+            handle.config.debug_dir_path,
         )
         raise
 
 
-def execute(config, continue_mode, export_mode=False, need_thumb=True, debug_mode=False):
-    handle = merhist.handle.create(config)
+def execute(
+    config: merhist.config.Config,
+    continue_mode: merhist.crawler.ContinueMode,
+    export_mode: bool = False,
+    need_thumb: bool = True,
+    debug_mode: bool = False,
+) -> None:
+    handle = merhist.handle.Handle(config)
 
     try:
         if not export_mode:
             try:
                 execute_fetch(handle, continue_mode, debug_mode)
             except Exception:
-                driver, _ = merhist.handle.get_selenium_driver(handle)
+                driver, _ = handle.get_selenium_driver()
                 logging.exception("Failed to fetch data: %s", driver.current_url)
-                merhist.handle.set_status(handle, "データの収集中にエラーが発生しました", is_error=True)
+                handle.set_status("データの収集中にエラーが発生しました", is_error=True)
 
         try:
-            merhist.history.generate_table_excel(
-                handle, merhist.handle.get_excel_file_path(handle), need_thumb
-            )
+            merhist.history.generate_table_excel(handle, handle.config.excel_file_path, need_thumb)
         except Exception:
-            merhist.handle.set_status(handle, "エクセルファイルの生成中にエラーが発生しました", is_error=True)
+            handle.set_status("エクセルファイルの生成中にエラーが発生しました", is_error=True)
             logging.exception("Failed to generate Excel file.")
     finally:
-        merhist.handle.finish(handle)
+        handle.finish()
 
     if not debug_mode:
         input("完了しました。エンターを押すと終了します。")
@@ -74,19 +86,19 @@ if __name__ == "__main__":
 
     args = docopt.docopt(__doc__)
 
-    config_file = args["-c"]
-    is_continue_mode = {
+    config_file: str = args["-c"]
+    is_continue_mode: merhist.crawler.ContinueMode = {
         "bought": not (args["--fA"] or args["--fB"]),
         "sold": not (args["--fA"] or args["--fS"]),
     }
 
-    export_mode = args["-e"]
-    need_thumb = not args["-N"]
+    export_mode: bool = args["-e"]
+    need_thumb: bool = not args["-N"]
 
-    debug_mode = args["-D"]
+    debug_mode: bool = args["-D"]
 
     my_lib.logger.init("bot.merhist", level=logging.DEBUG if debug_mode else logging.INFO)
 
-    config = my_lib.config.load(config_file, pathlib.Path(SCHEMA_CONFIG))
+    config = merhist.config.Config.load(my_lib.config.load(config_file, pathlib.Path(SCHEMA_CONFIG)))
 
     execute(config, is_continue_mode, export_mode, need_thumb, debug_mode)
