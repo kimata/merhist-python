@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime
 import pathlib
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 import zoneinfo
 
 import enlighten
@@ -80,9 +80,8 @@ class Handle:
         self.trading.sold_item_id_stat[item.id] = True
         self.trading.sold_checked_count += 1
 
-    def get_sold_item_stat(self, item: merhist.item.SoldItem | merhist.item.ItemDict) -> bool:
-        item_id = item.id if isinstance(item, merhist.item.SoldItem) else item["id"]
-        return item_id in self.trading.sold_item_id_stat
+    def get_sold_item_stat(self, item: merhist.item.SoldItem) -> bool:
+        return item.id in self.trading.sold_item_id_stat
 
     def get_sold_item_list(self) -> list[merhist.item.SoldItem]:
         return sorted(self.trading.sold_item_list, key=lambda x: x.completion_date or datetime.datetime.min)
@@ -95,9 +94,8 @@ class Handle:
         self.trading.bought_item_id_stat[item.id] = True
         self.trading.bought_checked_count += 1
 
-    def get_bought_item_stat(self, item: merhist.item.BoughtItem | merhist.item.ItemDict) -> bool:
-        item_id = item.id if isinstance(item, merhist.item.BoughtItem) else item["id"]
-        return item_id in self.trading.bought_item_id_stat
+    def get_bought_item_stat(self, item: merhist.item.BoughtItem) -> bool:
+        return item.id in self.trading.bought_item_id_stat
 
     def get_bought_item_list(self) -> list[merhist.item.BoughtItem]:
         return sorted(self.trading.bought_item_list, key=lambda x: x.purchase_date or datetime.datetime.min)
@@ -115,9 +113,8 @@ class Handle:
         self.trading.sold_checked_count = len(self.trading.sold_item_list)
 
     # --- サムネイル ---
-    def get_thumb_path(self, item: merhist.item.ItemBase | merhist.item.ItemDict) -> pathlib.Path:
-        item_id = item.id if isinstance(item, merhist.item.ItemBase) else item["id"]
-        return self.config.thumb_dir_path / (item_id + ".png")
+    def get_thumb_path(self, item: merhist.item.ItemBase) -> pathlib.Path:
+        return self.config.thumb_dir_path / (item.id + ".png")
 
     # --- プログレスバー ---
     def set_progress_bar(self, desc: str, total: int) -> None:
@@ -147,11 +144,14 @@ class Handle:
             self.status.update(status=status, force=True)
 
     # --- 終了処理 ---
-    def finish(self) -> None:
+    def quit_selenium(self) -> None:
         if self.selenium is not None:
+            self.set_status("クローラを終了しています...")
             my_lib.selenium_util.quit_driver_gracefully(self.selenium.driver, wait_sec=1)
             self.selenium = None
 
+    def finish(self) -> None:
+        self.quit_selenium()
         self.progress_manager.stop()
 
     # --- シリアライズ ---
@@ -160,56 +160,7 @@ class Handle:
         my_lib.serializer.store(self.config.cache_file_path, self.trading)
 
     def _load_trading_info(self) -> None:
-        loaded = my_lib.serializer.load(self.config.cache_file_path, TradingInfo())
-        # NOTE: 古いバージョンで保存された TradingInfo (dict) を読み込む場合の対応
-        if isinstance(loaded, dict):
-            self.trading = self._convert_legacy_trading_info(loaded)
-        elif isinstance(loaded, TradingInfo):
-            # NOTE: 古いバージョンで保存されたアイテムリスト (list[dict]) を変換
-            self.trading = self._convert_legacy_trading_info_items(loaded)
-        else:
-            self.trading = loaded
-
-    def _convert_legacy_trading_info(self, data: dict[str, Any]) -> TradingInfo:
-        """古い dict 形式の TradingInfo を変換"""
-        sold_items = [
-            merhist.item.SoldItem.from_dict(item) if isinstance(item, dict) else item
-            for item in data.get("sold_item_list", [])
-        ]
-        bought_items = [
-            merhist.item.BoughtItem.from_dict(item) if isinstance(item, dict) else item
-            for item in data.get("bought_item_list", [])
-        ]
-        return TradingInfo(
-            sold_item_list=sold_items,
-            sold_item_id_stat=data.get("sold_item_id_stat", {}),
-            sold_total_count=data.get("sold_total_count", 0),
-            sold_checked_count=data.get("sold_checked_count", 0),
-            bought_item_list=bought_items,
-            bought_item_id_stat=data.get("bought_item_id_stat", {}),
-            bought_total_count=data.get("bought_total_count", 0),
-            bought_checked_count=data.get("bought_checked_count", 0),
-            last_modified=data.get(
-                "last_modified",
-                datetime.datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo")),
-            ),
-        )
-
-    def _convert_legacy_trading_info_items(self, trading: TradingInfo) -> TradingInfo:
-        """TradingInfo 内の古い dict 形式アイテムを変換"""
-        # sold_item_list 内に dict が含まれている場合は変換
-        if trading.sold_item_list and isinstance(trading.sold_item_list[0], dict):
-            trading.sold_item_list = [
-                merhist.item.SoldItem.from_dict(item)  # type: ignore[arg-type]
-                for item in trading.sold_item_list
-            ]
-        # bought_item_list 内に dict が含まれている場合は変換
-        if trading.bought_item_list and isinstance(trading.bought_item_list[0], dict):
-            trading.bought_item_list = [
-                merhist.item.BoughtItem.from_dict(item)  # type: ignore[arg-type]
-                for item in trading.bought_item_list
-            ]
-        return trading
+        self.trading = my_lib.serializer.load(self.config.cache_file_path, TradingInfo())
 
     def _prepare_directory(self) -> None:
         self.config.selenium_data_dir_path.mkdir(parents=True, exist_ok=True)
