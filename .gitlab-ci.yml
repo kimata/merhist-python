@@ -24,18 +24,33 @@ test-prepare:
                   - uv.lock
           paths:
               - $UV_CACHE_DIR
-    
-test-walk-through:
+
+test-typecheck:
     stage: test
 
     needs:
         - test-prepare
-    
-    cache:
-        key: ${CI_JOB_NAME}
+
+    script:
+        - uv run pytest --numprocesses=auto --junit-xml=tests/evidence/junit-report.xml tests/test_typecheck.py
+
+    artifacts:
+        when: always
         paths:
-            - data
-            - .venv
+            - tests/evidence/**
+        reports:
+            junit: tests/evidence/junit-report.xml
+              
+test-normal:
+    stage: test
+
+    needs:
+        - test-prepare
+
+    cache:
+        - key: ${CI_PROJECT_NAME}-data
+          paths:            
+              - data
 
     script:
         - 'echo "Building: ${CI_REGISTRY_IMAGE}:${TAG}"'
@@ -51,6 +66,7 @@ test-walk-through:
         
         - uv run python src/app.py -D
 
+       
 renovate:
     stage: renovate
     image:
