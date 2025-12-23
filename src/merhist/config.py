@@ -136,7 +136,7 @@ class Config:
     login: LoginConfig
     data: DataConfig
     output: OutputConfig
-    slack: my_lib.notify.slack.SlackConfig | None = None
+    slack: my_lib.notify.slack.SlackConfigTypes
 
     # --- パス関連プロパティ ---
     @property
@@ -170,9 +170,7 @@ class Config:
     @classmethod
     def load(cls, data: dict[str, Any]) -> Self:
         """辞書から Config を生成する"""
-        slack = None
-        if "slack" in data:
-            slack = my_lib.notify.slack.parse_config(data["slack"])
+        slack = my_lib.notify.slack.parse_config(data.get("slack", {}))
 
         return cls(
             base_dir=pathlib.Path(data["base_dir"]),
