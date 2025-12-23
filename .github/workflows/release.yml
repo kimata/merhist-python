@@ -52,11 +52,11 @@ jobs:
                 COMMON_OPTS="--mode=app --product-name=${{ env.PROJECT_NAME }} --file-version=${{ needs.prepare.outputs.version }} --product-version=${{ needs.prepare.outputs.version }} --include-package-data=selenium --include-package=jinxed --nofollow-import-to=*.tests --no-deployment-flag=self-execution --assume-yes-for-downloads --output-dir=build"
 
                 if [ "$RUNNER_OS" == "Windows" ]; then
-                  uv run python -m nuitka $COMMON_OPTS --windows-icon-from-ico=img/icon.png ${{ env.SCRIPT_NAME }}
+                  uv run python -m nuitka $COMMON_OPTS --windows-icon-from-ico=img/icon.png --output-filename=${{ env.PROJECT_NAME }}.exe ${{ env.SCRIPT_NAME }}
                 elif [ "$RUNNER_OS" == "macOS" ]; then
                   uv run python -m nuitka $COMMON_OPTS --macos-app-icon=img/icon.png --macos-app-name=${{ env.PROJECT_NAME }} ${{ env.SCRIPT_NAME }}
                 else
-                  uv run python -m nuitka $COMMON_OPTS ${{ env.SCRIPT_NAME }}
+                  uv run python -m nuitka $COMMON_OPTS --output-filename=${{ env.PROJECT_NAME }}.bin ${{ env.SCRIPT_NAME }}
                 fi
 
             - name: Check if secret exists
@@ -73,7 +73,7 @@ jobs:
               if: (runner.os == 'Windows') && (steps.check_secret.outputs.secret_exists == 'true')
               uses: lando/code-sign-action@v3
               with:
-                file: build/*.exe
+                file: build/${{ env.PROJECT_NAME }}.exe
                 certificate-data: ${{ secrets.CERTIFICATE }}
                 certificate-password: ${{ secrets.PASSWORD }}
 
