@@ -69,30 +69,36 @@ jobs:
                   Write-Output "secret_exists=false" >> $env:GITHUB_OUTPUT
                 }
 
-            - name: Setup signtool path
-              if: runner.os == 'Windows'
+            - name: Sign code
+              if: (runner.os == 'Windows') && (steps.check_secret.outputs.secret_exists == 'true')
               shell: pwsh
               run: |
+                # Find signtool.exe in Windows SDK
                 $sdkPath = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
                   Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
                   Sort-Object Name -Descending |
                   Select-Object -First 1
-                if ($sdkPath) {
-                  $signtoolDir = Join-Path $sdkPath.FullName "x64"
-                  Write-Host "Adding signtool path: $signtoolDir"
-                  echo "$signtoolDir" >> $env:GITHUB_PATH
-                } else {
+                if (-not $sdkPath) {
                   Write-Error "Windows SDK not found"
                   exit 1
                 }
+                $signtool = Join-Path $sdkPath.FullName "x64\signtool.exe"
+                Write-Host "Using signtool: $signtool"
 
-            - name: Sign code
-              if: (runner.os == 'Windows') && (steps.check_secret.outputs.secret_exists == 'true')
-              uses: lando/code-sign-action@v3
-              with:
-                file: build/${{ env.PROJECT_NAME }}.exe
-                certificate-data: ${{ secrets.CERTIFICATE }}
-                certificate-password: ${{ secrets.PASSWORD }}
+                # Decode certificate
+                $certPath = "$env:RUNNER_TEMP\signcert.p12"
+                $certData = [System.Convert]::FromBase64String("${{ secrets.CERTIFICATE }}")
+                [System.IO.File]::WriteAllBytes($certPath, $certData)
+
+                # Sign the executable
+                & $signtool sign /f $certPath /p "${{ secrets.PASSWORD }}" /fd sha256 /tr http://timestamp.digicert.com /td sha256 "build/${{ env.PROJECT_NAME }}.exe"
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Code signing failed"
+                  exit 1
+                }
+
+                # Clean up certificate
+                Remove-Item $certPath -Force
 
             - name: Copy bundle file
               run: |
