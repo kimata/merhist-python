@@ -69,6 +69,23 @@ jobs:
                   Write-Output "secret_exists=false" >> $env:GITHUB_OUTPUT
                 }
 
+            - name: Setup signtool path
+              if: runner.os == 'Windows'
+              shell: pwsh
+              run: |
+                $sdkPath = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                  Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
+                  Sort-Object Name -Descending |
+                  Select-Object -First 1
+                if ($sdkPath) {
+                  $signtoolDir = Join-Path $sdkPath.FullName "x64"
+                  Write-Host "Adding signtool path: $signtoolDir"
+                  echo "$signtoolDir" >> $env:GITHUB_PATH
+                } else {
+                  Write-Error "Windows SDK not found"
+                  exit 1
+                }
+
             - name: Sign code
               if: (runner.os == 'Windows') && (steps.check_secret.outputs.secret_exists == 'true')
               uses: lando/code-sign-action@v3
