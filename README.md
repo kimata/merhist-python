@@ -53,14 +53,6 @@ login:
 slack:
     bot_token: xoxp-XXXXXXXXXXXX-XXXXXXXXXXXX-XXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     from: Mercari History
-    info:
-        channel:
-            name: "#mercari"
-    error:
-        channel:
-            name: "#error"
-            id: XXXXXXXXXXX
-        interval_min: 180
     captcha:
         channel:
             name: "#captcha"
