@@ -71,7 +71,7 @@ jobs:
 
             - name: Sign code
               if: (runner.os == 'Windows') && (steps.check_secret.outputs.secret_exists == 'true')
-              uses: kimata/code-sign-action@v1
+              uses: lando/code-sign-action@v3
               with:
                 file: build/*.exe
                 certificate-data: ${{ secrets.CERTIFICATE }}
