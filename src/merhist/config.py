@@ -136,7 +136,7 @@ class Config:
     login: LoginConfig
     data: DataConfig
     output: OutputConfig
-    slack: my_lib.notify.slack.SlackConfigTypes
+    slack: my_lib.notify.slack.HasCaptcha | my_lib.notify.slack.SlackEmptyConfig
 
     # --- パス関連プロパティ ---
     @property
@@ -171,6 +171,17 @@ class Config:
     def load(cls, data: dict[str, Any]) -> Self:
         """辞書から Config を生成する"""
         slack = my_lib.notify.slack.parse_config(data.get("slack", {}))
+
+        # このプロジェクトでは captcha のみ、または設定なしのパターンのみ対応
+        if not isinstance(
+            slack,
+            (
+                my_lib.notify.slack.SlackConfig,
+                my_lib.notify.slack.SlackCaptchaOnlyConfig,
+                my_lib.notify.slack.SlackEmptyConfig,
+            ),
+        ):
+            raise ValueError("Slack 設定には captcha が必要です（または設定なし）")
 
         return cls(
             base_dir=pathlib.Path(data["base_dir"]),
