@@ -333,6 +333,12 @@ def fetch_item_detail(handle: merhist.handle.Handle, item: T, debug_mode: bool) 
             error_message = str(e)
             logging.warning("%s: %s", type(e).__name__, error_message.rstrip())
             error_detail = traceback.format_exc()
+            driver, _ = handle.get_selenium_driver()
+            my_lib.selenium_util.dump_page(
+                driver,
+                int(random.random() * 100),  # noqa: S311
+                handle.config.debug_dir_path,
+            )
 
         logging.warning("Failed to fetch %s", gen_item_transaction_url(item))
 
@@ -413,10 +419,18 @@ def fetch_sold_item_list_by_page(
             break
 
     is_found_new = False
+    is_first_fetch = True
     for item in item_list:
         if not continue_mode or not handle.get_sold_item_stat(item):
             # 強制取得モードまたは未キャッシュの場合は取得
             fetch_item_detail(handle, item, debug_mode)
+
+            if item.error and is_first_fetch:
+                # 最初のfetchが失敗した場合は収集を停止
+                logging.error("最初のアイテム取得に失敗したため、収集を停止します")
+                raise merhist.exceptions.HistoryFetchError(item.error)
+
+            is_first_fetch = False
             handle.record_sold_item(item)
 
             handle.progress_bar[STATUS_SOLD_ITEM].update()
@@ -632,10 +646,18 @@ def fetch_bought_item_list(
 
     handle.set_progress_bar(STATUS_BOUGHT_ITEM, len(item_list))
 
+    is_first_fetch = True
     for item in item_list:
         if not continue_mode or not handle.get_bought_item_stat(item):
             # 強制取得モードまたは未キャッシュの場合は取得
             fetch_item_detail(handle, item, debug_mode)
+
+            if item.error and is_first_fetch:
+                # 最初のfetchが失敗した場合は収集を停止
+                logging.error("最初のアイテム取得に失敗したため、収集を停止します")
+                raise merhist.exceptions.HistoryFetchError(item.error)
+
+            is_first_fetch = False
             handle.record_bought_item(item)
             handle.progress_bar[STATUS_BOUGHT_ITEM].update()
         else:
