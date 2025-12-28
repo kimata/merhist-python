@@ -52,7 +52,6 @@ test-walk-through:
     stage: test
 
     needs:
-        - build-image
         - test-prepare
 
     script:
