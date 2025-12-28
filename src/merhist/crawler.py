@@ -278,7 +278,7 @@ def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.ite
     visit_url(handle, gen_item_transaction_url(item), merhist.xpath.SHOP_TRANSACTION_PHOTO_NAME)
 
     info_xpath = merhist.xpath.SHOP_TRANSACTION_INFO
-    item.price = int(  # type: ignore[attr-defined]
+    item.price = int(
         driver.find_element(
             selenium.webdriver.common.by.By.XPATH,
             info_xpath + merhist.xpath.SHOP_TRANSACTION_PRICE,
@@ -296,6 +296,7 @@ def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.ite
 
 def fetch_item_transaction(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
     if item.shop == MERCARI_SHOP:
+        assert isinstance(item, merhist.item.BoughtItem)
         fetch_item_transaction_shop(handle, item)
     else:
         fetch_item_transaction_normal(handle, item)
