@@ -172,7 +172,7 @@ class Config:
         """辞書から Config を生成する"""
         slack = my_lib.notify.slack.parse_config(data.get("slack", {}))
 
-        # このプロジェクトでは captcha のみ、または設定なしのパターンのみ対応
+        # このプロジェクトでは captcha 有りの設定、または設定なしのパターンのみ対応
         if not isinstance(
             slack,
             (
