@@ -14,13 +14,13 @@ Options:
   --fS              : 販売履歴を強制的に再取得します。
   -D                : デバッグモードで動作します。
 """
+
 from __future__ import annotations
 
 import warnings
 
 warnings.filterwarnings("ignore", message="Couldn't find ffmpeg or avconv")
 
-import datetime
 import logging
 import math
 import pathlib
@@ -28,7 +28,7 @@ import random
 import re
 import time
 import traceback
-from typing import Any, TypedDict, TypeVar
+from typing import Any, TypedDict, TypeVar, cast
 
 import merhist.const
 import merhist.exceptions
@@ -133,9 +133,7 @@ def set_item_id_from_order_url(item: merhist.item.ItemBase) -> None:
         raise merhist.exceptions.InvalidURLFormatError("URL の形式が想定と異なります", item.order_url)
 
 
-def visit_url(
-    handle: merhist.handle.Handle, url: str, xpath: str = merhist.xpath.NAVIGATION_TOP
-) -> None:
+def visit_url(handle: merhist.handle.Handle, url: str, xpath: str = merhist.xpath.NAVIGATION_TOP) -> None:
     driver, _ = handle.get_selenium_driver()
     driver.get(url)
 
@@ -190,7 +188,8 @@ def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.Ite
                     item.set_field(
                         row_def["name"],
                         driver.find_element(
-                            selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.xpath.ITEM_DESC_ROW_BODY
+                            selenium.webdriver.common.by.By.XPATH,
+                            row_xpath + merhist.xpath.ITEM_DESC_ROW_BODY,
                         ).text,
                     )
                 elif row_def["type"] == "category":
@@ -273,13 +272,13 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
         )
 
 
-def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
+def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.item.BoughtItem) -> None:
     driver, _ = handle.get_selenium_driver()
 
     visit_url(handle, gen_item_transaction_url(item), merhist.xpath.SHOP_TRANSACTION_PHOTO_NAME)
 
     info_xpath = merhist.xpath.SHOP_TRANSACTION_INFO
-    item.price = int(  # type: ignore[attr-defined]
+    item.price = int(
         driver.find_element(
             selenium.webdriver.common.by.By.XPATH,
             info_xpath + merhist.xpath.SHOP_TRANSACTION_PRICE,
@@ -297,7 +296,7 @@ def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.ite
 
 def fetch_item_transaction(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
     if item.shop == MERCARI_SHOP:
-        fetch_item_transaction_shop(handle, item)
+        fetch_item_transaction_shop(handle, cast(merhist.item.BoughtItem, item))
     else:
         fetch_item_transaction_normal(handle, item)
 
@@ -454,9 +453,7 @@ def fetch_sold_count(handle: merhist.handle.Handle) -> None:
 
     visit_url(handle, gen_sell_hist_url(0), merhist.xpath.SOLD_PAGING)
 
-    paging_text = driver.find_element(
-        selenium.webdriver.common.by.By.XPATH, merhist.xpath.SOLD_PAGING
-    ).text
+    paging_text = driver.find_element(selenium.webdriver.common.by.By.XPATH, merhist.xpath.SOLD_PAGING).text
     sold_count = merhist.parser.parse_sold_count(paging_text)
 
     logging.info("Total sold items: %s", f"{sold_count:,}")
@@ -542,9 +539,12 @@ def get_bought_item_info_list(
         item.name = driver.find_element(
             selenium.webdriver.common.by.By.XPATH, item_xpath + merhist.xpath.BOUGHT_ITEM_LABEL
         ).text
-        item.order_url = driver.find_element(
-            selenium.webdriver.common.by.By.XPATH, item_xpath + merhist.xpath.BOUGHT_ITEM_LINK
-        ).get_attribute("href") or ""
+        item.order_url = (
+            driver.find_element(
+                selenium.webdriver.common.by.By.XPATH, item_xpath + merhist.xpath.BOUGHT_ITEM_LINK
+            ).get_attribute("href")
+            or ""
+        )
 
         # 日時テキストを取得（例: "2025/12/05 21:44"）
         datetime_text = driver.find_element(
