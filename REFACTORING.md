@@ -145,7 +145,7 @@ class MercariSelectors:
 - `tests/unit/test_parser.py`: パース関数テスト
 
 **Phase 3** (2025-12-28)
-- `src/merhist/selectors.py`: XPathセレクタを集約
+- `src/merhist/xpath.py`: XPathセレクタを集約（selectors.pyは標準ライブラリと競合するため改名）
 - `src/merhist/const.py`: URLとページ設定のみに整理
 
 **テスト結果**: 96テスト全てパス、カバレッジ43%

@@ -35,7 +35,7 @@ import merhist.exceptions
 import merhist.handle
 import merhist.item
 import merhist.parser
-import merhist.selectors
+import merhist.xpath
 
 T = TypeVar("T", bound=merhist.item.ItemBase)
 
@@ -79,7 +79,7 @@ def execute_login(handle: merhist.handle.Handle) -> None:
 
 def wait_for_loading(
     handle: merhist.handle.Handle,
-    xpath: str = merhist.selectors.NOTIFICATION_BUTTON,
+    xpath: str = merhist.xpath.NOTIFICATION_BUTTON,
     sec: float = 1,
     retry: bool = True,
 ) -> None:
@@ -132,7 +132,7 @@ def set_item_id_from_order_url(item: merhist.item.ItemBase) -> None:
 
 
 def visit_url(
-    handle: merhist.handle.Handle, url: str, xpath: str = merhist.selectors.NAVIGATION_TOP
+    handle: merhist.handle.Handle, url: str, xpath: str = merhist.xpath.NAVIGATION_TOP
 ) -> None:
     driver, _ = handle.get_selenium_driver()
     driver.get(url)
@@ -164,21 +164,21 @@ def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.Ite
     with my_lib.selenium_util.browser_tab(driver, gen_item_description_url(item)):
         wait_for_loading(handle)
 
-        if my_lib.selenium_util.xpath_exists(driver, merhist.selectors.ITEM_DESC_NOT_FOUND):
+        if my_lib.selenium_util.xpath_exists(driver, merhist.xpath.ITEM_DESC_NOT_FOUND):
             logging.warning("Description page not found: %s", driver.current_url)
             item.error = "商品情報ページが見つかりませんでした．"
             return
-        elif my_lib.selenium_util.xpath_exists(driver, merhist.selectors.ITEM_DESC_DELETED):
+        elif my_lib.selenium_util.xpath_exists(driver, merhist.xpath.ITEM_DESC_DELETED):
             logging.warning("Description page has been deleted: %s", driver.current_url)
             item.error = "商品情報ページが削除されています．"
             return
 
-        info_row_xpath = merhist.selectors.ITEM_DESC_INFO_ROW
+        info_row_xpath = merhist.xpath.ITEM_DESC_INFO_ROW
         for i in range(len(driver.find_elements(selenium.webdriver.common.by.By.XPATH, info_row_xpath))):
-            row_xpath = merhist.selectors.nth_element(info_row_xpath, i + 1)
+            row_xpath = merhist.xpath.nth_element(info_row_xpath, i + 1)
 
             row_title = driver.find_element(
-                selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.selectors.ITEM_DESC_ROW_TITLE
+                selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.xpath.ITEM_DESC_ROW_TITLE
             ).text
             for row_def in ROW_DEF_LIST:
                 if row_def["title"] != row_title:
@@ -188,13 +188,13 @@ def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.Ite
                     item.set_field(
                         row_def["name"],
                         driver.find_element(
-                            selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.selectors.ITEM_DESC_ROW_BODY
+                            selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.xpath.ITEM_DESC_ROW_BODY
                         ).text,
                     )
                 elif row_def["type"] == "category":
                     breadcrumb_list = driver.find_elements(
                         selenium.webdriver.common.by.By.XPATH,
-                        row_xpath + merhist.selectors.ITEM_DESC_ROW_BODY_LINKS,
+                        row_xpath + merhist.xpath.ITEM_DESC_ROW_BODY_LINKS,
                     )
                     item.set_field(row_def["name"], [x.text for x in breadcrumb_list])
 
@@ -208,19 +208,19 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
 
     driver, _ = handle.get_selenium_driver()
 
-    visit_url(handle, gen_item_transaction_url(item), merhist.selectors.TRANSACTION_INFO_ROW)
+    visit_url(handle, gen_item_transaction_url(item), merhist.xpath.TRANSACTION_INFO_ROW)
 
-    if my_lib.selenium_util.xpath_exists(driver, merhist.selectors.TRANSACTION_PAGE_ERROR):
+    if my_lib.selenium_util.xpath_exists(driver, merhist.xpath.TRANSACTION_PAGE_ERROR):
         logging.warning("Failed to load page: %s", driver.current_url)
         raise merhist.exceptions.PageLoadError("ページの読み込みに失敗しました", driver.current_url)
 
-    info_row_xpath = merhist.selectors.TRANSACTION_INFO_ROW
+    info_row_xpath = merhist.xpath.TRANSACTION_INFO_ROW
     has_purchase_date = False
     for i in range(len(driver.find_elements(selenium.webdriver.common.by.By.XPATH, info_row_xpath))):
-        row_xpath = merhist.selectors.nth_element(info_row_xpath, i + 1)
+        row_xpath = merhist.xpath.nth_element(info_row_xpath, i + 1)
 
         row_title = driver.find_element(
-            selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.selectors.TRANSACTION_ROW_TITLE
+            selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.xpath.TRANSACTION_ROW_TITLE
         ).text
         for row_def in ROW_DEF_LIST:
             if row_def["title"] != row_title:
@@ -232,7 +232,7 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
                     merhist.parser.parse_datetime(
                         driver.find_element(
                             selenium.webdriver.common.by.By.XPATH,
-                            row_xpath + merhist.selectors.TRANSACTION_ROW_BODY_SPAN,
+                            row_xpath + merhist.xpath.TRANSACTION_ROW_BODY_SPAN,
                         ).text
                     ),
                 )
@@ -242,14 +242,14 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
                     continue
                 body_elem = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
-                    row_xpath + merhist.selectors.TRANSACTION_ROW_BODY,
+                    row_xpath + merhist.xpath.TRANSACTION_ROW_BODY,
                 )
                 body_text = body_elem.text
                 number_text = None
                 if "送料込み" not in body_text:
                     number_text = body_elem.find_element(
                         selenium.webdriver.common.by.By.XPATH,
-                        merhist.selectors.TRANSACTION_ROW_NUMBER,
+                        merhist.xpath.TRANSACTION_ROW_NUMBER,
                     ).text
                 item.set_field(
                     row_def["name"],
@@ -258,7 +258,7 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
 
     thumb_url = driver.find_element(
         selenium.webdriver.common.by.By.XPATH,
-        merhist.selectors.TRANSACTION_THUMBNAIL,
+        merhist.xpath.TRANSACTION_THUMBNAIL,
     ).get_attribute("src")
 
     if thumb_url is not None:
@@ -274,20 +274,20 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
 def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
     driver, _ = handle.get_selenium_driver()
 
-    visit_url(handle, gen_item_transaction_url(item), merhist.selectors.SHOP_TRANSACTION_PHOTO_NAME)
+    visit_url(handle, gen_item_transaction_url(item), merhist.xpath.SHOP_TRANSACTION_PHOTO_NAME)
 
-    info_xpath = merhist.selectors.SHOP_TRANSACTION_INFO
+    info_xpath = merhist.xpath.SHOP_TRANSACTION_INFO
     item.price = int(  # type: ignore[attr-defined]
         driver.find_element(
             selenium.webdriver.common.by.By.XPATH,
-            info_xpath + merhist.selectors.SHOP_TRANSACTION_PRICE,
+            info_xpath + merhist.xpath.SHOP_TRANSACTION_PRICE,
         )
         .text.replace("￥", "")
         .replace(",", "")
     )
 
     thumb_url = driver.find_element(
-        selenium.webdriver.common.by.By.XPATH, info_xpath + merhist.selectors.SHOP_TRANSACTION_THUMBNAIL
+        selenium.webdriver.common.by.By.XPATH, info_xpath + merhist.xpath.SHOP_TRANSACTION_THUMBNAIL
     ).get_attribute("src")
     if thumb_url is not None:
         save_thumbnail(handle, item, thumb_url)
@@ -362,22 +362,22 @@ def fetch_sold_item_list_by_page(
 
     handle.set_status(f"販売履歴を解析しています... {page}/{total_page} ページ")
 
-    visit_url(handle, gen_sell_hist_url(page), merhist.selectors.SOLD_PAGING)
+    visit_url(handle, gen_sell_hist_url(page), merhist.xpath.SOLD_PAGING)
 
     logging.info("Check sell history page %d/%d", page, total_page)
 
     item_list: list[merhist.item.SoldItem] = []
-    item_list_xpath = merhist.selectors.SOLD_LIST_ITEM
+    item_list_xpath = merhist.xpath.SOLD_LIST_ITEM
     for i in range(len(driver.find_elements(selenium.webdriver.common.by.By.XPATH, item_list_xpath))):
         item_xpath = f"{item_list_xpath}[{i + 1}]"
 
         item = merhist.item.SoldItem()
         for col_def in COL_DEF_LIST:
-            col_xpath = merhist.selectors.sold_item_column(item_xpath, col_def["index"])
+            col_xpath = merhist.xpath.sold_item_column(item_xpath, col_def["index"])
             if col_def["type"] == "text":
                 link_elem = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
-                    col_xpath + merhist.selectors.SOLD_ITEM_LINK,
+                    col_xpath + merhist.xpath.SOLD_ITEM_LINK,
                 )
                 item.set_field(col_def["name"], link_elem.text)
                 if "link" in col_def:
@@ -385,7 +385,7 @@ def fetch_sold_item_list_by_page(
             elif col_def["type"] == "price":
                 price_text = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
-                    col_xpath + merhist.selectors.SOLD_ITEM_PRICE_NUMBER,
+                    col_xpath + merhist.xpath.SOLD_ITEM_PRICE_NUMBER,
                 ).text
                 item.set_field(col_def["name"], merhist.parser.parse_price(price_text))
             elif col_def["type"] == "rate":
@@ -438,10 +438,10 @@ def fetch_sold_count(handle: merhist.handle.Handle) -> None:
 
     logging.info(gen_sell_hist_url(0))
 
-    visit_url(handle, gen_sell_hist_url(0), merhist.selectors.SOLD_PAGING)
+    visit_url(handle, gen_sell_hist_url(0), merhist.xpath.SOLD_PAGING)
 
     paging_text = driver.find_element(
-        selenium.webdriver.common.by.By.XPATH, merhist.selectors.SOLD_PAGING
+        selenium.webdriver.common.by.By.XPATH, merhist.xpath.SOLD_PAGING
     ).text
     sold_count = merhist.parser.parse_sold_count(paging_text)
 
@@ -511,7 +511,7 @@ def get_bought_item_info_list(
 ) -> tuple[int, bool]:
     driver, _ = handle.get_selenium_driver()
 
-    item_list_xpath = merhist.selectors.BOUGHT_LIST_ITEM
+    item_list_xpath = merhist.xpath.BOUGHT_LIST_ITEM
     list_length = len(driver.find_elements(selenium.webdriver.common.by.By.XPATH, item_list_xpath))
     prev_length = len(item_list)
 
@@ -523,19 +523,19 @@ def get_bought_item_info_list(
     is_found_new = False
     for i in range(offset, list_length):
         item = merhist.item.BoughtItem()
-        item_xpath = merhist.selectors.nth_element(item_list_xpath, i + 1)
+        item_xpath = merhist.xpath.nth_element(item_list_xpath, i + 1)
 
         item.name = driver.find_element(
-            selenium.webdriver.common.by.By.XPATH, item_xpath + merhist.selectors.BOUGHT_ITEM_LABEL
+            selenium.webdriver.common.by.By.XPATH, item_xpath + merhist.xpath.BOUGHT_ITEM_LABEL
         ).text
         item.order_url = driver.find_element(
-            selenium.webdriver.common.by.By.XPATH, item_xpath + merhist.selectors.BOUGHT_ITEM_LINK
+            selenium.webdriver.common.by.By.XPATH, item_xpath + merhist.xpath.BOUGHT_ITEM_LINK
         ).get_attribute("href") or ""
 
         # 日時テキストを取得（例: "2025/12/05 21:44"）
         datetime_text = driver.find_element(
             selenium.webdriver.common.by.By.XPATH,
-            item_xpath + merhist.selectors.BOUGHT_ITEM_DATETIME,
+            item_xpath + merhist.xpath.BOUGHT_ITEM_DATETIME,
         ).text
 
         item.purchase_date = merhist.parser.parse_datetime(datetime_text, False)
@@ -561,7 +561,7 @@ def fetch_bought_item_info_list_impl(
 
     handle.set_status("購入履歴の件数を確認しています...")
 
-    visit_url(handle, merhist.const.BOUGHT_HIST_URL, merhist.selectors.BOUGHT_LIST)
+    visit_url(handle, merhist.const.BOUGHT_HIST_URL, merhist.xpath.BOUGHT_LIST)
 
     item_list: list[merhist.item.BoughtItem] = []
     page = 1
@@ -574,16 +574,16 @@ def fetch_bought_item_info_list_impl(
             logging.info("Leaving as it seems there are no more new items...")
             break
 
-        if not my_lib.selenium_util.xpath_exists(driver, merhist.selectors.BOUGHT_MORE_BUTTON):
+        if not my_lib.selenium_util.xpath_exists(driver, merhist.xpath.BOUGHT_MORE_BUTTON):
             logging.info("Detected end of list")
             break
 
         logging.info("Load next items")
 
-        my_lib.selenium_util.click_xpath(driver, merhist.selectors.BOUGHT_MORE_BUTTON)
+        my_lib.selenium_util.click_xpath(driver, merhist.xpath.BOUGHT_MORE_BUTTON)
         wait.until(
             selenium.webdriver.support.expected_conditions.invisibility_of_element_located(
-                (selenium.webdriver.common.by.By.XPATH, merhist.selectors.LOADING_ICON)
+                (selenium.webdriver.common.by.By.XPATH, merhist.xpath.LOADING_ICON)
             )
         )
 
