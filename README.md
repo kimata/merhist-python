@@ -2,7 +2,8 @@
 
 メルカリの販売履歴・購入履歴を収集し、サムネイル付きの Excel ファイルとして出力するツール
 
-[![Test Status](https://gitlab.green-rabbit.net/kimata/merhist-python/badges/main/pipeline.svg)](https://gitlab.green-rabbit.net/kimata/merhist-python/-/pipelines)
+[![Test Status](https://github.com/kimata/merhist-python/actions/workflows/test.yaml/badge.svg)](https://github.com/kimata/merhist-python/actions/workflows/test.yaml)
+[![Test Report](https://img.shields.io/badge/Test_Report-pytest.html-blue)](https://kimata.github.io/merhist-python/pytest.html)
 [![Coverage Status](https://coveralls.io/repos/github/kimata/merhist-python/badge.svg?branch=main)](https://coveralls.io/github/kimata/merhist-python?branch=main)
 
 ## 📋 概要
