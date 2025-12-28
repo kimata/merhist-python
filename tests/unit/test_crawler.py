@@ -34,7 +34,11 @@ class TestFetchItemDetail:
     def handle(self, mock_config):
         """Handle インスタンス"""
         with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            return merhist.handle.Handle(config=mock_config)
+            h = merhist.handle.Handle(config=mock_config)
+            mock_driver = unittest.mock.MagicMock()
+            mock_wait = unittest.mock.MagicMock()
+            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+            return h
 
     def test_fetch_item_detail_success(self, handle):
         """正常に詳細情報を取得"""
@@ -77,6 +81,7 @@ class TestFetchItemDetail:
             unittest.mock.patch("merhist.crawler.fetch_item_description", side_effect=mock_fetch_description),
             unittest.mock.patch("merhist.crawler.fetch_item_transaction"),
             unittest.mock.patch("time.sleep"),
+            unittest.mock.patch("my_lib.selenium_util.dump_page"),
         ):
             result = merhist.crawler.fetch_item_detail(handle, item, debug_mode=False)
 
@@ -92,6 +97,7 @@ class TestFetchItemDetail:
                 "merhist.crawler.fetch_item_description", side_effect=Exception("永続的なエラー")
             ),
             unittest.mock.patch("time.sleep"),
+            unittest.mock.patch("my_lib.selenium_util.dump_page"),
         ):
             result = merhist.crawler.fetch_item_detail(handle, item, debug_mode=False)
 
