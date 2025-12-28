@@ -223,7 +223,7 @@ def generate_sheet(
             transaction_info["item_list"],
             SHEET_DEF[transaction_info["mode"]],
             is_need_thumb,
-            lambda item: handle.get_thumb_path(item),
+            lambda item: handle.get_thumb_path(item),  # pyright: ignore[reportArgumentType]
             lambda status: handle.set_status(status),
             lambda: handle.progress_bar[STATUS_ALL].update(),
             lambda: handle.progress_bar[STATUS_INSERT_ITEM].update(),
@@ -241,7 +241,7 @@ def generate_table_excel(
     logging.info("Start to Generate excel file")
 
     book = openpyxl.Workbook()
-    book._named_styles["Normal"].font = handle.config.excel_font  # noqa: SLF001
+    book._named_styles["Normal"].font = handle.config.excel_font  # pyright: ignore[reportAttributeAccessIssue] # noqa: SLF001
 
     handle.progress_bar[STATUS_ALL].update()
 
@@ -273,6 +273,7 @@ if __name__ == "__main__":
 
     import merhist.config
 
+    assert __doc__ is not None
     args = docopt.docopt(__doc__)
 
     my_lib.logger.init("test", level=logging.INFO)

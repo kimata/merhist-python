@@ -4,12 +4,14 @@ from __future__ import annotations
 import datetime
 import pathlib
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
 import zoneinfo
+
+from typing import TYPE_CHECKING
 
 import enlighten
 import my_lib.selenium_util
 import my_lib.serializer
+import selenium.webdriver.remote.webdriver
 import selenium.webdriver.support.wait
 
 if TYPE_CHECKING:
@@ -44,7 +46,7 @@ class SeleniumInfo:
 @dataclass
 class Handle:
     config: merhist.config.Config
-    progress_manager: enlighten.Manager = field(default_factory=enlighten.get_manager)
+    progress_manager: enlighten.Manager | enlighten.NotebookManager = field(default_factory=enlighten.get_manager)
     progress_bar: dict[str, enlighten.Counter] = field(default_factory=dict)
     trading: TradingInfo = field(default_factory=TradingInfo)
     selenium: SeleniumInfo | None = None
@@ -57,7 +59,7 @@ class Handle:
     # --- Selenium 関連 ---
     def get_selenium_driver(
         self,
-    ) -> tuple[WebDriver, WebDriverWait]:
+    ) -> tuple["WebDriver", "WebDriverWait"]:
         if self.selenium is not None:
             return (self.selenium.driver, self.selenium.wait)
 
