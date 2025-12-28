@@ -7,9 +7,45 @@ Selenium で取得したテキストデータを解析し、適切な型に変�
 """
 from __future__ import annotations
 
+import datetime
 import re
 
 import merhist.exceptions
+
+
+def parse_date(date_text: str) -> datetime.datetime:
+    """日付テキストをパース
+
+    Args:
+        date_text: 日付テキスト（例: "2025/01/15"）
+
+    Returns:
+        datetime オブジェクト
+
+    Raises:
+        ValueError: パースできない形式の場合
+    """
+    return datetime.datetime.strptime(date_text, "%Y/%m/%d")
+
+
+def parse_datetime(datetime_text: str, is_japanese: bool = True) -> datetime.datetime:
+    """日時テキストをパース
+
+    Args:
+        datetime_text: 日時テキスト
+        is_japanese: True の場合 "2025年01月15日 10:30" 形式、
+                     False の場合 "2025/01/15 10:30" 形式
+
+    Returns:
+        datetime オブジェクト
+
+    Raises:
+        ValueError: パースできない形式の場合
+    """
+    if is_japanese:
+        return datetime.datetime.strptime(datetime_text, "%Y年%m月%d日 %H:%M")
+    else:
+        return datetime.datetime.strptime(datetime_text, "%Y/%m/%d %H:%M")
 
 
 def parse_price(text: str) -> int:
