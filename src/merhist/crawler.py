@@ -39,6 +39,7 @@ import merhist.xpath
 
 T = TypeVar("T", bound=merhist.item.ItemBase)
 
+import my_lib.pretty
 import my_lib.selenium_util
 import my_lib.store.mercari.login
 import selenium.common.exceptions
@@ -316,8 +317,6 @@ def fetch_item_detail(handle: merhist.handle.Handle, item: T, debug_mode: bool) 
             fetch_item_transaction(handle, item)
 
             if debug_mode:
-                import my_lib.pretty
-
                 logging.debug(my_lib.pretty.format(item.to_dict()))
             else:
                 price = getattr(item, "price", 0)

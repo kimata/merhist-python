@@ -340,7 +340,7 @@ class TestHandleSelenium:
         with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully") as mock_quit:
             handle.quit_selenium()
 
-            mock_quit.assert_called_once_with(mock_driver, wait_sec=1)
+            mock_quit.assert_called_once_with(mock_driver, wait_sec=5)
             assert handle.selenium is None
 
     def test_quit_selenium_no_driver(self, handle):
