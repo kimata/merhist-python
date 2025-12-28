@@ -295,3 +295,25 @@ class TestConfig:
             assert isinstance(font, openpyxl.styles.Font)
             assert font.name == "Arial"
             assert font.size == 10
+
+    def test_load_with_invalid_slack_config(self, sample_full_config_data):
+        """不正な Slack 設定でエラー"""
+        # captcha なしの error 設定など、対応していないパターン
+        invalid_slack = unittest.mock.MagicMock()  # 不正な型
+
+        with (
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_line_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_mercari_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+            unittest.mock.patch(
+                "my_lib.notify.slack.parse_config",
+                return_value=invalid_slack,
+            ),
+            pytest.raises(ValueError, match="Slack 設定には captcha が必要です"),
+        ):
+            Config.load(sample_full_config_data)
