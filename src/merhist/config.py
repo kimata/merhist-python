@@ -136,7 +136,7 @@ class Config:
     login: LoginConfig
     data: DataConfig
     output: OutputConfig
-    slack: my_lib.notify.slack.HasCaptcha | my_lib.notify.slack.SlackEmptyConfig
+    slack: my_lib.notify.slack.HasCaptchaConfig | my_lib.notify.slack.SlackEmptyConfig
 
     # --- パス関連プロパティ ---
     @property

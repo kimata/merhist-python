@@ -241,7 +241,7 @@ def generate_table_excel(
     logging.info("Start to Generate excel file")
 
     book = openpyxl.Workbook()
-    book._named_styles["Normal"].font = handle.config.excel_font  # type: ignore[attr-defined] # noqa: SLF001
+    book._named_styles["Normal"].font = handle.config.excel_font  # noqa: SLF001
 
     handle.progress_bar[STATUS_ALL].update()
 
