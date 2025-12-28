@@ -100,17 +100,6 @@ def wait_for_loading(
     time.sleep(sec)
 
 
-def parse_date(date_text: str) -> datetime.datetime:
-    return datetime.datetime.strptime(date_text, "%Y/%m/%d")
-
-
-def parse_datetime(datetime_text: str, is_japanese: bool = True) -> datetime.datetime:
-    if is_japanese:
-        return datetime.datetime.strptime(datetime_text, "%Y年%m月%d日 %H:%M")
-    else:
-        return datetime.datetime.strptime(datetime_text, "%Y/%m/%d %H:%M")
-
-
 def gen_sell_hist_url(page: int) -> str:
     return merhist.const.SOLD_HIST_URL.format(page=page)
 
@@ -258,7 +247,7 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
             if row_def["type"] == "datetime":
                 item.set_field(
                     row_def["name"],
-                    parse_datetime(
+                    merhist.parser.parse_datetime(
                         driver.find_element(
                             selenium.webdriver.common.by.By.XPATH,
                             row_xpath + '//div[contains(@class, "body__")]/span',
@@ -433,7 +422,7 @@ def fetch_sold_item_list_by_page(
             elif col_def["type"] == "date":
                 item.set_field(
                     col_def["name"],
-                    parse_date(
+                    merhist.parser.parse_date(
                         driver.find_element(
                             selenium.webdriver.common.by.By.XPATH,
                             "(" + item_xpath + "//td)[{index}]".format(index=col_def["index"]),
@@ -575,7 +564,7 @@ def get_bought_item_info_list(
             item_xpath + '//span[contains(text(), "/") and contains(text(), ":")]',
         ).text
 
-        item.purchase_date = parse_datetime(datetime_text, False)
+        item.purchase_date = merhist.parser.parse_datetime(datetime_text, False)
 
         set_item_id_from_order_url(item)
 
