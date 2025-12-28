@@ -1325,7 +1325,7 @@ dev = [
 requires-dist = [
     { name = "docopt-ng", specifier = ">=0.9.0" },
     { name = "enlighten", specifier = ">=1.14.1" },
-    { name = "my-lib", git = "https://github.com/kimata/my-py-lib?rev=5dd900bf5ae8202f04bb37c28e37bc825792dc39" },
+    { name = "my-lib", git = "https://github.com/kimata/my-py-lib?rev=fc41868630f966cb23eff07f6d2a42272f8ad1d7" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pillow", specifier = ">=11.2.1" },
     { name = "psutil", specifier = ">=6.1.0" },
@@ -1475,7 +1475,7 @@ wheels = [
 [[package]]
 name = "my-lib"
 version = "0.2.0"
-source = { git = "https://github.com/kimata/my-py-lib?rev=5dd900bf5ae8202f04bb37c28e37bc825792dc39#5dd900bf5ae8202f04bb37c28e37bc825792dc39" }
+source = { git = "https://github.com/kimata/my-py-lib?rev=fc41868630f966cb23eff07f6d2a42272f8ad1d7#fc41868630f966cb23eff07f6d2a42272f8ad1d7" }
 dependencies = [
     { name = "coloredlogs" },
     { name = "docopt-ng" },
