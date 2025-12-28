@@ -1,4 +1,4 @@
-image: gitlab.green-rabbit.net:5050/kimata/local-ubuntu:250706_043ea01d
+image: gitlab.green-rabbit.net:5050/kimata/local-ubuntu:251228_620c5aae
 
 variables:
     UV_LINK_MODE: copy
