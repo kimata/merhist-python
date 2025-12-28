@@ -1,4 +1,4 @@
-image: gitlab.green-rabbit.net:5050/kimata/local-ubuntu:250706_043ea01d
+image: gitlab.green-rabbit.net:5050/kimata/local-ubuntu:251228_d5251182
 
 variables:
     UV_LINK_MODE: copy
@@ -46,6 +46,33 @@ test-typecheck:
                   - uv.lock
           paths:
               - ${UV_CACHE_DIR}
+
+
+test-walk-through:
+    stage: test
+
+    needs:
+        - build-image
+        - test-prepare
+
+    script:
+        - uv run pytest
+
+    cache:
+        - key:
+              files:
+                  - uv.lock
+          paths:
+              - ${UV_CACHE_DIR}
+
+    artifacts:
+        when: always
+        paths:
+            - data/debug/**
+            - reports/**
+        reports:
+            junit: reports/junit-report.xml
+
 
 test-dry-run:
     stage: test
