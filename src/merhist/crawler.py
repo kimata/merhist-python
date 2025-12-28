@@ -34,6 +34,7 @@ import merhist.const
 import merhist.exceptions
 import merhist.handle
 import merhist.item
+import merhist.parser
 
 T = TypeVar("T", bound=merhist.item.ItemBase)
 
@@ -273,18 +274,16 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
                     row_xpath + '//div[contains(@class, "body__")]',
                 )
                 body_text = body_elem.text
-                if "送料込み" in body_text:
-                    item.set_field(row_def["name"], 0)
-                else:
-                    item.set_field(
-                        row_def["name"],
-                        int(
-                            body_elem.find_element(
-                                selenium.webdriver.common.by.By.XPATH,
-                                './/span[contains(@class, "number__")]',
-                            ).text.replace(",", "")
-                        ),
-                    )
+                number_text = None
+                if "送料込み" not in body_text:
+                    number_text = body_elem.find_element(
+                        selenium.webdriver.common.by.By.XPATH,
+                        './/span[contains(@class, "number__")]',
+                    ).text
+                item.set_field(
+                    row_def["name"],
+                    merhist.parser.parse_price_with_shipping(body_text, number_text),
+                )
 
     thumb_url = driver.find_element(
         selenium.webdriver.common.by.By.XPATH,
@@ -417,28 +416,20 @@ def fetch_sold_item_list_by_page(
                 if "link" in col_def:
                     item.set_field(col_def["link"]["name"], link_elem.get_attribute("href"))
             elif col_def["type"] == "price":
-                item.set_field(
-                    col_def["name"],
-                    int(
-                        driver.find_element(
-                            selenium.webdriver.common.by.By.XPATH,
-                            (
-                                f"({item_xpath}//td)[{col_def['index']}]"
-                                f'//span[contains(text(), "¥")]/following-sibling::span'
-                            ),
-                        ).text.replace(",", "")
+                price_text = driver.find_element(
+                    selenium.webdriver.common.by.By.XPATH,
+                    (
+                        f"({item_xpath}//td)[{col_def['index']}]"
+                        f'//span[contains(text(), "¥")]/following-sibling::span'
                     ),
-                )
+                ).text
+                item.set_field(col_def["name"], merhist.parser.parse_price(price_text))
             elif col_def["type"] == "rate":
-                item.set_field(
-                    col_def["name"],
-                    int(
-                        driver.find_element(
-                            selenium.webdriver.common.by.By.XPATH,
-                            "(" + item_xpath + "//td)[{index}]".format(index=col_def["index"]),
-                        ).text.replace("%", "")
-                    ),
-                )
+                rate_text = driver.find_element(
+                    selenium.webdriver.common.by.By.XPATH,
+                    "(" + item_xpath + "//td)[{index}]".format(index=col_def["index"]),
+                ).text
+                item.set_field(col_def["name"], merhist.parser.parse_rate(rate_text))
             elif col_def["type"] == "date":
                 item.set_field(
                     col_def["name"],
@@ -488,12 +479,7 @@ def fetch_sold_count(handle: merhist.handle.Handle) -> None:
     paging_text = driver.find_element(
         selenium.webdriver.common.by.By.XPATH, merhist.const.SOLD_HIST_PAGING_XPATH
     ).text
-    match = re.match(r".*全(\d+)件", paging_text)
-    if match is None:
-        raise merhist.exceptions.InvalidPageFormatError(
-            "ページング情報の形式が想定と異なります", gen_sell_hist_url(0)
-        )
-    sold_count = int(match.group(1))
+    sold_count = merhist.parser.parse_sold_count(paging_text)
 
     logging.info("Total sold items: %s", f"{sold_count:,}")
 
