@@ -147,7 +147,7 @@ class Handle:
     def quit_selenium(self) -> None:
         if self.selenium is not None:
             self.set_status("クローラを終了しています...")
-            my_lib.selenium_util.quit_driver_gracefully(self.selenium.driver, wait_sec=1)
+            my_lib.selenium_util.quit_driver_gracefully(self.selenium.driver, wait_sec=5)
             self.selenium = None
 
     def finish(self) -> None:
