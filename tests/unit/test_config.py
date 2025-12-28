@@ -4,14 +4,17 @@
 設定パースのテスト
 """
 import pathlib
+import unittest.mock
 
 import openpyxl.styles
 import pytest
 
 from merhist.config import (
+    Config,
     DataConfig,
     ExcelConfig,
     ExcelFontConfig,
+    LoginConfig,
     MercariCacheConfig,
     MercariDataConfig,
     OutputConfig,
@@ -164,3 +167,131 @@ class TestConfigPathProperties:
 
         assert base / config.captcha == pathlib.Path("/app/output/captcha.png")
         assert base / config.excel.table == pathlib.Path("/app/output/mercari.xlsx")
+
+
+class TestLoginConfig:
+    """LoginConfig のテスト"""
+
+    def test_parse(self):
+        """辞書からパース"""
+        line_config = unittest.mock.MagicMock()
+        mercari_config = unittest.mock.MagicMock()
+
+        with (
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_line_login", return_value=line_config
+            ) as mock_line,
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_mercari_login", return_value=mercari_config
+            ) as mock_mercari,
+        ):
+            data = {"line": {"user": "test"}, "mercari": {"email": "test@example.com"}}
+            config = LoginConfig.parse(data)
+
+            mock_line.assert_called_once_with({"user": "test"})
+            mock_mercari.assert_called_once_with({"email": "test@example.com"})
+            assert config.line == line_config
+            assert config.mercari == mercari_config
+
+
+class TestConfig:
+    """Config のテスト"""
+
+    @pytest.fixture
+    def mock_login_config(self):
+        """モック LoginConfig"""
+        return unittest.mock.MagicMock()
+
+    @pytest.fixture
+    def sample_full_config_data(self):
+        """完全な設定データ"""
+        return {
+            "base_dir": "/app",
+            "login": {"line": {}, "mercari": {}},
+            "data": {
+                "selenium": "data/selenium",
+                "debug": "data/debug",
+                "mercari": {"cache": {"order": "cache/order.pickle", "thumb": "cache/thumb"}},
+            },
+            "output": {
+                "captcha": "output/captcha.png",
+                "excel": {"font": {"name": "Arial", "size": 10}, "table": "output/mercari.xlsx"},
+            },
+        }
+
+    def test_load_without_slack(self, sample_full_config_data):
+        """Slack設定なしでロード"""
+        with (
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_line_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_mercari_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+        ):
+            config = Config.load(sample_full_config_data)
+
+            assert config.base_dir == pathlib.Path("/app")
+            assert isinstance(config.data, DataConfig)
+            assert isinstance(config.output, OutputConfig)
+
+    def test_load_with_slack_captcha(self, sample_full_config_data):
+        """Slack captcha設定ありでロード"""
+        sample_full_config_data["slack"] = {
+            "captcha": {"bot_token": "token", "channel": {"id": "C123", "name": "test"}},
+        }
+
+        with (
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_line_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_mercari_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+        ):
+            config = Config.load(sample_full_config_data)
+            assert config.base_dir == pathlib.Path("/app")
+
+    def test_path_properties(self, sample_full_config_data):
+        """パスプロパティのテスト"""
+        with (
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_line_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_mercari_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+        ):
+            config = Config.load(sample_full_config_data)
+
+            assert config.cache_file_path == pathlib.Path("/app/cache/order.pickle")
+            assert config.excel_file_path == pathlib.Path("/app/output/mercari.xlsx")
+            assert config.thumb_dir_path == pathlib.Path("/app/cache/thumb")
+            assert config.selenium_data_dir_path == pathlib.Path("/app/data/selenium")
+            assert config.debug_dir_path == pathlib.Path("/app/data/debug")
+            assert config.captcha_file_path == pathlib.Path("/app/output/captcha.png")
+
+    def test_excel_font_property(self, sample_full_config_data):
+        """excel_font プロパティのテスト"""
+        with (
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_line_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+            unittest.mock.patch(
+                "my_lib.store.mercari.config.parse_mercari_login",
+                return_value=unittest.mock.MagicMock(),
+            ),
+        ):
+            config = Config.load(sample_full_config_data)
+            font = config.excel_font
+
+            assert isinstance(font, openpyxl.styles.Font)
+            assert font.name == "Arial"
+            assert font.size == 10
