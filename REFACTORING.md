@@ -124,9 +124,31 @@ class MercariSelectors:
 
 | Phase | 内容 | 状態 | リファクタリング |
 |-------|------|------|------------------|
-| 1 | 既存純粋ロジックのテスト作成 | 進行中 | 不要 |
-| 2 | パース関数の分離とテスト | 未着手 | 必要 |
-| 3 | XPathセレクタ定数化 | 未着手 | 必要 |
+| 1 | 既存純粋ロジックのテスト作成 | ✅ 完了 | 不要 |
+| 2 | パース関数の分離とテスト | ✅ 完了 | 必要 |
+| 3 | XPathセレクタ定数化 | ✅ 完了 | 必要 |
+
+### 実装結果
+
+**Phase 1** (2025-12-28)
+- `tests/conftest.py`: 共通フィクスチャ
+- `tests/unit/test_url_builder.py`: URL生成・解析テスト
+- `tests/unit/test_date_parser.py`: 日付解析テスト
+- `tests/unit/test_item.py`: データモデルテスト
+- `tests/unit/test_config.py`: 設定パーステスト
+
+**Phase 2** (2025-12-28)
+- `src/merhist/parser.py`: パース関数を集約
+  - `parse_date()`, `parse_datetime()`
+  - `parse_price()`, `parse_rate()`
+  - `parse_sold_count()`, `parse_price_with_shipping()`
+- `tests/unit/test_parser.py`: パース関数テスト
+
+**Phase 3** (2025-12-28)
+- `src/merhist/selectors.py`: XPathセレクタを集約
+- `src/merhist/const.py`: URLとページ設定のみに整理
+
+**テスト結果**: 96テスト全てパス、カバレッジ43%
 
 ## 期待される成果
 
