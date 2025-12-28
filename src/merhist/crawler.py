@@ -44,7 +44,8 @@ import my_lib.selenium_util
 import my_lib.store.mercari.login
 import selenium.common.exceptions
 import selenium.webdriver.common.by
-import selenium.webdriver.support
+import selenium.webdriver.support.expected_conditions
+import selenium.webdriver.support.wait
 
 STATUS_SOLD_ITEM: str = "[collect] Sold items"
 STATUS_SOLD_PAGE: str = "[collect] Sold pages"
@@ -693,6 +694,7 @@ if __name__ == "__main__":
 
     import merhist.config
 
+    assert __doc__ is not None
     args = docopt.docopt(__doc__)
 
     config_file = args["-c"]
