@@ -2,8 +2,7 @@
 
 メルカリの販売履歴・購入履歴を収集し、サムネイル付きの Excel ファイルとして出力するツール
 
-[![Test Status](https://github.com/kimata/merhist-python/actions/workflows/regression.yml/badge.svg)](https://github.com/kimata/merhist-python/actions/workflows/regression.yml)
-[![Test Report](https://img.shields.io/badge/Test_Report-pytest.html-blue)](https://kimata.github.io/merhist-python/pytest.html)
+[![Test Status](https://gitlab.green-rabbit.net/kimata/merhist-python/badges/main/pipeline.svg)](https://gitlab.green-rabbit.net/kimata/merhist-python/-/pipelines)
 [![Coverage Status](https://coveralls.io/repos/github/kimata/merhist-python/badge.svg?branch=main)](https://coveralls.io/github/kimata/merhist-python?branch=main)
 
 ## 📋 概要
@@ -92,7 +91,7 @@ uv run python src/app.py
 
 ### Windows で実行する場合
 
-[リリースページ](https://github.com/kimata/merhist-python/releases) から `merhist-windows_x64-binary-*.zip` をダウンロードし、中に入っている `app.exe` を実行してください。
+[リリースページ](https://gitlab.green-rabbit.net/kimata/merhist-python/-/releases) から `merhist-windows_x64-binary-*.zip` をダウンロードし、中に入っている `app.exe` を実行してください。
 
 > ⚠️ **注意**: 環境によってはウィルス判定されることがあります。これは Python スクリプトを [Nuitka](https://nuitka.net/) で実行ファイルに変換していることが原因です。検疫されてしまった場合は、Windows Defender の設定を一時的に変更してください。
 
@@ -137,6 +136,6 @@ Apache License Version 2.0
 
 **⭐ このプロジェクトが役に立った場合は、Star をお願いします！**
 
-[🐛 Issue 報告](https://github.com/kimata/merhist-python/issues)
+[🐛 Issue 報告](https://gitlab.green-rabbit.net/kimata/merhist-python/-/issues)
 
 </div>
