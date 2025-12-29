@@ -12,6 +12,7 @@ Options:
 """
 from __future__ import annotations
 
+import datetime
 import logging
 import pathlib
 from typing import Any
@@ -205,6 +206,17 @@ SHEET_DEF = {
 }
 
 
+def _warning_handler(item: my_lib.openpyxl_util.RowData, message: str) -> None:
+    """警告メッセージを「⚠️ YY年MM月DD日 商品名: 警告メッセージ」の形式で出力する。"""
+    name = item["name"] if "name" in item else "不明"
+    date_str = ""
+    if "purchase_date" in item and item["purchase_date"] is not None:
+        date_val = item["purchase_date"]
+        if isinstance(date_val, datetime.datetime):
+            date_str = date_val.strftime("%y年%m月%d日 ")
+    logging.warning("⚠️ %s%s: %s", date_str, name, message)
+
+
 def generate_sheet(
     handle: merhist.handle.Handle,
     book: openpyxl.Workbook,
@@ -227,6 +239,7 @@ def generate_sheet(
             lambda status: handle.set_status(status),
             lambda: handle.progress_bar[STATUS_ALL].update(),
             lambda: handle.progress_bar[STATUS_INSERT_ITEM].update(),
+            warning_handler=_warning_handler,
         )
 
 
@@ -235,7 +248,7 @@ def generate_table_excel(
     excel_file: pathlib.Path,
     is_need_thumb: bool = True,
 ) -> None:
-    handle.set_status("エクセルファイルの作成を開始します...")
+    handle.set_status("📊 エクセルファイルの作成を開始します...")
     handle.set_progress_bar(STATUS_ALL, 2 + 3 * 2)
 
     logging.info("Start to Generate excel file")
@@ -251,7 +264,7 @@ def generate_table_excel(
 
     book.remove(book.worksheets[0])
 
-    handle.set_status("エクセルファイルを書き出しています...")
+    handle.set_status("💾 エクセルファイルを書き出しています...")
 
     book.save(excel_file)
 
@@ -261,7 +274,7 @@ def generate_table_excel(
 
     handle.progress_bar[STATUS_ALL].update()
 
-    handle.set_status("完了しました！")
+    handle.set_status("🎉 完了しました！")
 
     logging.info("Complete to Generate excel file")
 
