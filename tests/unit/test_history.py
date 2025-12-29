@@ -220,7 +220,7 @@ class TestGenerateTableExcel:
         merhist.history.generate_table_excel(handle, excel_path, is_need_thumb=False)
 
         # プログレスバーが更新されることを確認
-        assert handle.progress_bar[merhist.history.STATUS_ALL].update.call_count >= 3
+        assert handle.progress_bar[merhist.history.STATUS_ALL].count >= 3
 
 
 class TestWarningHandler:
