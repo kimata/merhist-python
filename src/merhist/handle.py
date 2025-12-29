@@ -132,7 +132,8 @@ class Handle:
         )
 
     def set_status(self, status: str, is_error: bool = False) -> None:
-        color = "bold_bright_white_on_red" if is_error else "bold_bright_white_on_lightslategray"
+        # 通常時: 水色背景・黒文字, エラー時: 赤背景・白文字
+        color = "bold_bright_white_on_red" if is_error else "bold_black_on_bright_cyan"
 
         if self.status is None:
             self.status = self.progress_manager.status_bar(
@@ -148,7 +149,7 @@ class Handle:
     # --- 終了処理 ---
     def quit_selenium(self) -> None:
         if self.selenium is not None:
-            self.set_status("クローラを終了しています...")
+            self.set_status("🛑 クローラを終了しています...")
             my_lib.selenium_util.quit_driver_gracefully(self.selenium.driver, wait_sec=5)
             self.selenium = None
 
