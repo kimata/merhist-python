@@ -386,14 +386,24 @@ class TestHandleProgressBar:
             h = merhist.handle.Handle(config=mock_config)
             return h
 
-    def test_set_progress_bar(self, handle):
-        """プログレスバーを設定"""
-        handle.set_progress_bar("テスト", 100)
+    @pytest.fixture
+    def handle_tty(self, mock_config):
+        """TTY環境をシミュレートした Handle インスタンス"""
+        with (
+            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
+            unittest.mock.patch("rich.console.Console.is_terminal", new_callable=lambda: property(lambda self: True)),
+        ):
+            h = merhist.handle.Handle(config=mock_config)
+            return h
 
-        assert "テスト" in handle.progress_bar
-        assert handle.progress_bar["テスト"].total == 100
+    def test_set_progress_bar(self, handle_tty):
+        """プログレスバーを設定（TTY環境）"""
+        handle_tty.set_progress_bar("テスト", 100)
 
-        handle.finish()
+        assert "テスト" in handle_tty.progress_bar
+        assert handle_tty.progress_bar["テスト"].total == 100
+
+        handle_tty.finish()
 
     def test_set_status_creates_new(self, handle):
         """ステータスを設定"""
