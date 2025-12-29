@@ -243,6 +243,8 @@ class Handle:
     def set_progress_bar(self, desc: str, total: int) -> None:
         """プログレスバーを作成"""
         if self._progress is None:
+            # 非TTY環境でもダミーのProgressTaskを作成（KeyError防止）
+            self.progress_bar[desc] = ProgressTask(self, rich.progress.TaskID(-1), total)
             return
 
         task_id = self._progress.add_task(desc, total=total)
