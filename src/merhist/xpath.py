@@ -38,7 +38,7 @@ TRANSACTION_INFO_ROW = (
     '//div[contains(@data-testid, "transaction:information-for-")]'
     '//div[contains(@class, "merDisplayRow")]'
 )
-TRANSACTION_ROW_TITLE = '//div[contains(@class, "title__")]/span'
+TRANSACTION_ROW_TITLE = '//div[contains(@class, "title__")]/*[self::span or self::div]'
 TRANSACTION_ROW_BODY = '//div[contains(@class, "body__")]'
 TRANSACTION_ROW_BODY_SPAN = '//div[contains(@class, "body__")]/span'
 TRANSACTION_ROW_NUMBER = './/span[contains(@class, "number__")]'
