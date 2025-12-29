@@ -237,8 +237,8 @@ def generate_sheet(
             is_need_thumb,
             lambda item: handle.get_thumb_path(item),  # pyright: ignore[reportArgumentType]
             lambda status: handle.set_status(status),
-            lambda: handle.progress_bar[STATUS_ALL].update(),
-            lambda: handle.progress_bar[STATUS_INSERT_ITEM].update(),
+            lambda: handle.update_progress_bar(STATUS_ALL),
+            lambda: handle.update_progress_bar(STATUS_INSERT_ITEM),
             warning_handler=_warning_handler,
         )
 
@@ -256,7 +256,7 @@ def generate_table_excel(
     book = openpyxl.Workbook()
     book._named_styles["Normal"].font = handle.config.excel_font  # pyright: ignore[reportAttributeAccessIssue] # noqa: SLF001
 
-    handle.progress_bar[STATUS_ALL].update()
+    handle.update_progress_bar(STATUS_ALL)
 
     handle.normalize()
 
@@ -268,11 +268,11 @@ def generate_table_excel(
 
     book.save(excel_file)
 
-    handle.progress_bar[STATUS_ALL].update()
+    handle.update_progress_bar(STATUS_ALL)
 
     book.close()
 
-    handle.progress_bar[STATUS_ALL].update()
+    handle.update_progress_bar(STATUS_ALL)
 
     handle.set_status("🎉 完了しました！")
 

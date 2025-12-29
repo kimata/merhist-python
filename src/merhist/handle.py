@@ -249,6 +249,11 @@ class Handle:
         self.progress_bar[desc] = ProgressTask(self, task_id, total)
         self._refresh_display()
 
+    def update_progress_bar(self, desc: str, advance: int = 1) -> None:
+        """プログレスバーを進める（存在しない場合は何もしない）"""
+        if desc in self.progress_bar:
+            self.progress_bar[desc].update(advance)
+
     def set_status(self, status: str, is_error: bool = False) -> None:
         """ステータスを更新"""
         self._status_text = status

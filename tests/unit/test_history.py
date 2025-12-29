@@ -217,10 +217,15 @@ class TestGenerateTableExcel:
         excel_path = tmp_path / "output" / "test_progress.xlsx"
         excel_path.parent.mkdir(parents=True, exist_ok=True)
 
-        merhist.history.generate_table_excel(handle, excel_path, is_need_thumb=False)
+        with unittest.mock.patch.object(handle, "update_progress_bar") as mock_update:
+            merhist.history.generate_table_excel(handle, excel_path, is_need_thumb=False)
 
-        # プログレスバーが更新されることを確認
-        assert handle.progress_bar[merhist.history.STATUS_ALL].count >= 3
+            # update_progress_bar が適切に呼ばれることを確認
+            # STATUS_ALL で少なくとも3回呼ばれる（Workbook作成後、save後、close後）
+            status_all_calls = [
+                call for call in mock_update.call_args_list if call[0][0] == merhist.history.STATUS_ALL
+            ]
+            assert len(status_all_calls) >= 3
 
 
 class TestWarningHandler:
