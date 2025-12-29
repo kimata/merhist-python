@@ -96,6 +96,9 @@ test-dry-run:
         - export LC_ALL=ja_JP.UTF-8
         - export TERM=xterm-256color
 
+        # Chrome プロファイルをクリア（古いキャッシュとの互換性問題を回避）
+        - rm -rf data/selenium/chrome
+
         - uv run python src/app.py -D
 
 renovate:
