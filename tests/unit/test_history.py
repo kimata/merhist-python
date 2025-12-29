@@ -223,6 +223,86 @@ class TestGenerateTableExcel:
         assert handle.progress_bar[merhist.history.STATUS_ALL].update.call_count >= 3
 
 
+class TestWarningHandler:
+    """_warning_handler のテスト"""
+
+    def test_warning_with_name_and_date(self, caplog):
+        """商品名と日付がある場合の警告メッセージ"""
+        import logging
+
+        item = {
+            "name": "テスト商品",
+            "purchase_date": datetime.datetime(2025, 1, 15),
+        }
+
+        with caplog.at_level(logging.WARNING):
+            merhist.history._warning_handler(item, "テスト警告")
+
+        assert len(caplog.records) == 1
+        assert "⚠️" in caplog.text
+        assert "25年01月15日" in caplog.text
+        assert "テスト商品" in caplog.text
+        assert "テスト警告" in caplog.text
+
+    def test_warning_without_name(self, caplog):
+        """商品名がない場合は「不明」を使用"""
+        import logging
+
+        item = {
+            "purchase_date": datetime.datetime(2025, 1, 15),
+        }
+
+        with caplog.at_level(logging.WARNING):
+            merhist.history._warning_handler(item, "テスト警告")
+
+        assert "不明" in caplog.text
+        assert "テスト警告" in caplog.text
+
+    def test_warning_without_date(self, caplog):
+        """日付がない場合は日付部分を省略"""
+        import logging
+
+        item = {
+            "name": "テスト商品",
+        }
+
+        with caplog.at_level(logging.WARNING):
+            merhist.history._warning_handler(item, "テスト警告")
+
+        assert "テスト商品: テスト警告" in caplog.text
+        assert "年" not in caplog.text.split("テスト商品")[0]  # 日付がないことを確認
+
+    def test_warning_with_none_date(self, caplog):
+        """日付が None の場合は日付部分を省略"""
+        import logging
+
+        item = {
+            "name": "テスト商品",
+            "purchase_date": None,
+        }
+
+        with caplog.at_level(logging.WARNING):
+            merhist.history._warning_handler(item, "テスト警告")
+
+        assert "テスト商品: テスト警告" in caplog.text
+
+    def test_warning_with_non_datetime_date(self, caplog):
+        """日付が datetime でない場合は日付部分を省略"""
+        import logging
+
+        item = {
+            "name": "テスト商品",
+            "purchase_date": "2025-01-15",  # 文字列
+        }
+
+        with caplog.at_level(logging.WARNING):
+            merhist.history._warning_handler(item, "テスト警告")
+
+        assert "テスト商品: テスト警告" in caplog.text
+        # 日付形式でないので年月日が含まれない
+        assert "年" not in caplog.text.split("テスト商品")[0]
+
+
 class TestStatusConstants:
     """ステータス定数のテスト"""
 
