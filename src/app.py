@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 import pathlib
 import random
+import sys
 from typing import Any
 
 import merhist.config
@@ -26,6 +27,7 @@ import merhist.crawler
 import merhist.handle
 import merhist.history
 import my_lib.selenium_util
+import my_lib.store.mercari.exceptions
 
 SCHEMA_CONFIG: str = "config.schema"
 
@@ -54,17 +56,32 @@ def execute(
     export_mode: bool = False,
     need_thumb: bool = True,
     debug_mode: bool = False,
-) -> None:
+) -> int:
+    """メイン処理を実行する。
+
+    Returns:
+        int: 終了コード（0: 成功、1: エラー）
+    """
     handle = merhist.handle.Handle(config)
+    exit_code = 0
 
     try:
         if not export_mode:
             try:
                 execute_fetch(handle, continue_mode, debug_mode)
+            except my_lib.selenium_util.SeleniumError as e:
+                logging.exception("Selenium の起動に失敗しました")
+                handle.set_status(f"❌ {e}", is_error=True)
+                return 1
+            except my_lib.store.mercari.exceptions.LoginError as e:
+                logging.exception("メルカリへのログインに失敗しました")
+                handle.set_status(f"❌ {e}", is_error=True)
+                return 1
             except Exception:
                 driver, _ = handle.get_selenium_driver()
                 logging.exception("Failed to fetch data: %s", driver.current_url)
                 handle.set_status("❌ データの収集中にエラーが発生しました", is_error=True)
+                exit_code = 1
             finally:
                 handle.quit_selenium()
 
@@ -73,11 +90,14 @@ def execute(
         except Exception:
             handle.set_status("❌ エクセルファイルの生成中にエラーが発生しました", is_error=True)
             logging.exception("Failed to generate Excel file.")
+            exit_code = 1
     finally:
         handle.finish()
 
     if not debug_mode:
         input("完了しました。エンターを押すと終了します。")
+
+    return exit_code
 
 
 ######################################################################
@@ -104,4 +124,4 @@ if __name__ == "__main__":
 
     config = merhist.config.Config.load(my_lib.config.load(config_file, pathlib.Path(SCHEMA_CONFIG)))
 
-    execute(config, is_continue_mode, export_mode, need_thumb, debug_mode)
+    sys.exit(execute(config, is_continue_mode, export_mode, need_thumb, debug_mode))

@@ -41,6 +41,7 @@ T = TypeVar("T", bound=merhist.item.ItemBase)
 
 import my_lib.pretty
 import my_lib.selenium_util
+import my_lib.store.mercari.exceptions
 import my_lib.store.mercari.login
 import selenium.common.exceptions
 import selenium.webdriver.common.by
@@ -69,14 +70,17 @@ def execute_login(handle: merhist.handle.Handle) -> None:
 
     driver, wait = handle.get_selenium_driver()
 
-    my_lib.store.mercari.login.execute(
-        driver,
-        wait,
-        handle.config.login.mercari,
-        handle.config.login.line,
-        handle.config.slack,
-        handle.config.debug_dir_path,
-    )
+    try:
+        my_lib.store.mercari.login.execute(
+            driver,
+            wait,
+            handle.config.login.mercari,
+            handle.config.login.line,
+            handle.config.slack,
+            handle.config.debug_dir_path,
+        )
+    except Exception as e:
+        raise my_lib.store.mercari.exceptions.LoginError(f"メルカリへのログインに失敗しました: {e}") from e
 
 
 def wait_for_loading(
