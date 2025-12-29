@@ -501,12 +501,10 @@ def fetch_sold_item_list(
     handle.progress_bar[STATUS_SOLD_ITEM].update(
         handle.progress_bar[STATUS_SOLD_ITEM].total - handle.progress_bar[STATUS_SOLD_ITEM].count
     )
-    handle.progress_bar[STATUS_SOLD_ITEM].update()
 
     handle.progress_bar[STATUS_SOLD_PAGE].update(
         handle.progress_bar[STATUS_SOLD_PAGE].total - handle.progress_bar[STATUS_SOLD_PAGE].count
     )
-    handle.progress_bar[STATUS_SOLD_PAGE].update()
 
     handle.trading.sold_checked_count = handle.trading.sold_total_count
     handle.store_trading_info()
@@ -668,8 +666,6 @@ def fetch_bought_item_list(
 
         if debug_mode:
             break
-
-    handle.progress_bar[STATUS_BOUGHT_ITEM].update()
 
     handle.set_status("✅ 購入履歴の収集が完了しました")
 
