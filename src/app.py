@@ -64,14 +64,14 @@ def execute(
             except Exception:
                 driver, _ = handle.get_selenium_driver()
                 logging.exception("Failed to fetch data: %s", driver.current_url)
-                handle.set_status("データの収集中にエラーが発生しました", is_error=True)
+                handle.set_status("❌ データの収集中にエラーが発生しました", is_error=True)
             finally:
                 handle.quit_selenium()
 
         try:
             merhist.history.generate_table_excel(handle, handle.config.excel_file_path, need_thumb)
         except Exception:
-            handle.set_status("エクセルファイルの生成中にエラーが発生しました", is_error=True)
+            handle.set_status("❌ エクセルファイルの生成中にエラーが発生しました", is_error=True)
             logging.exception("Failed to generate Excel file.")
     finally:
         handle.finish()

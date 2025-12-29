@@ -65,7 +65,7 @@ class ContinueMode(TypedDict):
 
 
 def execute_login(handle: merhist.handle.Handle) -> None:
-    handle.set_status("メルカリにログインします...")
+    handle.set_status("🔑 メルカリにログインします...")
 
     driver, wait = handle.get_selenium_driver()
 
@@ -448,7 +448,7 @@ def fetch_sold_item_list_by_page(
 def fetch_sold_count(handle: merhist.handle.Handle) -> None:
     driver, _ = handle.get_selenium_driver()
 
-    handle.set_status("販売件数を取得しています...")
+    handle.set_status("🔍 販売件数を取得しています...")
 
     logging.info(gen_sell_hist_url(0))
 
@@ -465,7 +465,7 @@ def fetch_sold_count(handle: merhist.handle.Handle) -> None:
 def fetch_sold_item_list(
     handle: merhist.handle.Handle, continue_mode: bool = True, debug_mode: bool = False
 ) -> None:
-    handle.set_status("販売履歴の収集を開始します...")
+    handle.set_status("📥 販売履歴の収集を開始します...")
 
     fetch_sold_count(handle)
 
@@ -511,7 +511,7 @@ def fetch_sold_item_list(
     handle.trading.sold_checked_count = handle.trading.sold_total_count
     handle.store_trading_info()
 
-    handle.set_status("販売履歴の収集が完了しました．")
+    handle.set_status("✅ 販売履歴の収集が完了しました")
 
 
 def get_bought_item_info_list(
@@ -574,7 +574,7 @@ def fetch_bought_item_info_list_impl(
 ) -> list[merhist.item.BoughtItem]:
     driver, wait = handle.get_selenium_driver()
 
-    handle.set_status("購入履歴の件数を確認しています...")
+    handle.set_status("🔍 購入履歴の件数を確認しています...")
 
     visit_url(handle, merhist.const.BOUGHT_HIST_URL, merhist.xpath.BOUGHT_LIST)
 
@@ -615,7 +615,7 @@ def fetch_bought_item_info_list(
 ) -> list[merhist.item.BoughtItem]:
     driver, _ = handle.get_selenium_driver()
 
-    handle.set_status("購入履歴の件数を確認しています...")
+    handle.set_status("🔍 購入履歴の件数を確認しています...")
 
     for i in range(FETCH_RETRY_COUNT):
         if i != 0:
@@ -639,11 +639,11 @@ def fetch_bought_item_list(
 ) -> None:
     driver, _ = handle.get_selenium_driver()
 
-    handle.set_status("購入履歴の収集を開始します...")
+    handle.set_status("📥 購入履歴の収集を開始します...")
 
     item_list = fetch_bought_item_info_list(handle, continue_mode, debug_mode)
 
-    handle.set_status("購入履歴の詳細情報を収集しています...")
+    handle.set_status("🔍 購入履歴の詳細情報を収集しています...")
 
     handle.set_progress_bar(STATUS_BOUGHT_ITEM, len(item_list))
 
@@ -671,21 +671,21 @@ def fetch_bought_item_list(
 
     handle.progress_bar[STATUS_BOUGHT_ITEM].update()
 
-    handle.set_status("購入履歴の収集が完了しました．")
+    handle.set_status("✅ 購入履歴の収集が完了しました")
 
 
 def fetch_order_item_list(
     handle: merhist.handle.Handle, continue_mode: ContinueMode, debug_mode: bool = False
 ) -> None:
-    handle.set_status("巡回ロボットの準備をします...")
+    handle.set_status("🤖 巡回ロボットの準備をしています...")
     driver, _ = handle.get_selenium_driver()
 
-    handle.set_status("注文履歴の収集を開始します...")
+    handle.set_status("📥 注文履歴の収集を開始します...")
 
     fetch_sold_item_list(handle, continue_mode["sold"], debug_mode)
     fetch_bought_item_list(handle, continue_mode["bought"], debug_mode)
 
-    handle.set_status("注文履歴の収集が完了しました．")
+    handle.set_status("✅ 注文履歴の収集が完了しました")
 
 
 if __name__ == "__main__":

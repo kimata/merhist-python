@@ -429,6 +429,30 @@ class TestHandleProgressBar:
         assert "red" in call_kwargs["color"]
 
 
+class TestEnlightenColorValidation:
+    """enlighten の色文字列が有効かを検証するテスト"""
+
+    def test_status_bar_colors_are_valid(self):
+        """set_status で使用する色文字列が blessed で解決可能か検証
+
+        enlighten の色検証は TTY 環境でのみ動作するため、
+        blessed の formatter を直接使用して検証する。
+        """
+        import blessed
+
+        term = blessed.Terminal(force_styling=True)
+
+        # 通常時の色（水色背景・黒文字）
+        normal_color = "bold_black_on_bright_cyan"
+        # エラー時の色（赤背景・白文字）
+        error_color = "bold_bright_white_on_red"
+
+        for color in [normal_color, error_color]:
+            # formatter が有効な色を返すことを確認
+            result = term.formatter(color)
+            assert result, f"Invalid color: {color}"
+
+
 class TestHandleSerialization:
     """Handle のシリアライズ関連テスト"""
 
