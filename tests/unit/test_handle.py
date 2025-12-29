@@ -384,73 +384,61 @@ class TestHandleProgressBar:
         """Handle インスタンス"""
         with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
             h = merhist.handle.Handle(config=mock_config)
-            h.progress_manager = unittest.mock.MagicMock()
             return h
 
     def test_set_progress_bar(self, handle):
         """プログレスバーを設定"""
-        mock_counter = unittest.mock.MagicMock()
-        handle.progress_manager.counter.return_value = mock_counter
-
         handle.set_progress_bar("テスト", 100)
 
-        handle.progress_manager.counter.assert_called_once()
-        assert handle.progress_bar["テスト"] == mock_counter
+        assert "テスト" in handle.progress_bar
+        assert handle.progress_bar["テスト"].total == 100
+
+        handle.finish()
 
     def test_set_status_creates_new(self, handle):
-        """ステータスバーを新規作成"""
-        mock_status = unittest.mock.MagicMock()
-        handle.progress_manager.status_bar.return_value = mock_status
-        handle.status = None
-
+        """ステータスを設定"""
         handle.set_status("処理中...")
 
-        handle.progress_manager.status_bar.assert_called_once()
-        assert handle.status == mock_status
+        assert handle._status_text == "処理中..."
+        assert handle._status_is_error is False
+
+        handle.finish()
 
     def test_set_status_updates_existing(self, handle):
-        """既存のステータスバーを更新"""
-        mock_status = unittest.mock.MagicMock()
-        handle.status = mock_status
-
+        """ステータスを更新"""
+        handle.set_status("処理中...")
         handle.set_status("更新中...")
 
-        mock_status.update.assert_called_once()
+        assert handle._status_text == "更新中..."
+
+        handle.finish()
 
     def test_set_status_error(self, handle):
-        """エラー時の色設定"""
-        mock_status = unittest.mock.MagicMock()
-        handle.progress_manager.status_bar.return_value = mock_status
-        handle.status = None
-
+        """エラー時のフラグ設定"""
         handle.set_status("エラー発生", is_error=True)
 
-        call_kwargs = handle.progress_manager.status_bar.call_args.kwargs
-        assert "red" in call_kwargs["color"]
+        assert handle._status_text == "エラー発生"
+        assert handle._status_is_error is True
+
+        handle.finish()
 
 
-class TestEnlightenColorValidation:
-    """enlighten の色文字列が有効かを検証するテスト"""
+class TestRichStyleValidation:
+    """rich のスタイル文字列が有効かを検証するテスト"""
 
-    def test_status_bar_colors_are_valid(self):
-        """set_status で使用する色文字列が blessed で解決可能か検証
+    def test_status_bar_styles_are_valid(self):
+        """set_status で使用するスタイル文字列が rich で有効か検証"""
+        import rich.style
 
-        enlighten の色検証は TTY 環境でのみ動作するため、
-        blessed の formatter を直接使用して検証する。
-        """
-        import blessed
+        # 通常時のスタイル（水色背景・黒文字）
+        normal_style = merhist.handle.STATUS_STYLE_NORMAL
+        # エラー時のスタイル（赤背景・白文字）
+        error_style = merhist.handle.STATUS_STYLE_ERROR
 
-        term = blessed.Terminal(force_styling=True)
-
-        # 通常時の色（水色背景・黒文字）
-        normal_color = "bold_black_on_bright_cyan"
-        # エラー時の色（赤背景・白文字）
-        error_color = "bold_bright_white_on_red"
-
-        for color in [normal_color, error_color]:
-            # formatter が有効な色を返すことを確認
-            result = term.formatter(color)
-            assert result, f"Invalid color: {color}"
+        for style_str in [normal_style, error_style]:
+            # スタイルが正しくパースされることを確認
+            style = rich.style.Style.parse(style_str)
+            assert style is not None, f"Invalid style: {style_str}"
 
 
 class TestHandleSerialization:
