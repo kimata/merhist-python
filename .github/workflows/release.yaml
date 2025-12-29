@@ -49,7 +49,30 @@ jobs:
             - name: Build Executable
               shell: bash
               run: |
-                COMMON_OPTS="--mode=app --product-name=${{ env.PROJECT_NAME }} --file-version=${{ needs.prepare.outputs.version }} --product-version=${{ needs.prepare.outputs.version }} --include-package-data=selenium --include-package=jinxed --nofollow-import-to=*.tests --no-deployment-flag=self-execution --assume-yes-for-downloads --output-dir=build"
+                # 基本オプション
+                COMMON_OPTS="--mode=app --product-name=${{ env.PROJECT_NAME }} --file-version=${{ needs.prepare.outputs.version }} --product-version=${{ needs.prepare.outputs.version }} --include-package-data=selenium --include-package=jinxed --no-deployment-flag=self-execution --assume-yes-for-downloads --output-dir=build"
+
+                # 未使用の my_lib モジュールを除外
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.sensor --nofollow-import-to=my_lib.sensor_data"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.notify.line --nofollow-import-to=my_lib.notify.mail"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.store.amazon"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.webapp --nofollow-import-to=my_lib.flask_util"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.weather --nofollow-import-to=my_lib.rpi"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.sqlite_util --nofollow-import-to=my_lib.voice"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.healthz --nofollow-import-to=my_lib.fluentd_util"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.git_util --nofollow-import-to=my_lib.plot_util"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=my_lib.panel_util --nofollow-import-to=my_lib.panel_config"
+
+                # 未使用のサードパーティパッケージを除外
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=smbus2 --nofollow-import-to=serial"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=influxdb_client --nofollow-import-to=linebot"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=sseclient --nofollow-import-to=uptime"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=git --nofollow-import-to=gitdb"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=flask --nofollow-import-to=werkzeug"
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=genson --nofollow-import-to=lxml"
+
+                # テストモジュールを除外
+                COMMON_OPTS="$COMMON_OPTS --nofollow-import-to=*.tests --nofollow-import-to=pytest"
 
                 if [ "$RUNNER_OS" == "Windows" ]; then
                   uv run python -m nuitka $COMMON_OPTS --windows-icon-from-ico=img/icon.png --output-filename=${{ env.PROJECT_NAME }}.exe ${{ env.SCRIPT_NAME }}
