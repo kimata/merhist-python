@@ -96,12 +96,17 @@ test-dry-run:
         - export LC_ALL=ja_JP.UTF-8
         - export TERM=xterm-256color
 
-        # Chrome プロファイルをクリア（古いキャッシュとの互換性問題を回避）
-        - rm -rf data/selenium/chrome
-
-        # Chrome の動作確認
+        # Chrome の動作確認（stderr を分離してHTML出力を確認）
         - google-chrome --version
-        - google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com 2>&1 | head -20
+        - google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com 2>/dev/null | head -5
+
+        # Chrome プロファイルをクリア（古いキャッシュとの互換性問題を回避）
+        - echo "=== Data directory structure ==="
+        - find data -type d -name "*chrome*" 2>/dev/null || true
+        - find data -type d 2>/dev/null | head -20 || true
+        - rm -rf data/*/chrome data/chrome
+        - echo "=== After cleanup ==="
+        - find data -type d -name "*chrome*" 2>/dev/null || true
 
         - uv run python src/app.py -D
 
