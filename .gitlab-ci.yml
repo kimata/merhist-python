@@ -99,6 +99,10 @@ test-dry-run:
         # Chrome プロファイルをクリア（古いキャッシュとの互換性問題を回避）
         - rm -rf data/selenium/chrome
 
+        # Chrome の動作確認
+        - google-chrome --version
+        - google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com 2>&1 | head -20
+
         - uv run python src/app.py -D
 
 renovate:
