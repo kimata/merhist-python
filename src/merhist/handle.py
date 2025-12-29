@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import pathlib
 import time
 import zoneinfo
@@ -113,6 +114,10 @@ class Handle:
 
     def _init_progress(self) -> None:
         """Progress と Live を初期化"""
+        # 非TTY環境では Live を使用しない
+        if not self._console.is_terminal:
+            return
+
         self._progress = rich.progress.Progress(
             rich.progress.TextColumn("[bold]{task.description:<31}"),
             rich.progress.BarColumn(bar_width=None),
@@ -248,6 +253,15 @@ class Handle:
         """ステータスを更新"""
         self._status_text = status
         self._status_is_error = is_error
+
+        # 非TTY環境では logging で出力
+        if not self._console.is_terminal:
+            if is_error:
+                logging.error(status)
+            else:
+                logging.info(status)
+            return
+
         self._refresh_display()
 
     # --- 終了処理 ---

@@ -120,7 +120,14 @@ if __name__ == "__main__":
 
     debug_mode: bool = args["-D"]
 
-    my_lib.logger.init("bot.merhist", level=logging.DEBUG if debug_mode else logging.INFO)
+    # TTY環境ではシンプルなログフォーマットを使用（Rich の表示と干渉しないため）
+    log_format = my_lib.logger.SIMPLE_FORMAT if sys.stdout.isatty() else None
+
+    my_lib.logger.init(
+        "bot.merhist",
+        level=logging.DEBUG if debug_mode else logging.INFO,
+        log_format=log_format,
+    )
 
     config = merhist.config.Config.load(my_lib.config.load(config_file, pathlib.Path(SCHEMA_CONFIG)))
 
