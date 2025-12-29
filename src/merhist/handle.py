@@ -63,8 +63,8 @@ class _DisplayRenderable:
         return self._handle._create_display()
 
 
-class ProgressTaskWrapper:
-    """enlighten.Counter 互換のラッパークラス"""
+class ProgressTask:
+    """Rich Progress のタスクを管理するクラス"""
 
     def __init__(self, handle: Handle, task_id: rich.progress.TaskID, total: int) -> None:
         self._handle = handle
@@ -101,9 +101,10 @@ class Handle:
     _start_time: float = field(default_factory=time.time)
     _status_text: str = ""
     _status_is_error: bool = False
+    _display_renderable: _DisplayRenderable | None = field(default=None, repr=False)
 
-    # enlighten 互換の progress_bar 辞書
-    progress_bar: dict[str, ProgressTaskWrapper] = field(default_factory=dict)
+    # プログレスタスク管理
+    progress_bar: dict[str, ProgressTask] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self._load_trading_info()
@@ -240,7 +241,7 @@ class Handle:
             return
 
         task_id = self._progress.add_task(desc, total=total)
-        self.progress_bar[desc] = ProgressTaskWrapper(self, task_id, total)
+        self.progress_bar[desc] = ProgressTask(self, task_id, total)
         self._refresh_display()
 
     def set_status(self, status: str, is_error: bool = False) -> None:
