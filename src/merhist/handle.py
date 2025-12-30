@@ -142,17 +142,22 @@ class Handle:
         elapsed = time.time() - self._start_time
         elapsed_str = f"{int(elapsed // 60):02d}:{int(elapsed % 60):02d}"
 
+        # ターミナル幅を取得し、明示的に幅を制限
+        # NOTE: tmux 環境では幅計算が実際と異なることがあるため、余裕を持たせる
+        terminal_width = self._console.width - 2
+
         table = rich.table.Table(
             show_header=False,
             show_edge=False,
             box=None,
             padding=0,
-            expand=True,
+            expand=False,  # expand=False にして幅を明示的に制御
+            width=terminal_width,  # ターミナル幅に制限
             style=style,
         )
-        table.add_column("title", justify="left", ratio=1, no_wrap=True, style=style)
-        table.add_column("status", justify="center", ratio=3, no_wrap=True, style=style)
-        table.add_column("time", justify="right", ratio=1, no_wrap=True, style=style)
+        table.add_column("title", justify="left", ratio=1, no_wrap=True, overflow="ellipsis", style=style)
+        table.add_column("status", justify="center", ratio=3, no_wrap=True, overflow="ellipsis", style=style)
+        table.add_column("time", justify="right", ratio=1, no_wrap=True, overflow="ellipsis", style=style)
 
         table.add_row(
             rich.text.Text(" メルカリ ", style=style),
