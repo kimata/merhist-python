@@ -98,11 +98,13 @@ test-dry-run:
         - export TERM=xterm-256color
 
         - uv run python src/app.py -D
+        - sync
 
     cache:
         - key: ${CI_PROJECT_NAME}-selenium
           paths:
               - data/chrome
+          when: on_success
 
     artifacts:
         when: always
