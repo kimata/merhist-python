@@ -92,6 +92,7 @@ class ProgressTask:
 @dataclass
 class Handle:
     config: merhist.config.Config
+    clear_profile_on_browser_error: bool = False
     trading: TradingInfo = field(default_factory=TradingInfo)
     selenium: SeleniumInfo | None = None
 
@@ -198,6 +199,8 @@ class Handle:
 
             return (driver, wait)
         except Exception as e:
+            if self.clear_profile_on_browser_error:
+                my_lib.selenium_util.delete_profile("Merhist", self.config.selenium_data_dir_path)
             raise my_lib.selenium_util.SeleniumError(f"Selenium の起動に失敗しました: {e}") from e
 
     # --- 販売アイテム関連 ---
