@@ -77,7 +77,8 @@ test-dry-run:
     stage: test
 
     needs:
-        - test-prepare
+        - job: test-walk-through
+          artifacts: false
 
     cache:
         - key: ${CI_PROJECT_NAME}-data
