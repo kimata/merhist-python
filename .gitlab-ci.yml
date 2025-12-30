@@ -98,6 +98,16 @@ test-dry-run:
 
         - uv run python src/app.py -D
 
+    cache:
+        - key: ${CI_PROJECT_NAME}-selenium
+          paths:
+              - data/chrome
+
+    artifacts:
+        when: always
+        paths:
+            - data/debug/**
+
 renovate:
     stage: renovate
     image:
