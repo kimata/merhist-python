@@ -1,6 +1,6 @@
 [project]
 name = "merhist-python"
-version = "0.1.0"
+version = "0.2.2"
 description = "メルカリの販売履歴と購入履歴を収集するスクリプトです．"
 authors = [
     { name = "KIMATA Tetsuya", email = "kimata@green-rabbit.net" }
