@@ -33,9 +33,11 @@ src/
 tests/
 └── test_typecheck.py       # mypy 型チェックテスト
 
+schema/
+└── config.schema           # 設定値の JSON Schema
+
 config.yaml                 # 設定ファイル（要作成）
 config.example.yaml         # 設定ファイルのサンプル
-config.schema               # 設定値の JSON Schema
 ```
 
 ## 開発コマンド

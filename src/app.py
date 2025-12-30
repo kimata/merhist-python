@@ -29,7 +29,7 @@ import merhist.history
 import my_lib.selenium_util
 import my_lib.store.mercari.exceptions
 
-SCHEMA_CONFIG: str = "config.schema"
+SCHEMA_CONFIG: str = "schema/config.schema"
 
 
 def execute_fetch(
