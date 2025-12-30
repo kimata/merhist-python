@@ -3,7 +3,7 @@
 メルカリから販売履歴や購入履歴を収集して、Excel ファイルとして出力します。
 
 Usage:
-  merhist.py [-c CONFIG] [-e] [--fA|--fB|--fS] [-N] [-D]
+  merhist.py [-c CONFIG] [-e] [--fA|--fB|--fS] [-N] [-D] [-R]
 
 Options:
   -c CONFIG         : CONFIG を設定ファイルとして読み込んで実行します。[default: config.yaml]
@@ -13,6 +13,7 @@ Options:
   -e                : データ収集は行わず、Excel ファイルの出力のみ行います。
   -N                : サムネイル画像を含めないようにします。
   -D                : デバッグモードで動作します。
+  -R                : ブラウザ起動失敗時にプロファイルを削除します。
 """
 from __future__ import annotations
 
@@ -56,13 +57,14 @@ def execute(
     export_mode: bool = False,
     need_thumb: bool = True,
     debug_mode: bool = False,
+    clear_profile_on_browser_error: bool = False,
 ) -> int:
     """メイン処理を実行する。
 
     Returns:
         int: 終了コード（0: 成功、1: エラー）
     """
-    handle = merhist.handle.Handle(config)
+    handle = merhist.handle.Handle(config, clear_profile_on_browser_error=clear_profile_on_browser_error)
     exit_code = 0
 
     try:
@@ -119,6 +121,7 @@ if __name__ == "__main__":
     need_thumb: bool = not args["-N"]
 
     debug_mode: bool = args["-D"]
+    clear_profile_on_browser_error: bool = args["-R"]
 
     # TTY環境ではシンプルなログフォーマットを使用（Rich の表示と干渉しないため）
     log_format = my_lib.logger.SIMPLE_FORMAT if sys.stdout.isatty() else None
@@ -131,4 +134,4 @@ if __name__ == "__main__":
 
     config = merhist.config.Config.load(my_lib.config.load(config_file, pathlib.Path(SCHEMA_CONFIG)))
 
-    sys.exit(execute(config, is_continue_mode, export_mode, need_thumb, debug_mode))
+    sys.exit(execute(config, is_continue_mode, export_mode, need_thumb, debug_mode, clear_profile_on_browser_error))
