@@ -1277,7 +1277,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "docopt-ng", specifier = ">=0.9.0" },
-    { name = "my-lib", git = "https://github.com/kimata/my-py-lib?rev=c391f5660704fa8c7735ce891bf70e860806abab" },
+    { name = "my-lib", git = "https://github.com/kimata/my-py-lib?rev=49fda6c4c056251deeac6ed70d47c519fc1e2038" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pillow", specifier = ">=11.2.1" },
     { name = "psutil", specifier = ">=6.1.0" },
@@ -1291,20 +1291,20 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "flaky", specifier = ">=3.8.1" },
-    { name = "mypy", specifier = ">=1.14.0" },
-    { name = "playwright", specifier = ">=1.49.0" },
-    { name = "pre-commit", specifier = ">=4.2.0" },
-    { name = "pyright", specifier = ">=1.1.0" },
-    { name = "pytest", specifier = ">=8.3.0" },
-    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "mypy", specifier = ">=1.19.1" },
+    { name = "playwright", specifier = ">=1.57.0" },
+    { name = "pre-commit", specifier = ">=4.5.1" },
+    { name = "pyright", specifier = ">=1.1.407" },
+    { name = "pytest", specifier = ">=9.0.2" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-html", specifier = ">=4.1.1" },
-    { name = "pytest-mock", specifier = ">=3.14.0" },
-    { name = "pytest-playwright", specifier = ">=0.6.0" },
+    { name = "pytest-mock", specifier = ">=3.15.1" },
+    { name = "pytest-playwright", specifier = ">=0.7.2" },
     { name = "pytest-timeout", specifier = ">=2.4.0" },
-    { name = "pytest-xdist", specifier = ">=3.6.1" },
-    { name = "time-machine", specifier = ">=2.16.0" },
-    { name = "types-paramiko", specifier = ">=3.4.0" },
-    { name = "types-pytz", specifier = ">=2024.1.0" },
+    { name = "pytest-xdist", specifier = ">=3.8.0" },
+    { name = "time-machine", specifier = ">=3.2.0" },
+    { name = "types-paramiko", specifier = ">=4.0.0" },
+    { name = "types-pytz", specifier = ">=2025.2.0" },
     { name = "types-pyyaml", specifier = ">=6.0.12" },
 ]
 
@@ -1428,7 +1428,7 @@ wheels = [
 [[package]]
 name = "my-lib"
 version = "0.2.0"
-source = { git = "https://github.com/kimata/my-py-lib?rev=c391f5660704fa8c7735ce891bf70e860806abab#c391f5660704fa8c7735ce891bf70e860806abab" }
+source = { git = "https://github.com/kimata/my-py-lib?rev=49fda6c4c056251deeac6ed70d47c519fc1e2038#49fda6c4c056251deeac6ed70d47c519fc1e2038" }
 dependencies = [
     { name = "coloredlogs" },
     { name = "docopt-ng" },
