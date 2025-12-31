@@ -195,7 +195,7 @@ class Handle:
         table.add_column("time", justify="right", ratio=1, no_wrap=True, overflow="ellipsis", style=style)
 
         table.add_row(
-            rich.text.Text(" メルカリ ", style=style),
+            rich.text.Text(" 🛒メルカリ ", style=style),
             rich.text.Text(self._status_text, style=style),
             rich.text.Text(f" {elapsed_str} ", style=style),
         )
