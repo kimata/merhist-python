@@ -73,7 +73,7 @@ test-walk-through:
             junit: reports/junit-report.xml
 
 
-test-dry-run:
+test-smoke:
     stage: test
 
     needs:
