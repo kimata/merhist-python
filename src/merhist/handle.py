@@ -90,6 +90,7 @@ class ProgressTask:
 class Handle:
     config: merhist.config.Config
     clear_profile_on_browser_error: bool = False
+    ignore_cache: bool = False
     trading: TradingState = field(default_factory=TradingState)
     selenium: SeleniumInfo | None = None
     _db: merhist.database.Database | None = field(default=None, repr=False)
@@ -113,6 +114,11 @@ class Handle:
 
     def _init_database(self) -> None:
         """データベースを初期化"""
+        # キャッシュ無視モードの場合、既存のデータベースを削除
+        if self.ignore_cache and self.config.cache_file_path.exists():
+            logging.info("キャッシュを無視します: %s", self.config.cache_file_path)
+            self.config.cache_file_path.unlink()
+
         self._db = merhist.database.open_database(
             self.config.cache_file_path,
             SQLITE_SCHEMA_PATH,
@@ -139,7 +145,9 @@ class Handle:
             rich.progress.BarColumn(bar_width=None),
             rich.progress.TaskProgressColumn(),
             rich.progress.TextColumn("{task.completed:>5} / {task.total:<5}"),
+            rich.progress.TextColumn("経過:"),
             rich.progress.TimeElapsedColumn(),
+            rich.progress.TextColumn("残り:"),
             rich.progress.TimeRemainingColumn(),
             console=self._console,
             expand=True,
