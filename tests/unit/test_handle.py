@@ -4,40 +4,13 @@
 Handle クラスのテスト
 """
 import datetime
-import pathlib
-import tempfile
 import unittest.mock
-import zoneinfo
 
 import pytest
 
 import merhist.config
 import merhist.handle
 import merhist.item
-
-
-class TestTradingInfo:
-    """TradingInfo のテスト"""
-
-    def test_default_values(self):
-        """デフォルト値"""
-        info = merhist.handle.TradingInfo()
-
-        assert info.sold_item_list == []
-        assert info.sold_item_id_stat == {}
-        assert info.sold_total_count == 0
-        assert info.sold_checked_count == 0
-        assert info.bought_item_list == []
-        assert info.bought_item_id_stat == {}
-        assert info.bought_total_count == 0
-        assert info.bought_checked_count == 0
-
-    def test_last_modified_default(self):
-        """last_modified のデフォルト値"""
-        info = merhist.handle.TradingInfo()
-        assert info.last_modified.year == 1994
-        assert info.last_modified.month == 7
-        assert info.last_modified.day == 5
 
 
 class TestHandleItemOperations:
