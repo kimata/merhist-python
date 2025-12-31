@@ -214,10 +214,20 @@ class Handle:
         if self._live is not None:
             self._live.refresh()
 
+    def pause_live(self) -> None:
+        """Live 表示を一時停止（input() の前に呼び出す）"""
+        if self._live is not None:
+            self._live.stop()
+
+    def resume_live(self) -> None:
+        """Live 表示を再開（input() の後に呼び出す）"""
+        if self._live is not None:
+            self._live.start()
+
     # --- Selenium 関連 ---
     def get_selenium_driver(
         self,
-    ) -> tuple["WebDriver", "WebDriverWait"]:
+    ) -> tuple[WebDriver, WebDriverWait]:
         if self.selenium is not None:
             return (self.selenium.driver, self.selenium.wait)
 
