@@ -79,10 +79,13 @@ class ProgressTask:
         return self._count
 
     def update(self, advance: int = 1) -> None:
-        """プログレスを進める"""
-        self._count += advance
+        """プログレスを進める（total を超えないように制限）"""
+        if self._count >= self._total:
+            return
+        actual_advance = min(advance, self._total - self._count)
+        self._count += actual_advance
         if self._handle._progress is not None:
-            self._handle._progress.update(self._task_id, advance=advance)
+            self._handle._progress.update(self._task_id, advance=actual_advance)
             self._handle._refresh_display()
 
 
