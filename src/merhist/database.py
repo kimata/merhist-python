@@ -5,17 +5,10 @@ from __future__ import annotations
 
 import datetime
 import json
-import logging
 import pathlib
-import shutil
 import sqlite3
-import zoneinfo
-from typing import TYPE_CHECKING
 
 import merhist.item
-
-if TYPE_CHECKING:
-    from typing import Any
 
 SQLITE_MAGIC = b"SQLite format 3\x00"
 
@@ -252,53 +245,10 @@ class Database:
         except ValueError:
             return None
 
-    def migrate_from_trading_info(self, trading_info: Any) -> None:
-        """TradingInfo からデータを移行"""
-        logging.info("pickle から SQLite へ移行を開始します...")
-
-        # 販売アイテム
-        for item in trading_info.sold_item_list:
-            self.upsert_sold_item(item)
-        logging.info("販売アイテム %d 件を移行しました", len(trading_info.sold_item_list))
-
-        # 購入アイテム
-        for item in trading_info.bought_item_list:
-            self.upsert_bought_item(item)
-        logging.info("購入アイテム %d 件を移行しました", len(trading_info.bought_item_list))
-
-        # メタデータ
-        self.set_metadata_int("sold_total_count", trading_info.sold_total_count)
-        self.set_metadata_int("bought_total_count", trading_info.bought_total_count)
-        self.set_metadata("last_modified", trading_info.last_modified.isoformat())
-
-        logging.info("SQLite への移行が完了しました")
-
 
 def open_database(
     db_path: pathlib.Path,
     schema_path: pathlib.Path,
 ) -> Database:
-    """データベースを開く（pickle なら自動変換）"""
-    if db_path.exists() and not is_sqlite_file(db_path):
-        logging.info("pickle ファイルを検出しました。SQLite に変換します...")
-
-        # pickle を読み込み
-        import my_lib.serializer
-
-        from merhist.handle import TradingInfo
-
-        trading_info = my_lib.serializer.load(db_path, TradingInfo())
-
-        # バックアップ作成
-        backup_path = db_path.with_suffix(".dat.bak")
-        shutil.copy(db_path, backup_path)
-        logging.info("バックアップを作成しました: %s", backup_path)
-
-        # 既存ファイルを削除して新規 SQLite 作成
-        db_path.unlink()
-        db = Database(db_path, schema_path)
-        db.migrate_from_trading_info(trading_info)
-
-        return db
-
+    """データベースを開く"""
     return Database(db_path, schema_path)

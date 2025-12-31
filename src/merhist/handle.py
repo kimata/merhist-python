@@ -37,23 +37,6 @@ STATUS_STYLE_ERROR = "bold white on red"
 
 
 @dataclass
-class TradingInfo:
-    """後方互換性のための旧データ構造（pickle 移行時に使用）"""
-
-    sold_item_list: list[merhist.item.SoldItem] = field(default_factory=list)
-    sold_item_id_stat: dict[str, bool] = field(default_factory=dict)
-    sold_total_count: int = 0
-    sold_checked_count: int = 0
-    bought_item_list: list[merhist.item.BoughtItem] = field(default_factory=list)
-    bought_item_id_stat: dict[str, bool] = field(default_factory=dict)
-    bought_total_count: int = 0
-    bought_checked_count: int = 0
-    last_modified: datetime.datetime = field(
-        default_factory=lambda: datetime.datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo"))
-    )
-
-
-@dataclass
 class TradingState:
     """取引状態（メモリ上で管理するカウンタ）"""
 
