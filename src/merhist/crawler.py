@@ -26,6 +26,8 @@ import math
 import pathlib
 import random
 import re
+import signal
+import sys
 import time
 import traceback
 from typing import Any, TypedDict, TypeVar
@@ -51,6 +53,57 @@ import selenium.webdriver.support.wait
 STATUS_SOLD_PAGE: str = "[収集] 販売ページ"
 STATUS_SOLD_ITEM: str = "[収集] 販売商品"
 STATUS_BOUGHT_ITEM: str = "[収集] 購入商品"
+
+# Graceful shutdown 用のフラグとハンドル
+_shutdown_requested: bool = False
+_current_handle: merhist.handle.Handle | None = None
+
+
+def _signal_handler(signum: int, frame: Any) -> None:
+    """Ctrl+C シグナルハンドラ"""
+    global _shutdown_requested, _current_handle
+
+    # 既にシャットダウンリクエスト中の場合は強制終了
+    if _shutdown_requested:
+        logging.warning("強制終了します")
+        sys.exit(1)
+
+    try:
+        # Rich Live を一時停止して入力を受け付ける
+        if _current_handle is not None:
+            _current_handle.pause_live()
+
+        response = input("\n終了しますか？(y/N): ").strip().lower()
+        if response == "y":
+            _shutdown_requested = True
+            logging.info("終了リクエストを受け付けました。現在の処理が完了次第終了します...")
+        else:
+            logging.info("処理を継続します")
+
+        # Rich Live を再開
+        if _current_handle is not None:
+            _current_handle.resume_live()
+    except EOFError:
+        # 入力が取得できない場合は継続
+        logging.info("処理を継続します")
+        if _current_handle is not None:
+            _current_handle.resume_live()
+
+
+def setup_signal_handler() -> None:
+    """シグナルハンドラを設定"""
+    signal.signal(signal.SIGINT, _signal_handler)
+
+
+def is_shutdown_requested() -> bool:
+    """シャットダウンがリクエストされているかを返す"""
+    return _shutdown_requested
+
+
+def reset_shutdown_flag() -> None:
+    """シャットダウンフラグをリセット"""
+    global _shutdown_requested
+    _shutdown_requested = False
 
 
 LOGIN_RETRY_COUNT: int = 2
@@ -481,6 +534,11 @@ def fetch_sold_item_list(
 
     page = 1
     while True:
+        # シャットダウンリクエストがあれば終了
+        if is_shutdown_requested():
+            logging.info("シャットダウンリクエストにより処理を中断します")
+            break
+
         if continue_mode and handle.get_sold_checked_count() >= handle.trading.sold_total_count:
             if page == 1:
                 logging.info("No new items")
@@ -502,17 +560,19 @@ def fetch_sold_item_list(
         page += 1
 
     # NOTE: ここまできた時には全て完了しているはずなので，強制的にプログレスバーを完了に持っていく
-    handle.progress_bar[STATUS_SOLD_ITEM].update(
-        handle.progress_bar[STATUS_SOLD_ITEM].total - handle.progress_bar[STATUS_SOLD_ITEM].count
-    )
+    if not is_shutdown_requested():
+        handle.progress_bar[STATUS_SOLD_ITEM].update(
+            handle.progress_bar[STATUS_SOLD_ITEM].total - handle.progress_bar[STATUS_SOLD_ITEM].count
+        )
 
-    handle.progress_bar[STATUS_SOLD_PAGE].update(
-        handle.progress_bar[STATUS_SOLD_PAGE].total - handle.progress_bar[STATUS_SOLD_PAGE].count
-    )
+        handle.progress_bar[STATUS_SOLD_PAGE].update(
+            handle.progress_bar[STATUS_SOLD_PAGE].total - handle.progress_bar[STATUS_SOLD_PAGE].count
+        )
 
     handle.store_trading_info()
 
-    handle.set_status("✅ 販売履歴の収集が完了しました")
+    if not is_shutdown_requested():
+        handle.set_status("✅ 販売履歴の収集が完了しました")
 
 
 def get_bought_item_info_list(
@@ -650,6 +710,11 @@ def fetch_bought_item_list(
 
     is_first_fetch = True
     for item in item_list:
+        # シャットダウンリクエストがあれば終了
+        if is_shutdown_requested():
+            logging.info("シャットダウンリクエストにより処理を中断します")
+            break
+
         if not continue_mode or not handle.get_bought_item_stat(item):
             # 強制取得モードまたは未キャッシュの場合は取得
             fetch_item_detail(handle, item, debug_mode)
@@ -670,21 +735,33 @@ def fetch_bought_item_list(
         if debug_mode:
             break
 
-    handle.set_status("✅ 購入履歴の収集が完了しました")
+    if not is_shutdown_requested():
+        handle.set_status("✅ 購入履歴の収集が完了しました")
 
 
 def fetch_order_item_list(
     handle: merhist.handle.Handle, continue_mode: ContinueMode, debug_mode: bool = False
 ) -> None:
+    global _current_handle
+
     handle.set_status("🤖 巡回ロボットの準備をしています...")
     driver, _ = handle.get_selenium_driver()
+
+    # シグナルハンドラを設定（handle を保存してシグナルハンドラからアクセス可能にする）
+    _current_handle = handle
+    setup_signal_handler()
+    reset_shutdown_flag()
 
     handle.set_status("📥 注文履歴の収集を開始します...")
 
     fetch_sold_item_list(handle, continue_mode["sold"], debug_mode)
-    fetch_bought_item_list(handle, continue_mode["bought"], debug_mode)
+    if not is_shutdown_requested():
+        fetch_bought_item_list(handle, continue_mode["bought"], debug_mode)
 
-    handle.set_status("✅ 注文履歴の収集が完了しました")
+    if is_shutdown_requested():
+        handle.set_status("🛑 注文履歴の収集を中断しました")
+    else:
+        handle.set_status("✅ 注文履歴の収集が完了しました")
 
 
 if __name__ == "__main__":
