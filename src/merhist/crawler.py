@@ -489,13 +489,14 @@ def fetch_sold_item_list_by_page(
 
             is_first_fetch = False
             handle.record_sold_item(item)
-
-            handle.progress_bar[STATUS_SOLD_ITEM].update()
             is_found_new = True
 
             handle.store_trading_info()
         else:
             logging.info("%s %s円 [cached]", item.name, f"{item.price:,}")
+
+        # キャッシュ済みでも「確認した」としてプログレスを更新
+        handle.progress_bar[STATUS_SOLD_ITEM].update()
 
     time.sleep(1)
 
@@ -530,7 +531,7 @@ def fetch_sold_item_list(
 
     handle.set_progress_bar(STATUS_SOLD_PAGE, total_page)
     handle.set_progress_bar(STATUS_SOLD_ITEM, handle.trading.sold_total_count)
-    handle.progress_bar[STATUS_SOLD_ITEM].update(handle.get_sold_checked_count())
+    # NOTE: 各アイテムを確認するたびに update するため、初期 update は不要
 
     page = 1
     while True:
@@ -559,7 +560,8 @@ def fetch_sold_item_list(
 
         page += 1
 
-    # NOTE: ここまできた時には全て完了しているはずなので，強制的にプログレスバーを完了に持っていく
+    # NOTE: continue_mode で早期終了した場合、残りのページのアイテムはキャッシュ済みと見なし、
+    # プログレスバーを完了に持っていく（スキップされたページのアイテムは未カウントのため）
     if not is_shutdown_requested():
         handle.progress_bar[STATUS_SOLD_ITEM].update(
             handle.progress_bar[STATUS_SOLD_ITEM].total - handle.progress_bar[STATUS_SOLD_ITEM].count
@@ -726,9 +728,11 @@ def fetch_bought_item_list(
 
             is_first_fetch = False
             handle.record_bought_item(item)
-            handle.progress_bar[STATUS_BOUGHT_ITEM].update()
         else:
             logging.info("%s [cached]", item.name)
+
+        # キャッシュ済みでも「確認した」としてプログレスを更新
+        handle.progress_bar[STATUS_BOUGHT_ITEM].update()
 
         handle.store_trading_info()
 
