@@ -588,3 +588,403 @@ class TestFetchOrderItemList:
 
             mock_sold.assert_called_once_with(handle, False)
             mock_bought.assert_called_once_with(handle, False)
+
+
+class TestShutdownControl:
+    """シャットダウン制御関数のテスト"""
+
+    def test_is_shutdown_requested_initial(self):
+        """初期状態では False"""
+        merhist.crawler.reset_shutdown_flag()
+        assert merhist.crawler.is_shutdown_requested() is False
+
+    def test_reset_shutdown_flag(self):
+        """フラグリセット"""
+        # 内部フラグを True に設定してからリセット
+        merhist.crawler._shutdown_requested = True
+        assert merhist.crawler.is_shutdown_requested() is True
+
+        merhist.crawler.reset_shutdown_flag()
+        assert merhist.crawler.is_shutdown_requested() is False
+
+    def test_setup_signal_handler(self):
+        """シグナルハンドラの設定"""
+        import signal
+
+        with unittest.mock.patch("signal.signal") as mock_signal:
+            merhist.crawler.setup_signal_handler()
+
+            mock_signal.assert_called_once_with(signal.SIGINT, merhist.crawler._signal_handler)
+
+
+class TestFetchItemDescription:
+    """fetch_item_description のテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス"""
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
+
+    def test_fetch_item_description_not_found(self, handle):
+        """商品ページが見つからない場合"""
+        item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
+
+        with (
+            unittest.mock.patch("my_lib.selenium_util.browser_tab"),
+            unittest.mock.patch("merhist.crawler.wait_for_loading"),
+            unittest.mock.patch("my_lib.selenium_util.xpath_exists", side_effect=[True, False]),
+        ):
+            merhist.crawler.fetch_item_description(handle, item)
+
+            assert item.error == "商品情報ページが見つかりませんでした．"
+
+    def test_fetch_item_description_deleted(self, handle):
+        """商品ページが削除されている場合"""
+        item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
+
+        with (
+            unittest.mock.patch("my_lib.selenium_util.browser_tab"),
+            unittest.mock.patch("merhist.crawler.wait_for_loading"),
+            unittest.mock.patch("my_lib.selenium_util.xpath_exists", side_effect=[False, True]),
+        ):
+            merhist.crawler.fetch_item_description(handle, item)
+
+            assert item.error == "商品情報ページが削除されています．"
+
+    def test_fetch_item_description_success(self, handle):
+        """正常に商品説明を取得"""
+        item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
+
+        # モック要素を作成
+        mock_row_title = unittest.mock.MagicMock()
+        mock_row_title.text = "商品の状態"
+        mock_row_body = unittest.mock.MagicMock()
+        mock_row_body.text = "新品、未使用"
+
+        def find_element_side_effect(by, xpath):
+            if "title" in xpath.lower() or "dt" in xpath.lower():
+                return mock_row_title
+            return mock_row_body
+
+        handle.selenium.driver.find_elements.return_value = [unittest.mock.MagicMock()]  # 1行
+        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+
+        with (
+            unittest.mock.patch("my_lib.selenium_util.browser_tab"),
+            unittest.mock.patch("merhist.crawler.wait_for_loading"),
+            unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=False),
+        ):
+            merhist.crawler.fetch_item_description(handle, item)
+
+            assert item.condition == "新品、未使用"
+
+
+class TestFetchItemTransactionNormal:
+    """fetch_item_transaction_normal のテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス"""
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
+
+    def test_fetch_item_transaction_normal_page_error(self, handle):
+        """ページエラーの場合"""
+        item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
+        handle.selenium.driver.current_url = "https://example.com/error"
+
+        with (
+            unittest.mock.patch("merhist.crawler.visit_url"),
+            unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=True),
+            pytest.raises(merhist.exceptions.PageLoadError),
+        ):
+            merhist.crawler.fetch_item_transaction_normal(handle, item)
+
+    def test_fetch_item_transaction_normal_no_purchase_date(self, handle):
+        """購入日時がない場合"""
+        item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
+
+        # 空のリストを返す（行がない）
+        handle.selenium.driver.find_elements.return_value = []
+
+        # サムネイル用モック
+        mock_thumb = unittest.mock.MagicMock()
+        mock_thumb.get_attribute.return_value = None
+        handle.selenium.driver.find_element.return_value = mock_thumb
+
+        with (
+            unittest.mock.patch("merhist.crawler.visit_url"),
+            unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=False),
+            pytest.raises(merhist.exceptions.InvalidPageFormatError),
+        ):
+            merhist.crawler.fetch_item_transaction_normal(handle, item)
+
+
+class TestGetBoughtItemInfoList:
+    """get_bought_item_info_list のテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス"""
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
+
+    def test_get_bought_item_info_list_offset_error(self, handle):
+        """オフセットがリスト長より大きい場合"""
+        handle.selenium.driver.find_elements.return_value = []  # 0件
+
+        item_list: list[merhist.item.BoughtItem] = []
+
+        with pytest.raises(merhist.exceptions.HistoryFetchError, match="読み込みが正常にできていません"):
+            merhist.crawler.get_bought_item_info_list(handle, page=1, offset=1, item_list=item_list)
+
+    def test_get_bought_item_info_list_empty(self, handle):
+        """空リスト"""
+        handle.selenium.driver.find_elements.return_value = []
+
+        item_list: list[merhist.item.BoughtItem] = []
+        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(
+            handle, page=1, offset=0, item_list=item_list
+        )
+
+        assert list_length == 0
+        assert is_found_new is False
+        assert item_list == []
+
+    def test_get_bought_item_info_list_with_items(self, handle):
+        """アイテムがある場合"""
+        import merhist.xpath
+
+        # モック要素を作成
+        mock_item_elem = unittest.mock.MagicMock()
+        handle.selenium.driver.find_elements.return_value = [mock_item_elem]
+
+        # find_element のモック
+        mock_name = unittest.mock.MagicMock()
+        mock_name.text = "テスト商品"
+        mock_link = unittest.mock.MagicMock()
+        mock_link.get_attribute.return_value = "https://jp.mercari.com/transaction/m12345"
+        mock_datetime = unittest.mock.MagicMock()
+        mock_datetime.text = "2025/01/15 10:30"
+
+        def find_element_side_effect(by, xpath):
+            if merhist.xpath.BOUGHT_ITEM_LABEL in xpath:
+                return mock_name
+            elif merhist.xpath.BOUGHT_ITEM_LINK in xpath:
+                return mock_link
+            elif merhist.xpath.BOUGHT_ITEM_DATETIME in xpath:
+                return mock_datetime
+            return mock_name
+
+        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+
+        item_list: list[merhist.item.BoughtItem] = []
+        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(
+            handle, page=1, offset=0, item_list=item_list, continue_mode=True
+        )
+
+        assert list_length == 1
+        assert is_found_new is True
+        assert len(item_list) == 1
+        assert item_list[0].name == "テスト商品"
+        assert item_list[0].id == "m12345"
+
+    def test_get_bought_item_info_list_cached_continue_mode(self, handle):
+        """continue_mode でキャッシュ済みの場合はスキップ"""
+        import merhist.xpath
+
+        # DBにキャッシュを追加
+        cached_item = merhist.item.BoughtItem(id="m12345", name="キャッシュ済み")
+        handle.db.upsert_bought_item(cached_item)
+
+        # モック要素
+        mock_item_elem = unittest.mock.MagicMock()
+        handle.selenium.driver.find_elements.return_value = [mock_item_elem]
+
+        mock_name = unittest.mock.MagicMock()
+        mock_name.text = "テスト商品"
+        mock_link = unittest.mock.MagicMock()
+        mock_link.get_attribute.return_value = "https://jp.mercari.com/transaction/m12345"
+        mock_datetime = unittest.mock.MagicMock()
+        mock_datetime.text = "2025/01/15 10:30"
+
+        def find_element_side_effect(by, xpath):
+            if merhist.xpath.BOUGHT_ITEM_LABEL in xpath:
+                return mock_name
+            elif merhist.xpath.BOUGHT_ITEM_LINK in xpath:
+                return mock_link
+            elif merhist.xpath.BOUGHT_ITEM_DATETIME in xpath:
+                return mock_datetime
+            return mock_name
+
+        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+
+        item_list: list[merhist.item.BoughtItem] = []
+        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(
+            handle, page=1, offset=0, item_list=item_list, continue_mode=True
+        )
+
+        # キャッシュ済みなので is_found_new は False、リストにも追加されない
+        assert list_length == 1
+        assert is_found_new is False
+        assert len(item_list) == 0
+
+
+class TestFetchSoldCount:
+    """fetch_sold_count のテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス"""
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
+
+    def test_fetch_sold_count(self, handle):
+        """販売件数取得"""
+        mock_paging = unittest.mock.MagicMock()
+        mock_paging.text = "1～20/全42件"  # parse_sold_count が期待するフォーマット
+        handle.selenium.driver.find_element.return_value = mock_paging
+
+        with unittest.mock.patch("merhist.crawler.visit_url"):
+            merhist.crawler.fetch_sold_count(handle)
+
+            assert handle.trading.sold_total_count == 42
+
+
+class TestContinueModeTypedDict:
+    """ContinueMode TypedDict のテスト"""
+
+    def test_continue_mode_creation(self):
+        """ContinueMode の作成"""
+        mode: merhist.crawler.ContinueMode = {"bought": True, "sold": False}
+
+        assert mode["bought"] is True
+        assert mode["sold"] is False
+
+
+class TestConstantsAndUrls:
+    """定数と URL 生成のテスト"""
+
+    def test_mercari_normal_constant(self):
+        """MERCARI_NORMAL 定数"""
+        assert merhist.crawler.MERCARI_NORMAL == "mercari.com"
+
+    def test_mercari_shop_constant(self):
+        """MERCARI_SHOP 定数"""
+        assert merhist.crawler.MERCARI_SHOP == "mercari-shops.com"
+
+    def test_status_constants(self):
+        """ステータス定数"""
+        assert merhist.crawler.STATUS_SOLD_PAGE == "[収集] 販売ページ"
+        assert merhist.crawler.STATUS_SOLD_ITEM == "[収集] 販売商品"
+        assert merhist.crawler.STATUS_BOUGHT_ITEM == "[収集] 購入商品"
+
+    def test_retry_constants(self):
+        """リトライ定数"""
+        assert merhist.crawler.LOGIN_RETRY_COUNT == 2
+        assert merhist.crawler.FETCH_RETRY_COUNT == 3
+
+
+class TestLoginError:
+    """ログインエラーのテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        config.login = unittest.mock.MagicMock()
+        config.slack = unittest.mock.MagicMock()
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス"""
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
+
+    def test_execute_login_error(self, handle):
+        """ログインエラー時の例外"""
+        import my_lib.store.mercari.exceptions
+
+        with (
+            unittest.mock.patch(
+                "my_lib.store.mercari.login.execute", side_effect=Exception("認証失敗")
+            ),
+            pytest.raises(my_lib.store.mercari.exceptions.LoginError, match="メルカリへのログインに失敗しました"),
+        ):
+            merhist.crawler.execute_login(handle)
