@@ -66,7 +66,9 @@ def execute(
     Returns:
         int: 終了コード（0: 成功、1: エラー）
     """
-    handle = merhist.handle.Handle(config, clear_profile_on_browser_error=clear_profile_on_browser_error)
+    handle = merhist.handle.Handle(
+        config, clear_profile_on_browser_error=clear_profile_on_browser_error, ignore_cache=debug_mode
+    )
     exit_code = 0
 
     try:
