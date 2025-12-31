@@ -251,7 +251,8 @@ def generate_table_excel(
     is_need_thumb: bool = True,
 ) -> None:
     handle.set_status("📊 エクセルファイルの作成を開始します...")
-    handle.set_progress_bar(STATUS_ALL, 2 + 3 * 2)
+    # 直接呼び出し 3 回 + generate_list_sheet 内での呼び出し 3 回 × 2 シート
+    handle.set_progress_bar(STATUS_ALL, 3 + 3 * 2)
 
     logging.info("Start to Generate excel file")
 
