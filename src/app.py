@@ -36,11 +36,10 @@ SCHEMA_CONFIG: str = "schema/config.schema"
 def execute_fetch(
     handle: merhist.handle.Handle,
     continue_mode: merhist.crawler.ContinueMode,
-    debug_mode: bool,
 ) -> None:
     try:
         merhist.crawler.execute_login(handle)
-        merhist.crawler.fetch_order_item_list(handle, continue_mode, debug_mode)
+        merhist.crawler.fetch_order_item_list(handle, continue_mode)
     except Exception:
         # シャットダウン要求時はダンプをスキップ（ドライバーが既に閉じている可能性が高い）
         if not merhist.crawler.is_shutdown_requested():
@@ -67,14 +66,17 @@ def execute(
         int: 終了コード（0: 成功、1: エラー）
     """
     handle = merhist.handle.Handle(
-        config, clear_profile_on_browser_error=clear_profile_on_browser_error, ignore_cache=debug_mode
+        config,
+        clear_profile_on_browser_error=clear_profile_on_browser_error,
+        debug_mode=debug_mode,
+        ignore_cache=debug_mode,
     )
     exit_code = 0
 
     try:
         if not export_mode:
             try:
-                execute_fetch(handle, continue_mode, debug_mode)
+                execute_fetch(handle, continue_mode)
             except my_lib.selenium_util.SeleniumError as e:
                 logging.exception("Selenium の起動に失敗しました")
                 handle.set_status(f"❌ {e}", is_error=True)
@@ -102,7 +104,7 @@ def execute(
     finally:
         handle.finish()
 
-    if not debug_mode:
+    if not handle.debug_mode:
         handle.pause_live()
         input("完了しました。エンターを押すと終了します。")
 

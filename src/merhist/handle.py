@@ -90,6 +90,7 @@ class ProgressTask:
 class Handle:
     config: merhist.config.Config
     clear_profile_on_browser_error: bool = False
+    debug_mode: bool = False
     ignore_cache: bool = False
     trading: TradingState = field(default_factory=TradingState)
     selenium: SeleniumInfo | None = None
@@ -116,7 +117,7 @@ class Handle:
         """データベースを初期化"""
         # キャッシュ無視モードの場合、既存のデータベースを削除
         if self.ignore_cache and self.config.cache_file_path.exists():
-            logging.info("キャッシュを無視します: %s", self.config.cache_file_path)
+            logging.info("キャッシュを無視します")
             self.config.cache_file_path.unlink()
 
         self._db = merhist.database.open_database(
