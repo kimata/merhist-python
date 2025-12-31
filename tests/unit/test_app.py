@@ -31,12 +31,11 @@ class TestExecuteFetch:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        return h
 
     def test_execute_fetch_success(self, handle):
         """正常にフェッチ実行"""
@@ -85,7 +84,6 @@ class TestExecute:
         continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
 
         with (
-            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
             unittest.mock.patch("app.execute_fetch") as mock_fetch,
         ):
@@ -99,7 +97,6 @@ class TestExecute:
         continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
 
         with (
-            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
             unittest.mock.patch("app.execute_fetch") as mock_fetch,
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
@@ -114,7 +111,6 @@ class TestExecute:
         continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
 
         with (
-            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
             unittest.mock.patch("app.execute_fetch", side_effect=Exception("フェッチエラー")),
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
@@ -129,7 +125,6 @@ class TestExecute:
         continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
 
         with (
-            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
             unittest.mock.patch(
                 "merhist.history.generate_table_excel", side_effect=Exception("Excel生成エラー")
             ),
@@ -143,10 +138,7 @@ class TestExecute:
         """サムネイル付きで実行"""
         continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
 
-        with (
-            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
-            unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
-        ):
+        with unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel:
             app.execute(mock_config, continue_mode, export_mode=True, need_thumb=True, debug_mode=True)
 
             # need_thumb=True で呼ばれることを確認
@@ -157,10 +149,7 @@ class TestExecute:
         """サムネイルなしで実行"""
         continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
 
-        with (
-            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
-            unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
-        ):
+        with unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel:
             app.execute(mock_config, continue_mode, export_mode=True, need_thumb=False, debug_mode=True)
 
             # need_thumb=False で呼ばれることを確認
@@ -172,7 +161,6 @@ class TestExecute:
         continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
 
         with (
-            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
             unittest.mock.patch("merhist.history.generate_table_excel"),
             unittest.mock.patch("builtins.input", return_value="") as mock_input,
         ):
