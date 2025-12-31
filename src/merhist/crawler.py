@@ -477,11 +477,11 @@ def fetch_sold_item_list(
 
     handle.set_progress_bar(STATUS_SOLD_PAGE, total_page)
     handle.set_progress_bar(STATUS_SOLD_ITEM, handle.trading.sold_total_count)
-    handle.progress_bar[STATUS_SOLD_ITEM].update(handle.trading.sold_checked_count)
+    handle.progress_bar[STATUS_SOLD_ITEM].update(handle.get_sold_checked_count())
 
     page = 1
     while True:
-        if continue_mode and handle.trading.sold_checked_count >= handle.trading.sold_total_count:
+        if continue_mode and handle.get_sold_checked_count() >= handle.trading.sold_total_count:
             if page == 1:
                 logging.info("No new items")
             break
@@ -510,7 +510,6 @@ def fetch_sold_item_list(
         handle.progress_bar[STATUS_SOLD_PAGE].total - handle.progress_bar[STATUS_SOLD_PAGE].count
     )
 
-    handle.trading.sold_checked_count = handle.trading.sold_total_count
     handle.store_trading_info()
 
     handle.set_status("✅ 販売履歴の収集が完了しました")

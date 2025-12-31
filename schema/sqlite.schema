@@ -1,0 +1,54 @@
+-- メルカリ履歴データベーススキーマ
+
+-- 販売履歴
+CREATE TABLE IF NOT EXISTS sold_items (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    order_url TEXT,
+    url TEXT,
+    shop TEXT,
+    count INTEGER DEFAULT 1,
+    category TEXT,  -- JSON 配列として格納
+    condition TEXT,
+    postage_charge TEXT,
+    seller_region TEXT,
+    shipping_method TEXT,
+    purchase_date TEXT,  -- ISO 8601 形式
+    error TEXT,
+    price INTEGER DEFAULT 0,
+    commission INTEGER DEFAULT 0,
+    postage INTEGER DEFAULT 0,
+    commission_rate INTEGER DEFAULT 0,
+    profit INTEGER DEFAULT 0,
+    completion_date TEXT,  -- ISO 8601 形式
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 購入履歴
+CREATE TABLE IF NOT EXISTS bought_items (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    order_url TEXT,
+    url TEXT,
+    shop TEXT,
+    count INTEGER DEFAULT 1,
+    category TEXT,  -- JSON 配列として格納
+    condition TEXT,
+    postage_charge TEXT,
+    seller_region TEXT,
+    shipping_method TEXT,
+    purchase_date TEXT,  -- ISO 8601 形式
+    error TEXT,
+    price INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- メタデータ
+CREATE TABLE IF NOT EXISTS metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- インデックス
+CREATE INDEX IF NOT EXISTS idx_sold_completion_date ON sold_items(completion_date);
+CREATE INDEX IF NOT EXISTS idx_bought_purchase_date ON bought_items(purchase_date);

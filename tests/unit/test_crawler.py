@@ -22,7 +22,7 @@ class TestFetchItemDetail:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -33,12 +33,12 @@ class TestFetchItemDetail:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
 
     def test_fetch_item_detail_success(self, handle):
         """正常に詳細情報を取得"""
@@ -124,7 +124,7 @@ class TestWaitForLoading:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -135,12 +135,12 @@ class TestWaitForLoading:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
 
     def test_wait_for_loading_success(self, handle):
         """正常に読み込み完了を待機"""
@@ -180,7 +180,7 @@ class TestVisitUrl:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -191,12 +191,12 @@ class TestVisitUrl:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
 
     def test_visit_url(self, handle):
         """URLにアクセス"""
@@ -213,7 +213,7 @@ class TestExecuteLogin:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -226,12 +226,12 @@ class TestExecuteLogin:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
 
     def test_execute_login(self, handle):
         """ログイン実行"""
@@ -248,7 +248,7 @@ class TestSaveThumbnail:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -259,14 +259,14 @@ class TestSaveThumbnail:
     @pytest.fixture
     def handle(self, mock_config, tmp_path):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            # サムネイルディレクトリを作成
-            (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        # サムネイルディレクトリを作成
+        (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
+        yield h
+        h.finish()
 
     def test_save_thumbnail(self, handle):
         """サムネイル保存"""
@@ -290,7 +290,7 @@ class TestFetchItemTransaction:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -301,12 +301,12 @@ class TestFetchItemTransaction:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
 
     def test_fetch_item_transaction_normal(self, handle):
         """通常アイテムのトランザクション取得"""
@@ -334,7 +334,7 @@ class TestFetchSoldItemList:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -345,18 +345,17 @@ class TestFetchSoldItemList:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            h.progress_manager = unittest.mock.MagicMock()
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.progress_manager = unittest.mock.MagicMock()
+        yield h
+        h.finish()
 
     def test_fetch_sold_item_list_no_items(self, handle):
         """販売アイテムなし"""
         handle.trading.sold_total_count = 0
-        handle.trading.sold_checked_count = 0
 
         mock_counter = unittest.mock.MagicMock()
         mock_counter.total = 0
@@ -366,10 +365,7 @@ class TestFetchSoldItemList:
             merhist.crawler.STATUS_SOLD_ITEM: mock_counter,
         }
 
-        with (
-            unittest.mock.patch("merhist.crawler.fetch_sold_count") as mock_count,
-            unittest.mock.patch("my_lib.serializer.store"),
-        ):
+        with unittest.mock.patch("merhist.crawler.fetch_sold_count") as mock_count:
             mock_count.side_effect = lambda h: setattr(h.trading, "sold_total_count", 0)
 
             merhist.crawler.fetch_sold_item_list(handle, continue_mode=True, debug_mode=False)
@@ -378,8 +374,11 @@ class TestFetchSoldItemList:
 
     def test_fetch_sold_item_list_already_cached(self, handle):
         """既にキャッシュ済み"""
+        # DB に 10 件のアイテムを追加してキャッシュ済み状態をシミュレート
+        for i in range(10):
+            item = merhist.item.SoldItem(id=f"s{i}", name=f"商品{i}", price=100)
+            handle.db.upsert_sold_item(item)
         handle.trading.sold_total_count = 10
-        handle.trading.sold_checked_count = 10
 
         mock_counter = unittest.mock.MagicMock()
         mock_counter.total = 10
@@ -392,7 +391,6 @@ class TestFetchSoldItemList:
         with (
             unittest.mock.patch("merhist.crawler.fetch_sold_count"),
             unittest.mock.patch("merhist.crawler.fetch_sold_item_list_by_page") as mock_fetch_page,
-            unittest.mock.patch("my_lib.serializer.store"),
         ):
             merhist.crawler.fetch_sold_item_list(handle, continue_mode=True, debug_mode=False)
 
@@ -407,7 +405,7 @@ class TestFetchBoughtItemInfoList:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -418,12 +416,12 @@ class TestFetchBoughtItemInfoList:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        yield h
+        h.finish()
 
     def test_fetch_bought_item_info_list_success(self, handle):
         """正常に購入履歴取得"""
@@ -476,7 +474,7 @@ class TestFetchBoughtItemList:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -487,23 +485,20 @@ class TestFetchBoughtItemList:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            h.progress_manager = unittest.mock.MagicMock()
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.progress_manager = unittest.mock.MagicMock()
+        yield h
+        h.finish()
 
     def test_fetch_bought_item_list_empty(self, handle):
         """購入履歴なし"""
         mock_counter = unittest.mock.MagicMock()
         handle.progress_bar = {merhist.crawler.STATUS_BOUGHT_ITEM: mock_counter}
 
-        with (
-            unittest.mock.patch("merhist.crawler.fetch_bought_item_info_list", return_value=[]),
-            unittest.mock.patch("my_lib.serializer.store"),
-        ):
+        with unittest.mock.patch("merhist.crawler.fetch_bought_item_info_list", return_value=[]):
             merhist.crawler.fetch_bought_item_list(handle, continue_mode=True, debug_mode=False)
 
     def test_fetch_bought_item_list_with_items(self, handle):
@@ -516,17 +511,17 @@ class TestFetchBoughtItemList:
         with (
             unittest.mock.patch("merhist.crawler.fetch_bought_item_info_list", return_value=[item]),
             unittest.mock.patch("merhist.crawler.fetch_item_detail", return_value=item) as mock_detail,
-            unittest.mock.patch("my_lib.serializer.store"),
         ):
             merhist.crawler.fetch_bought_item_list(handle, continue_mode=True, debug_mode=False)
 
             mock_detail.assert_called_once()
-            assert len(handle.trading.bought_item_list) == 1
+            assert handle.get_bought_checked_count() == 1
 
     def test_fetch_bought_item_list_cached(self, handle):
         """キャッシュ済みアイテムはスキップ"""
         item = merhist.item.BoughtItem(id="m123", name="テスト商品", shop="mercari.com")
-        handle.trading.bought_item_id_stat["m123"] = True
+        # DB に直接アイテムを追加してキャッシュ済み状態をシミュレート
+        handle.db.upsert_bought_item(item)
 
         mock_counter = unittest.mock.MagicMock()
         handle.progress_bar = {merhist.crawler.STATUS_BOUGHT_ITEM: mock_counter}
@@ -534,7 +529,6 @@ class TestFetchBoughtItemList:
         with (
             unittest.mock.patch("merhist.crawler.fetch_bought_item_info_list", return_value=[item]),
             unittest.mock.patch("merhist.crawler.fetch_item_detail") as mock_detail,
-            unittest.mock.patch("my_lib.serializer.store"),
         ):
             merhist.crawler.fetch_bought_item_list(handle, continue_mode=True, debug_mode=False)
 
@@ -549,7 +543,7 @@ class TestFetchOrderItemList:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -560,13 +554,13 @@ class TestFetchOrderItemList:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            mock_driver = unittest.mock.MagicMock()
-            mock_wait = unittest.mock.MagicMock()
-            h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-            h.progress_manager = unittest.mock.MagicMock()
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.progress_manager = unittest.mock.MagicMock()
+        yield h
+        h.finish()
 
     def test_fetch_order_item_list(self, handle):
         """注文履歴取得"""
