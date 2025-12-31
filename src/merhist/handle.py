@@ -140,6 +140,7 @@ class Handle:
             rich.progress.TaskProgressColumn(),
             rich.progress.TextColumn("{task.completed:>5} / {task.total:<5}"),
             rich.progress.TimeElapsedColumn(),
+            rich.progress.TimeRemainingColumn(),
             console=self._console,
             expand=True,
         )
