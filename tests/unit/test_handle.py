@@ -289,7 +289,7 @@ class TestHandleSelenium:
             driver, wait = handle.get_selenium_driver()
 
             mock_create.assert_called_once_with(
-                "Merhist", mock_config.selenium_data_dir_path, clean_profile=True
+                "Merhist", mock_config.selenium_data_dir_path, use_subprocess=False
             )
             mock_clear.assert_called_once_with(mock_driver)
             assert driver == mock_driver
@@ -462,3 +462,334 @@ class TestHandleSerialization:
         assert handle.db.get_metadata_int("sold_total_count") == 100
         assert handle.db.get_metadata_int("bought_total_count") == 50
         assert handle.db.get_metadata("last_modified") != ""
+
+
+class TestHandlePrepareDirectory:
+    """Handle._prepare_directory のテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "output" / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    def test_creates_all_directories(self, mock_config, tmp_path):
+        """必要なディレクトリが全て作成される"""
+        # ディレクトリが存在しないことを確認
+        assert not (tmp_path / "cache").exists()
+        assert not (tmp_path / "selenium").exists()
+        assert not (tmp_path / "debug").exists()
+        assert not (tmp_path / "thumb").exists()
+        assert not (tmp_path / "output").exists()
+
+        handle = merhist.handle.Handle(config=mock_config)
+
+        # ディレクトリが作成されたことを確認
+        assert (tmp_path / "cache").exists()
+        assert (tmp_path / "selenium").exists()
+        assert (tmp_path / "debug").exists()
+        assert (tmp_path / "thumb").exists()
+        assert (tmp_path / "output").exists()
+
+        handle.finish()
+
+    def test_existing_directories_ok(self, mock_config, tmp_path):
+        """既存ディレクトリがあってもエラーにならない"""
+        # 事前にディレクトリを作成
+        (tmp_path / "cache").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "selenium").mkdir(parents=True, exist_ok=True)
+
+        handle = merhist.handle.Handle(config=mock_config)
+
+        # エラーなく作成される
+        assert (tmp_path / "cache").exists()
+        assert (tmp_path / "selenium").exists()
+
+        handle.finish()
+
+
+class TestHandleProgressTask:
+    """ProgressTask クラスのテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス"""
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
+
+    def test_progress_task_properties(self, handle):
+        """ProgressTask のプロパティ"""
+        import rich.progress
+
+        task = merhist.handle.ProgressTask(handle, rich.progress.TaskID(1), total=100)
+
+        assert task.total == 100
+        assert task.count == 0
+
+    def test_progress_task_update(self, handle):
+        """ProgressTask.update でカウントが進む"""
+        import rich.progress
+
+        task = merhist.handle.ProgressTask(handle, rich.progress.TaskID(1), total=100)
+
+        task.update(10)
+        assert task.count == 10
+
+        task.update(5)
+        assert task.count == 15
+
+
+class TestHandleProgressBarNonTty:
+    """非TTY環境でのプログレスバーテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス（非TTY）"""
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
+
+    def test_set_progress_bar_non_tty(self, handle):
+        """非TTY環境でもプログレスバーが作成される（ダミー）"""
+        handle.set_progress_bar("テスト", 100)
+
+        assert "テスト" in handle.progress_bar
+        assert handle.progress_bar["テスト"].total == 100
+
+    def test_update_progress_bar_non_tty(self, handle):
+        """非TTY環境でもupdate_progress_barが動作"""
+        handle.set_progress_bar("テスト", 100)
+
+        handle.update_progress_bar("テスト", 10)
+
+        assert handle.progress_bar["テスト"].count == 10
+
+    def test_update_progress_bar_nonexistent(self, handle):
+        """存在しないプログレスバーの更新は何もしない"""
+        # エラーにならないことを確認
+        handle.update_progress_bar("存在しない", 10)
+
+
+class TestHandleLiveControl:
+    """Live表示制御のテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス（非TTY）"""
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
+
+    def test_pause_live_no_live(self, handle):
+        """Live がない場合の pause_live は何もしない"""
+        handle._live = None
+        handle.pause_live()  # エラーにならない
+
+    def test_resume_live_no_live(self, handle):
+        """Live がない場合の resume_live は何もしない"""
+        handle._live = None
+        handle.resume_live()  # エラーにならない
+
+    def test_refresh_display_no_live(self, handle):
+        """Live がない場合の _refresh_display は何もしない"""
+        handle._live = None
+        handle._refresh_display()  # エラーにならない
+
+
+class TestHandleDatabase:
+    """Handle のデータベース関連テスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    def test_db_property(self, mock_config):
+        """db プロパティでデータベースインスタンスを取得"""
+        handle = merhist.handle.Handle(config=mock_config)
+
+        db = handle.db
+        assert db is not None
+
+        handle.finish()
+
+    def test_trading_state_restored_from_db(self, mock_config, tmp_path):
+        """TradingState がDBから復元される"""
+        # 最初のインスタンスで値を保存
+        handle1 = merhist.handle.Handle(config=mock_config)
+        handle1.trading.sold_total_count = 42
+        handle1.trading.bought_total_count = 24
+        handle1.store_trading_info()
+        handle1.finish()
+
+        # 2番目のインスタンスで復元を確認
+        handle2 = merhist.handle.Handle(config=mock_config)
+        assert handle2.trading.sold_total_count == 42
+        assert handle2.trading.bought_total_count == 24
+        handle2.finish()
+
+
+class TestDisplayRenderable:
+    """_DisplayRenderable クラスのテスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    def test_rich_method(self, mock_config):
+        """__rich__ メソッドが _create_display を呼び出す"""
+        handle = merhist.handle.Handle(config=mock_config)
+        renderable = merhist.handle._DisplayRenderable(handle)
+
+        with unittest.mock.patch.object(handle, "_create_display", return_value="test") as mock_create:
+            result = renderable.__rich__()
+            mock_create.assert_called_once()
+            assert result == "test"
+
+        handle.finish()
+
+
+class TestTradingState:
+    """TradingState データクラスのテスト"""
+
+    def test_default_values(self):
+        """デフォルト値が正しい"""
+        state = merhist.handle.TradingState()
+
+        assert state.sold_total_count == 0
+        assert state.bought_total_count == 0
+
+    def test_custom_values(self):
+        """カスタム値を設定"""
+        state = merhist.handle.TradingState(sold_total_count=100, bought_total_count=50)
+
+        assert state.sold_total_count == 100
+        assert state.bought_total_count == 50
+
+
+class TestSeleniumInfo:
+    """SeleniumInfo データクラスのテスト"""
+
+    def test_creation(self):
+        """インスタンス作成"""
+        mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
+
+        info = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+
+        assert info.driver == mock_driver
+        assert info.wait == mock_wait
+
+
+class TestHandleSeleniumError:
+    """Handle の Selenium エラー処理テスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    def test_selenium_error_with_clear_profile(self, mock_config):
+        """Selenium 起動エラー時にプロファイルをクリア"""
+        import my_lib.selenium_util
+
+        handle = merhist.handle.Handle(config=mock_config)
+        handle.clear_profile_on_browser_error = True
+
+        with (
+            unittest.mock.patch(
+                "my_lib.selenium_util.create_driver",
+                side_effect=Exception("起動失敗"),
+            ),
+            unittest.mock.patch("my_lib.selenium_util.delete_profile") as mock_delete,
+            pytest.raises(my_lib.selenium_util.SeleniumError),
+        ):
+            handle.get_selenium_driver()
+            mock_delete.assert_called_once()
+
+        handle.finish()
+
+    def test_selenium_error_without_clear_profile(self, mock_config):
+        """Selenium 起動エラー時にプロファイルをクリアしない"""
+        import my_lib.selenium_util
+
+        handle = merhist.handle.Handle(config=mock_config)
+        handle.clear_profile_on_browser_error = False
+
+        with (
+            unittest.mock.patch(
+                "my_lib.selenium_util.create_driver",
+                side_effect=Exception("起動失敗"),
+            ),
+            unittest.mock.patch("my_lib.selenium_util.delete_profile") as mock_delete,
+            pytest.raises(my_lib.selenium_util.SeleniumError),
+        ):
+            handle.get_selenium_driver()
+            mock_delete.assert_not_called()
+
+        handle.finish()

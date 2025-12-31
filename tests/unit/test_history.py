@@ -331,3 +331,183 @@ class TestStatusConstants:
     def test_shop_name(self):
         """SHOP_NAME が定義されている"""
         assert merhist.history.SHOP_NAME == "メルカリ"
+
+
+class TestExcelOutput:
+    """生成されるExcelファイルの検証"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        config.excel_font = openpyxl.styles.Font(name="Arial", size=10)
+        return config
+
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス"""
+        h = merhist.handle.Handle(config=mock_config)
+        h.progress_manager = unittest.mock.MagicMock()
+        mock_counter = unittest.mock.MagicMock()
+        h.progress_bar = {
+            merhist.history.STATUS_ALL: mock_counter,
+            merhist.history.STATUS_INSERT_SOLD_ITEM: mock_counter,
+            merhist.history.STATUS_INSERT_BOUGHT_ITEM: mock_counter,
+        }
+        yield h
+        h.finish()
+
+    def test_sheet_names(self, handle, tmp_path):
+        """シート名が「【メルカリ】購入」「【メルカリ】販売」で始まる"""
+        excel_path = tmp_path / "output" / "test_names.xlsx"
+        excel_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # データを追加
+        bought_item = merhist.item.BoughtItem(
+            id="m123", name="購入商品", purchase_date=datetime.datetime(2025, 1, 15)
+        )
+        sold_item = merhist.item.SoldItem(
+            id="s456", name="販売商品", price=1000, completion_date=datetime.datetime(2025, 1, 20)
+        )
+        handle.db.upsert_bought_item(bought_item)
+        handle.db.upsert_sold_item(sold_item)
+
+        merhist.history.generate_table_excel(handle, excel_path, is_need_thumb=False)
+
+        book = openpyxl.load_workbook(excel_path)
+        sheet_names = [ws.title for ws in book.worksheets]
+
+        # シート名が SHEET_TITLE で始まることを確認（サフィックス「アイテム一覧」が付く）
+        assert any("【メルカリ】購入" in name for name in sheet_names)
+        assert any("【メルカリ】販売" in name for name in sheet_names)
+        book.close()
+
+    def test_excel_contains_data(self, handle, tmp_path):
+        """Excelファイルにデータが含まれる"""
+        excel_path = tmp_path / "output" / "test_data.xlsx"
+        excel_path.parent.mkdir(parents=True, exist_ok=True)
+
+        bought_item = merhist.item.BoughtItem(
+            id="m123",
+            name="テスト商品",
+            purchase_date=datetime.datetime(2025, 1, 15, 10, 30),
+            price=1500,
+        )
+        handle.db.upsert_bought_item(bought_item)
+
+        merhist.history.generate_table_excel(handle, excel_path, is_need_thumb=False)
+
+        book = openpyxl.load_workbook(excel_path)
+
+        # 購入シートを取得
+        bought_ws = None
+        for ws in book.worksheets:
+            if "購入" in ws.title:
+                bought_ws = ws
+                break
+
+        assert bought_ws is not None
+
+        # シートが空でないことを確認（行数が1より多い）
+        assert bought_ws.max_row > 1
+
+        book.close()
+
+    def test_sold_item_data_exists(self, handle, tmp_path):
+        """販売シートにデータが含まれる"""
+        excel_path = tmp_path / "output" / "test_sold.xlsx"
+        excel_path.parent.mkdir(parents=True, exist_ok=True)
+
+        sold_item = merhist.item.SoldItem(
+            id="s123",
+            name="販売商品",
+            price=1000,
+            commission_rate=10,
+            completion_date=datetime.datetime(2025, 1, 20),
+        )
+        handle.db.upsert_sold_item(sold_item)
+
+        merhist.history.generate_table_excel(handle, excel_path, is_need_thumb=False)
+
+        book = openpyxl.load_workbook(excel_path)
+
+        # 販売シートを取得
+        sold_ws = None
+        for ws in book.worksheets:
+            if "販売" in ws.title:
+                sold_ws = ws
+                break
+
+        assert sold_ws is not None
+        assert sold_ws.max_row > 1
+
+        book.close()
+
+
+class TestSheetDefFormats:
+    """SHEET_DEF のフォーマット定義検証"""
+
+    def test_bought_date_format(self):
+        """購入シートの日付フォーマット"""
+        cols = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        assert cols["date"]["format"] == 'yyyy"年"mm"月"dd"日 ("aaa")"'
+
+    def test_sold_date_format(self):
+        """販売シートの日付フォーマット"""
+        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        assert cols["date"]["format"] == 'yyyy"年"mm"月"dd"日 ("aaa")"'
+
+    def test_price_format(self):
+        """価格フォーマット（通貨）"""
+        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        assert "¥" in cols["price"]["format"]
+        assert "#,##0" in cols["price"]["format"]
+
+    def test_commission_rate_format(self):
+        """手数料率フォーマット（パーセント）"""
+        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        assert cols["commission_rate"]["format"] == "0%"
+
+    def test_row_height_settings(self):
+        """行高さの設定"""
+        bought_row = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["row"]
+        sold_row = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["row"]
+
+        # サムネイルありの場合の高さ
+        assert bought_row["height"]["default"] == 80
+        assert sold_row["height"]["default"] == 80
+
+        # サムネイルなしの場合の高さ
+        assert bought_row["height"]["without_thumb"] == 25
+        assert sold_row["height"]["without_thumb"] == 25
+
+    def test_formal_key_mapping(self):
+        """formal_key によるフィールドマッピング"""
+        bought_cols = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        sold_cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+
+        # date は purchase_date にマッピング
+        assert bought_cols["date"]["formal_key"] == "purchase_date"
+        assert sold_cols["date"]["formal_key"] == "purchase_date"
+
+        # no は id にマッピング
+        assert bought_cols["no"]["formal_key"] == "id"
+        assert sold_cols["no"]["formal_key"] == "id"
+
+    def test_optional_fields(self):
+        """オプショナルフィールドの定義"""
+        bought_cols = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        sold_cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+
+        # price は購入シートではオプショナル
+        assert bought_cols["price"].get("optional") is True
+
+        # error はオプショナル
+        assert bought_cols["error"].get("optional") is True
+        assert sold_cols["error"].get("optional") is True
