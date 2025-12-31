@@ -27,8 +27,9 @@ import openpyxl.drawing.xdr
 import openpyxl.styles
 import openpyxl.utils
 
-STATUS_INSERT_ITEM: str = "[generate] Insert item"
-STATUS_ALL: str = "[generate] Excel file"
+STATUS_INSERT_SOLD_ITEM: str = "[生成] 販売商品"
+STATUS_INSERT_BOUGHT_ITEM: str = "[生成] 購入商品"
+STATUS_ALL: str = "[生成] Excel"
 
 
 SHOP_NAME: str = "メルカリ"
@@ -223,12 +224,13 @@ def generate_sheet(
     is_need_thumb: bool = True,
 ) -> None:
     transaction_list: list[dict[str, Any]] = [
-        {"mode": "BOUGHT", "item_list": handle.get_bought_item_list()},
-        {"mode": "SOLD", "item_list": handle.get_sold_item_list()},
+        {"mode": "BOUGHT", "item_list": handle.get_bought_item_list(), "status": STATUS_INSERT_BOUGHT_ITEM},
+        {"mode": "SOLD", "item_list": handle.get_sold_item_list(), "status": STATUS_INSERT_SOLD_ITEM},
     ]
 
     for transaction_info in transaction_list:
-        handle.set_progress_bar(STATUS_INSERT_ITEM, len(transaction_info["item_list"]))
+        status_key: str = transaction_info["status"]
+        handle.set_progress_bar(status_key, len(transaction_info["item_list"]))
 
         my_lib.openpyxl_util.generate_list_sheet(
             book,
@@ -238,7 +240,7 @@ def generate_sheet(
             lambda item: handle.get_thumb_path(item),  # pyright: ignore[reportArgumentType]
             lambda status: handle.set_status(status),
             lambda: handle.update_progress_bar(STATUS_ALL),
-            lambda: handle.update_progress_bar(STATUS_INSERT_ITEM),
+            lambda status_key=status_key: handle.update_progress_bar(status_key),
             warning_handler=_warning_handler,
         )
 

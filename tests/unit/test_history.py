@@ -153,7 +153,8 @@ class TestGenerateTableExcel:
         mock_counter = unittest.mock.MagicMock()
         h.progress_bar = {
             merhist.history.STATUS_ALL: mock_counter,
-            merhist.history.STATUS_INSERT_ITEM: mock_counter,
+            merhist.history.STATUS_INSERT_SOLD_ITEM: mock_counter,
+            merhist.history.STATUS_INSERT_BOUGHT_ITEM: mock_counter,
         }
         yield h
         h.finish()
@@ -312,10 +313,15 @@ class TestWarningHandler:
 class TestStatusConstants:
     """ステータス定数のテスト"""
 
-    def test_status_insert_item(self):
-        """STATUS_INSERT_ITEM が定義されている"""
-        assert merhist.history.STATUS_INSERT_ITEM
-        assert "Insert" in merhist.history.STATUS_INSERT_ITEM
+    def test_status_insert_sold_item(self):
+        """STATUS_INSERT_SOLD_ITEM が定義されている"""
+        assert merhist.history.STATUS_INSERT_SOLD_ITEM
+        assert "販売" in merhist.history.STATUS_INSERT_SOLD_ITEM
+
+    def test_status_insert_bought_item(self):
+        """STATUS_INSERT_BOUGHT_ITEM が定義されている"""
+        assert merhist.history.STATUS_INSERT_BOUGHT_ITEM
+        assert "購入" in merhist.history.STATUS_INSERT_BOUGHT_ITEM
 
     def test_status_all(self):
         """STATUS_ALL が定義されている"""
