@@ -47,7 +47,7 @@ class TestHandleItemOperations:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -58,8 +58,9 @@ class TestHandleItemOperations:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            return merhist.handle.Handle(config=mock_config)
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
 
     def test_record_sold_item(self, handle):
         """販売アイテムの記録"""
@@ -67,10 +68,11 @@ class TestHandleItemOperations:
 
         handle.record_sold_item(item)
 
-        assert len(handle.trading.sold_item_list) == 1
-        assert handle.trading.sold_item_list[0].id == "m123"
-        assert handle.trading.sold_item_id_stat["m123"] is True
-        assert handle.trading.sold_checked_count == 1
+        assert handle.get_sold_checked_count() == 1
+        assert handle.get_sold_item_stat(item) is True
+        sold_list = handle.get_sold_item_list()
+        assert len(sold_list) == 1
+        assert sold_list[0].id == "m123"
 
     def test_record_sold_item_duplicate(self, handle):
         """重複アイテムは追加されない"""
@@ -79,8 +81,7 @@ class TestHandleItemOperations:
         handle.record_sold_item(item)
         handle.record_sold_item(item)
 
-        assert len(handle.trading.sold_item_list) == 1
-        assert handle.trading.sold_checked_count == 1
+        assert handle.get_sold_checked_count() == 1
 
     def test_get_sold_item_stat_exists(self, handle):
         """存在するアイテムの状態確認"""
@@ -123,10 +124,11 @@ class TestHandleItemOperations:
 
         handle.record_bought_item(item)
 
-        assert len(handle.trading.bought_item_list) == 1
-        assert handle.trading.bought_item_list[0].id == "m456"
-        assert handle.trading.bought_item_id_stat["m456"] is True
-        assert handle.trading.bought_checked_count == 1
+        assert handle.get_bought_checked_count() == 1
+        assert handle.get_bought_item_stat(item) is True
+        bought_list = handle.get_bought_item_list()
+        assert len(bought_list) == 1
+        assert bought_list[0].id == "m456"
 
     def test_record_bought_item_duplicate(self, handle):
         """重複アイテムは追加されない"""
@@ -135,8 +137,7 @@ class TestHandleItemOperations:
         handle.record_bought_item(item)
         handle.record_bought_item(item)
 
-        assert len(handle.trading.bought_item_list) == 1
-        assert handle.trading.bought_checked_count == 1
+        assert handle.get_bought_checked_count() == 1
 
     def test_get_bought_item_stat_exists(self, handle):
         """存在するアイテムの状態確認"""
@@ -181,7 +182,7 @@ class TestHandleNormalize:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -192,40 +193,42 @@ class TestHandleNormalize:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            return merhist.handle.Handle(config=mock_config)
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
 
     def test_normalize_removes_duplicates_bought(self, handle):
-        """購入アイテムの重複が削除される"""
+        """購入アイテムの重複は DB の PRIMARY KEY 制約により自動的に防がれる"""
         item1 = merhist.item.BoughtItem(id="m1", name="商品1")
-        item2 = merhist.item.BoughtItem(id="m1", name="商品1更新")  # 同じID
+        item2 = merhist.item.BoughtItem(id="m1", name="商品1更新")  # 同じID（上書きされる）
         item3 = merhist.item.BoughtItem(id="m2", name="商品2")
 
-        handle.trading.bought_item_list = [item1, item2, item3]
-        handle.trading.bought_checked_count = 3
+        # record_bought_item は重複を許さない
+        handle.db.upsert_bought_item(item1)
+        handle.db.upsert_bought_item(item2)  # 同じ ID なので上書き
+        handle.db.upsert_bought_item(item3)
 
-        handle.normalize()
+        handle.normalize()  # SQLite では何もしない
 
-        assert len(handle.trading.bought_item_list) == 2
-        assert handle.trading.bought_checked_count == 2
-        ids = [item.id for item in handle.trading.bought_item_list]
+        assert handle.get_bought_checked_count() == 2
+        ids = [item.id for item in handle.get_bought_item_list()]
         assert "m1" in ids
         assert "m2" in ids
 
     def test_normalize_removes_duplicates_sold(self, handle):
-        """販売アイテムの重複が削除される"""
+        """販売アイテムの重複は DB の PRIMARY KEY 制約により自動的に防がれる"""
         item1 = merhist.item.SoldItem(id="s1", name="商品1", price=100)
-        item2 = merhist.item.SoldItem(id="s1", name="商品1更新", price=100)  # 同じID
+        item2 = merhist.item.SoldItem(id="s1", name="商品1更新", price=100)  # 同じID（上書きされる）
         item3 = merhist.item.SoldItem(id="s2", name="商品2", price=200)
 
-        handle.trading.sold_item_list = [item1, item2, item3]
-        handle.trading.sold_checked_count = 3
+        handle.db.upsert_sold_item(item1)
+        handle.db.upsert_sold_item(item2)  # 同じ ID なので上書き
+        handle.db.upsert_sold_item(item3)
 
-        handle.normalize()
+        handle.normalize()  # SQLite では何もしない
 
-        assert len(handle.trading.sold_item_list) == 2
-        assert handle.trading.sold_checked_count == 2
-        ids = [item.id for item in handle.trading.sold_item_list]
+        assert handle.get_sold_checked_count() == 2
+        ids = [item.id for item in handle.get_sold_item_list()]
         assert "s1" in ids
         assert "s2" in ids
 
@@ -233,10 +236,10 @@ class TestHandleNormalize:
         """空リストの正規化"""
         handle.normalize()
 
-        assert handle.trading.bought_item_list == []
-        assert handle.trading.sold_item_list == []
-        assert handle.trading.bought_checked_count == 0
-        assert handle.trading.sold_checked_count == 0
+        assert handle.get_bought_item_list() == []
+        assert handle.get_sold_item_list() == []
+        assert handle.get_bought_checked_count() == 0
+        assert handle.get_sold_checked_count() == 0
 
 
 class TestHandleThumbPath:
@@ -246,7 +249,7 @@ class TestHandleThumbPath:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -257,8 +260,9 @@ class TestHandleThumbPath:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            return merhist.handle.Handle(config=mock_config)
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
 
     def test_get_thumb_path(self, handle, tmp_path):
         """サムネイルパス取得"""
@@ -284,7 +288,7 @@ class TestHandleSelenium:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -295,8 +299,9 @@ class TestHandleSelenium:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            return merhist.handle.Handle(config=mock_config)
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
 
     def test_get_selenium_driver_creates_driver(self, handle, mock_config):
         """Selenium ドライバーを作成"""
@@ -371,7 +376,7 @@ class TestHandleProgressBar:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -382,19 +387,19 @@ class TestHandleProgressBar:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
 
     @pytest.fixture
     def handle_tty(self, mock_config):
         """TTY環境をシミュレートした Handle インスタンス"""
-        with (
-            unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()),
-            unittest.mock.patch("rich.console.Console.is_terminal", new_callable=lambda: property(lambda self: True)),
+        with unittest.mock.patch(
+            "rich.console.Console.is_terminal", new_callable=lambda: property(lambda self: True)
         ):
             h = merhist.handle.Handle(config=mock_config)
-            return h
+            yield h
+            h.finish()
 
     def test_set_progress_bar(self, handle_tty):
         """プログレスバーを設定（TTY環境）"""
@@ -458,7 +463,7 @@ class TestHandleSerialization:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -469,13 +474,18 @@ class TestHandleSerialization:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            return merhist.handle.Handle(config=mock_config)
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
 
-    def test_store_trading_info(self, handle, mock_config):
-        """取引情報を保存"""
-        with unittest.mock.patch("my_lib.serializer.store") as mock_store:
-            handle.store_trading_info()
+    def test_store_trading_info(self, handle):
+        """取引情報を保存（メタデータが DB に保存される）"""
+        handle.trading.sold_total_count = 100
+        handle.trading.bought_total_count = 50
 
-            mock_store.assert_called_once_with(mock_config.cache_file_path, handle.trading)
-            assert handle.trading.last_modified.year >= 2025
+        handle.store_trading_info()
+
+        # メタデータが正しく保存されたか確認
+        assert handle.db.get_metadata_int("sold_total_count") == 100
+        assert handle.db.get_metadata_int("bought_total_count") == 50
+        assert handle.db.get_metadata("last_modified") != ""

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import os
 import pathlib
 import time
 import zoneinfo
@@ -10,7 +11,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 import my_lib.selenium_util
-import my_lib.serializer
 import rich.console
 import rich.live
 import rich.panel
@@ -25,7 +25,11 @@ if TYPE_CHECKING:
     from selenium.webdriver.support.wait import WebDriverWait
 
 import merhist.config
+import merhist.database
 import merhist.item
+
+# SQLite スキーマファイルのパス（プロジェクトルートからの相対パス）
+SQLITE_SCHEMA_PATH = pathlib.Path(__file__).parent.parent.parent / "schema" / "sqlite.schema"
 
 # ステータスバーの色定義
 STATUS_STYLE_NORMAL = "bold #FFFFFF on #E72121"  # メルカリレッド
@@ -34,6 +38,8 @@ STATUS_STYLE_ERROR = "bold white on red"
 
 @dataclass
 class TradingInfo:
+    """後方互換性のための旧データ構造（pickle 移行時に使用）"""
+
     sold_item_list: list[merhist.item.SoldItem] = field(default_factory=list)
     sold_item_id_stat: dict[str, bool] = field(default_factory=dict)
     sold_total_count: int = 0
@@ -45,6 +51,14 @@ class TradingInfo:
     last_modified: datetime.datetime = field(
         default_factory=lambda: datetime.datetime(1994, 7, 5, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo"))
     )
+
+
+@dataclass
+class TradingState:
+    """取引状態（メモリ上で管理するカウンタ）"""
+
+    sold_total_count: int = 0
+    bought_total_count: int = 0
 
 
 @dataclass
@@ -93,8 +107,9 @@ class ProgressTask:
 class Handle:
     config: merhist.config.Config
     clear_profile_on_browser_error: bool = False
-    trading: TradingInfo = field(default_factory=TradingInfo)
+    trading: TradingState = field(default_factory=TradingState)
     selenium: SeleniumInfo | None = None
+    _db: merhist.database.Database | None = field(default=None, repr=False)
 
     # Rich 関連
     _console: rich.console.Console = field(default_factory=rich.console.Console)
@@ -109,9 +124,26 @@ class Handle:
     progress_bar: dict[str, ProgressTask] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        self._load_trading_info()
         self._prepare_directory()
+        self._init_database()
         self._init_progress()
+
+    def _init_database(self) -> None:
+        """データベースを初期化"""
+        self._db = merhist.database.open_database(
+            self.config.cache_file_path,
+            SQLITE_SCHEMA_PATH,
+        )
+        # メタデータからカウンタを復元
+        self.trading.sold_total_count = self._db.get_metadata_int("sold_total_count", 0)
+        self.trading.bought_total_count = self._db.get_metadata_int("bought_total_count", 0)
+
+    @property
+    def db(self) -> merhist.database.Database:
+        """データベースインスタンスを取得"""
+        if self._db is None:
+            raise RuntimeError("Database is not initialized")
+        return self._db
 
     def _init_progress(self) -> None:
         """Progress と Live を初期化"""
@@ -145,7 +177,9 @@ class Handle:
 
         # ターミナル幅を取得し、明示的に幅を制限
         # NOTE: tmux 環境では幅計算が実際と異なることがあるため、余裕を持たせる
-        terminal_width = self._console.width - 2
+        terminal_width = self._console.width
+        if os.environ.get("TMUX"):
+            terminal_width -= 2
 
         table = rich.table.Table(
             show_header=False,
@@ -207,41 +241,36 @@ class Handle:
     def record_sold_item(self, item: merhist.item.SoldItem) -> None:
         if self.get_sold_item_stat(item):
             return
-        self.trading.sold_item_list.append(item)
-        self.trading.sold_item_id_stat[item.id] = True
-        self.trading.sold_checked_count += 1
+        self.db.upsert_sold_item(item)
 
     def get_sold_item_stat(self, item: merhist.item.SoldItem) -> bool:
-        return item.id in self.trading.sold_item_id_stat
+        return self.db.exists_sold_item(item.id)
 
     def get_sold_item_list(self) -> list[merhist.item.SoldItem]:
-        return sorted(self.trading.sold_item_list, key=lambda x: x.completion_date or datetime.datetime.min)
+        return self.db.get_sold_item_list()
+
+    def get_sold_checked_count(self) -> int:
+        return self.db.get_sold_count()
 
     # --- 購入アイテム関連 ---
     def record_bought_item(self, item: merhist.item.BoughtItem) -> None:
         if self.get_bought_item_stat(item):
             return
-        self.trading.bought_item_list.append(item)
-        self.trading.bought_item_id_stat[item.id] = True
-        self.trading.bought_checked_count += 1
+        self.db.upsert_bought_item(item)
 
     def get_bought_item_stat(self, item: merhist.item.BoughtItem) -> bool:
-        return item.id in self.trading.bought_item_id_stat
+        return self.db.exists_bought_item(item.id)
 
     def get_bought_item_list(self) -> list[merhist.item.BoughtItem]:
-        return sorted(self.trading.bought_item_list, key=lambda x: x.purchase_date or datetime.datetime.min)
+        return self.db.get_bought_item_list()
+
+    def get_bought_checked_count(self) -> int:
+        return self.db.get_bought_count()
 
     # --- 正規化 ---
     def normalize(self) -> None:
-        self.trading.bought_item_list = list(
-            {item.id: item for item in self.trading.bought_item_list}.values()
-        )
-        self.trading.bought_checked_count = len(self.trading.bought_item_list)
-
-        self.trading.sold_item_list = list(
-            {item.id: item for item in self.trading.sold_item_list}.values()
-        )
-        self.trading.sold_checked_count = len(self.trading.sold_item_list)
+        # SQLite では PRIMARY KEY 制約により重複は発生しないため、何もしない
+        pass
 
     # --- サムネイル ---
     def get_thumb_path(self, item: merhist.item.ItemBase) -> pathlib.Path:
@@ -291,14 +320,19 @@ class Handle:
         if self._live is not None:
             self._live.stop()
             self._live = None
+        if self._db is not None:
+            self._db.close()
+            self._db = None
 
-    # --- シリアライズ ---
+    # --- メタデータ保存 ---
     def store_trading_info(self) -> None:
-        self.trading.last_modified = datetime.datetime.now(tz=zoneinfo.ZoneInfo("Asia/Tokyo"))
-        my_lib.serializer.store(self.config.cache_file_path, self.trading)
-
-    def _load_trading_info(self) -> None:
-        self.trading = my_lib.serializer.load(self.config.cache_file_path, TradingInfo())
+        """メタデータを保存（アイテムは record_* で即座に保存されるため不要）"""
+        self.db.set_metadata_int("sold_total_count", self.trading.sold_total_count)
+        self.db.set_metadata_int("bought_total_count", self.trading.bought_total_count)
+        self.db.set_metadata(
+            "last_modified",
+            datetime.datetime.now(tz=zoneinfo.ZoneInfo("Asia/Tokyo")).isoformat(),
+        )
 
     def _prepare_directory(self) -> None:
         self.config.selenium_data_dir_path.mkdir(parents=True, exist_ok=True)

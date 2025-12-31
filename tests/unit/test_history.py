@@ -74,7 +74,7 @@ class TestGenerateSheet:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -86,11 +86,11 @@ class TestGenerateSheet:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            h.progress_manager = unittest.mock.MagicMock()
-            h.progress_bar = {}
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        h.progress_manager = unittest.mock.MagicMock()
+        h.progress_bar = {}
+        yield h
+        h.finish()
 
     def test_generate_sheet_empty(self, handle):
         """空のリストでシート生成"""
@@ -108,8 +108,9 @@ class TestGenerateSheet:
         bought_item = merhist.item.BoughtItem(id="m123", name="購入商品")
         sold_item = merhist.item.SoldItem(id="s456", name="販売商品", price=1000)
 
-        handle.trading.bought_item_list = [bought_item]
-        handle.trading.sold_item_list = [sold_item]
+        # DB にアイテムを追加
+        handle.db.upsert_bought_item(bought_item)
+        handle.db.upsert_sold_item(sold_item)
 
         with unittest.mock.patch("my_lib.openpyxl_util.generate_list_sheet") as mock_gen:
             merhist.history.generate_sheet(handle, book, is_need_thumb=True)
@@ -135,7 +136,7 @@ class TestGenerateTableExcel:
     def mock_config(self, tmp_path):
         """モック Config"""
         config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "order.pickle"
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
         config.selenium_data_dir_path = tmp_path / "selenium"
         config.debug_dir_path = tmp_path / "debug"
         config.thumb_dir_path = tmp_path / "thumb"
@@ -147,15 +148,15 @@ class TestGenerateTableExcel:
     @pytest.fixture
     def handle(self, mock_config):
         """Handle インスタンス"""
-        with unittest.mock.patch("my_lib.serializer.load", return_value=merhist.handle.TradingInfo()):
-            h = merhist.handle.Handle(config=mock_config)
-            h.progress_manager = unittest.mock.MagicMock()
-            mock_counter = unittest.mock.MagicMock()
-            h.progress_bar = {
-                merhist.history.STATUS_ALL: mock_counter,
-                merhist.history.STATUS_INSERT_ITEM: mock_counter,
-            }
-            return h
+        h = merhist.handle.Handle(config=mock_config)
+        h.progress_manager = unittest.mock.MagicMock()
+        mock_counter = unittest.mock.MagicMock()
+        h.progress_bar = {
+            merhist.history.STATUS_ALL: mock_counter,
+            merhist.history.STATUS_INSERT_ITEM: mock_counter,
+        }
+        yield h
+        h.finish()
 
     def test_generate_table_excel(self, handle, tmp_path):
         """Excelファイル生成（ダミーデータ使用）"""
@@ -171,8 +172,8 @@ class TestGenerateTableExcel:
             id="s456", name="テスト販売商品", price=2000,
             completion_date=datetime.datetime(2025, 1, 20)
         )
-        handle.trading.bought_item_list = [bought_item]
-        handle.trading.sold_item_list = [sold_item]
+        handle.db.upsert_bought_item(bought_item)
+        handle.db.upsert_sold_item(sold_item)
 
         merhist.history.generate_table_excel(handle, excel_path, is_need_thumb=False)
 
@@ -197,20 +198,20 @@ class TestGenerateTableExcel:
         book.close()
 
     def test_generate_table_excel_normalizes_data(self, handle, tmp_path):
-        """データの正規化が呼ばれる"""
+        """データの正規化（DB では PRIMARY KEY 制約により重複が防がれる）"""
         excel_path = tmp_path / "output" / "test_normalize.xlsx"
         excel_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # 重複データを追加
+        # 重複データを追加（同じ ID は上書きされる）
         item1 = merhist.item.BoughtItem(id="m1", name="商品1")
         item2 = merhist.item.BoughtItem(id="m1", name="商品1更新")  # 同じID
-        handle.trading.bought_item_list = [item1, item2]
-        handle.trading.bought_checked_count = 2
+        handle.db.upsert_bought_item(item1)
+        handle.db.upsert_bought_item(item2)  # 上書き
 
         merhist.history.generate_table_excel(handle, excel_path, is_need_thumb=False)
 
-        # 正規化により重複が削除される
-        assert len(handle.trading.bought_item_list) == 1
+        # DB では PRIMARY KEY 制約により重複は1件になる
+        assert handle.get_bought_checked_count() == 1
 
     def test_generate_table_excel_updates_progress(self, handle, tmp_path):
         """プログレスバーが更新される"""
