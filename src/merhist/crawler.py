@@ -48,9 +48,9 @@ import selenium.webdriver.common.by
 import selenium.webdriver.support.expected_conditions
 import selenium.webdriver.support.wait
 
-STATUS_SOLD_ITEM: str = "[collect] Sold items"
-STATUS_SOLD_PAGE: str = "[collect] Sold pages"
-STATUS_BOUGHT_ITEM: str = "[collect] Bought items"
+STATUS_SOLD_PAGE: str = "[収集] 販売ページ"
+STATUS_SOLD_ITEM: str = "[収集] 販売商品"
+STATUS_BOUGHT_ITEM: str = "[収集] 購入商品"
 
 
 LOGIN_RETRY_COUNT: int = 2
