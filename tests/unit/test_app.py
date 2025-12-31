@@ -45,10 +45,10 @@ class TestExecuteFetch:
             unittest.mock.patch("merhist.crawler.execute_login") as mock_login,
             unittest.mock.patch("merhist.crawler.fetch_order_item_list") as mock_fetch,
         ):
-            app.execute_fetch(handle, continue_mode, debug_mode=False)
+            app.execute_fetch(handle, continue_mode)
 
             mock_login.assert_called_once_with(handle)
-            mock_fetch.assert_called_once_with(handle, continue_mode, False)
+            mock_fetch.assert_called_once_with(handle, continue_mode)
 
     def test_execute_fetch_error_dumps_page(self, handle):
         """エラー時にページダンプ"""
@@ -59,7 +59,7 @@ class TestExecuteFetch:
             unittest.mock.patch("my_lib.selenium_util.dump_page") as mock_dump,
             pytest.raises(Exception, match="ログインエラー"),
         ):
-            app.execute_fetch(handle, continue_mode, debug_mode=False)
+            app.execute_fetch(handle, continue_mode)
 
             mock_dump.assert_called_once()
 
