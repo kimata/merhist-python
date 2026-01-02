@@ -623,20 +623,20 @@ class TestHandleLiveControl:
         yield h
         h.finish()
 
-    def test_pause_live_no_live(self, handle):
-        """Live がない場合の pause_live は何もしない"""
-        handle._live = None
-        handle.pause_live()  # エラーにならない
+    def test_pause_live_null_object(self, handle):
+        """非TTY環境では _NullLive が使用される（Null Object パターン）"""
+        assert isinstance(handle._live, merhist.handle._NullLive)
+        handle.pause_live()  # _NullLive.stop() は何もしない
 
-    def test_resume_live_no_live(self, handle):
-        """Live がない場合の resume_live は何もしない"""
-        handle._live = None
-        handle.resume_live()  # エラーにならない
+    def test_resume_live_null_object(self, handle):
+        """非TTY環境では _NullLive が使用される（Null Object パターン）"""
+        assert isinstance(handle._live, merhist.handle._NullLive)
+        handle.resume_live()  # _NullLive.start() は何もしない
 
-    def test_refresh_display_no_live(self, handle):
-        """Live がない場合の _refresh_display は何もしない"""
-        handle._live = None
-        handle._refresh_display()  # エラーにならない
+    def test_refresh_display_null_object(self, handle):
+        """非TTY環境では _NullLive が使用される（Null Object パターン）"""
+        assert isinstance(handle._live, merhist.handle._NullLive)
+        handle._refresh_display()  # _NullLive.refresh() は何もしない
 
 
 class TestHandleDatabase:
@@ -737,6 +737,58 @@ class TestSeleniumInfo:
 
         assert info.driver == mock_driver
         assert info.wait == mock_wait
+
+
+class TestNullProgress:
+    """_NullProgress クラスのテスト（Null Object パターン）"""
+
+    def test_tasks_is_empty(self):
+        """tasks は常に空"""
+        progress = merhist.handle._NullProgress()
+        assert progress.tasks == []
+
+    def test_add_task_returns_task_id(self):
+        """add_task は TaskID(0) を返す"""
+        import rich.progress
+
+        progress = merhist.handle._NullProgress()
+        task_id = progress.add_task("テスト", total=100)
+        assert task_id == rich.progress.TaskID(0)
+
+    def test_update_does_nothing(self):
+        """update は何もしない"""
+        import rich.progress
+
+        progress = merhist.handle._NullProgress()
+        progress.update(rich.progress.TaskID(0), advance=10)  # エラーにならない
+
+    def test_rich_returns_empty_text(self):
+        """__rich__ は空の Text を返す"""
+        import rich.text
+
+        progress = merhist.handle._NullProgress()
+        result = progress.__rich__()
+        assert isinstance(result, rich.text.Text)
+        assert str(result) == ""
+
+
+class TestNullLive:
+    """_NullLive クラスのテスト（Null Object パターン）"""
+
+    def test_start_does_nothing(self):
+        """start は何もしない"""
+        live = merhist.handle._NullLive()
+        live.start()  # エラーにならない
+
+    def test_stop_does_nothing(self):
+        """stop は何もしない"""
+        live = merhist.handle._NullLive()
+        live.stop()  # エラーにならない
+
+    def test_refresh_does_nothing(self):
+        """refresh は何もしない"""
+        live = merhist.handle._NullLive()
+        live.refresh()  # エラーにならない
 
 
 class TestHandleSeleniumError:
