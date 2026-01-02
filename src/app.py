@@ -28,6 +28,7 @@ import my_lib.store.mercari.exceptions
 import selenium.common.exceptions
 
 import merhist.config
+import merhist.const
 import merhist.crawler
 import merhist.handle
 import merhist.history
@@ -57,7 +58,7 @@ def execute_fetch(
                 int(random.random() * 100),  # noqa: S311
                 handle.config.debug_dir_path,
             )
-        raise
+            raise
 
 
 def execute(
@@ -101,7 +102,9 @@ def execute(
                         handle.set_status(
                             f"🔄 セッションエラー、リトライ中... ({retry + 1}/{_MAX_SESSION_RETRY_COUNT})"
                         )
-                        my_lib.selenium_util.delete_profile("Merhist", config.selenium_data_dir_path)
+                        my_lib.selenium_util.delete_profile(
+                            merhist.const.SELENIUM_PROFILE_NAME, config.selenium_data_dir_path
+                        )
                         continue
                     # リトライ限度を超えた、または clear_profile_on_browser_error=False
                     logging.exception("セッションエラーが発生しました（リトライ不可）")
