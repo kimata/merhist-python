@@ -81,11 +81,6 @@ test-smoke:
         - job: test-walk-through
           artifacts: false
 
-    cache:
-        - key: ${CI_PROJECT_NAME}-data
-          paths:
-              - data
-
     script:
         - 'echo "Building: ${CI_REGISTRY_IMAGE}:${TAG}"'
         - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.green-rabbit.net/kimata/bot-config.git
