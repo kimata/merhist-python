@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from selenium.webdriver.support.wait import WebDriverWait
 
 import merhist.config
+import merhist.const
 import merhist.database
 import merhist.item
 
@@ -252,7 +253,7 @@ class Handle:
 
         try:
             driver = my_lib.selenium_util.create_driver(
-                "Merhist", self.config.selenium_data_dir_path, use_subprocess=False
+                merhist.const.SELENIUM_PROFILE_NAME, self.config.selenium_data_dir_path, use_subprocess=False
             )
             wait = selenium.webdriver.support.wait.WebDriverWait(driver, 5)
 
@@ -263,7 +264,9 @@ class Handle:
             return (driver, wait)
         except Exception as e:
             if self.clear_profile_on_browser_error:
-                my_lib.selenium_util.delete_profile("Merhist", self.config.selenium_data_dir_path)
+                my_lib.selenium_util.delete_profile(
+                    merhist.const.SELENIUM_PROFILE_NAME, self.config.selenium_data_dir_path
+                )
             raise my_lib.selenium_util.SeleniumError(f"Selenium の起動に失敗しました: {e}") from e
 
     # --- 販売アイテム関連 ---
