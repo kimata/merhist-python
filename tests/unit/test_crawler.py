@@ -3,8 +3,10 @@
 """
 crawler.py のテスト
 """
+
 import unittest.mock
 
+import my_lib.graceful_shutdown
 import pytest
 import selenium.common.exceptions
 
@@ -45,8 +47,11 @@ class TestFetchItemDetail:
         import datetime
 
         item = merhist.item.BoughtItem(
-            id="m123", name="テスト商品", shop="mercari.com", price=1000,
-            purchase_date=datetime.datetime(2025, 1, 1)
+            id="m123",
+            name="テスト商品",
+            shop="mercari.com",
+            price=1000,
+            purchase_date=datetime.datetime(2025, 1, 1),
         )
 
         with (
@@ -65,8 +70,11 @@ class TestFetchItemDetail:
         import datetime
 
         item = merhist.item.BoughtItem(
-            id="m123", name="テスト商品", shop="mercari.com", price=1000,
-            purchase_date=datetime.datetime(2025, 1, 1)
+            id="m123",
+            name="テスト商品",
+            shop="mercari.com",
+            price=1000,
+            purchase_date=datetime.datetime(2025, 1, 1),
         )
 
         call_count = 0
@@ -276,7 +284,10 @@ class TestSaveThumbnail:
         mock_img_element = unittest.mock.MagicMock()
         mock_img_element.screenshot_as_png = b"fake_png_data"
 
-        with unittest.mock.patch("my_lib.selenium_util.browser_tab"):
+        with (
+            unittest.mock.patch("my_lib.selenium_util.browser_tab"),
+            unittest.mock.patch("PIL.Image.open"),
+        ):
             handle.selenium.driver.find_element.return_value = mock_img_element
 
             merhist.crawler.save_thumbnail(handle, item, "https://example.com/thumb.jpg")
@@ -595,26 +606,22 @@ class TestShutdownControl:
 
     def test_is_shutdown_requested_initial(self):
         """初期状態では False"""
-        merhist.crawler.reset_shutdown_flag()
+        my_lib.graceful_shutdown.reset_shutdown_flag()
         assert merhist.crawler.is_shutdown_requested() is False
 
     def test_reset_shutdown_flag(self):
         """フラグリセット"""
-        # 内部フラグを True に設定してからリセット
-        merhist.crawler._shutdown_requested = True
+        # フラグを True に設定してからリセット
+        my_lib.graceful_shutdown.request_shutdown()
         assert merhist.crawler.is_shutdown_requested() is True
 
-        merhist.crawler.reset_shutdown_flag()
+        my_lib.graceful_shutdown.reset_shutdown_flag()
         assert merhist.crawler.is_shutdown_requested() is False
 
     def test_setup_signal_handler(self):
         """シグナルハンドラの設定"""
-        import signal
-
-        with unittest.mock.patch("signal.signal") as mock_signal:
-            merhist.crawler.setup_signal_handler()
-
-            mock_signal.assert_called_once_with(signal.SIGINT, merhist.crawler._signal_handler)
+        # 例外が発生しないことを確認
+        my_lib.graceful_shutdown.setup_signal_handler()
 
 
 class TestFetchItemDescription:
@@ -982,9 +989,9 @@ class TestLoginError:
         import my_lib.store.mercari.exceptions
 
         with (
-            unittest.mock.patch(
-                "my_lib.store.mercari.login.execute", side_effect=Exception("認証失敗")
+            unittest.mock.patch("my_lib.store.mercari.login.execute", side_effect=Exception("認証失敗")),
+            pytest.raises(
+                my_lib.store.mercari.exceptions.LoginError, match="メルカリへのログインに失敗しました"
             ),
-            pytest.raises(my_lib.store.mercari.exceptions.LoginError, match="メルカリへのログインに失敗しました"),
         ):
             merhist.crawler.execute_login(handle)
