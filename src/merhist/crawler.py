@@ -26,11 +26,12 @@ import math
 import pathlib
 import random
 import re
-import signal
-import sys
 import time
 import traceback
 from typing import Any, TypedDict, TypeVar
+
+import my_lib.graceful_shutdown
+import PIL.Image
 
 import merhist.const
 import merhist.exceptions
@@ -54,56 +55,11 @@ STATUS_SOLD_PAGE: str = "[収集] 販売ページ"
 STATUS_SOLD_ITEM: str = "[収集] 販売商品"
 STATUS_BOUGHT_ITEM: str = "[収集] 購入商品"
 
-# Graceful shutdown 用のフラグとハンドル
-_shutdown_requested: bool = False
-_current_handle: merhist.handle.Handle | None = None
 
-
-def _signal_handler(signum: int, frame: Any) -> None:
-    """Ctrl+C シグナルハンドラ"""
-    global _shutdown_requested, _current_handle
-
-    # 既にシャットダウンリクエスト中の場合は強制終了
-    if _shutdown_requested:
-        logging.warning("強制終了します")
-        sys.exit(1)
-
-    try:
-        # Rich Live を一時停止して入力を受け付ける
-        if _current_handle is not None:
-            _current_handle.pause_live()
-
-        response = input("\n終了しますか？(y/N): ").strip().lower()
-        if response == "y":
-            _shutdown_requested = True
-            logging.info("終了リクエストを受け付けました。現在の処理が完了次第終了します...")
-        else:
-            logging.info("処理を継続します")
-
-        # Rich Live を再開
-        if _current_handle is not None:
-            _current_handle.resume_live()
-    except EOFError:
-        # 入力が取得できない場合は継続
-        logging.info("処理を継続します")
-        if _current_handle is not None:
-            _current_handle.resume_live()
-
-
-def setup_signal_handler() -> None:
-    """シグナルハンドラを設定"""
-    signal.signal(signal.SIGINT, _signal_handler)
-
-
+# Graceful shutdown 用のエイリアス（my_lib.graceful_shutdown を使用）
 def is_shutdown_requested() -> bool:
     """シャットダウンがリクエストされているかを返す"""
-    return _shutdown_requested
-
-
-def reset_shutdown_flag() -> None:
-    """シャットダウンフラグをリセット"""
-    global _shutdown_requested
-    _shutdown_requested = False
+    return my_lib.graceful_shutdown.is_shutdown_requested()
 
 
 LOGIN_RETRY_COUNT: int = 2
@@ -200,11 +156,27 @@ def visit_url(handle: merhist.handle.Handle, url: str, xpath: str = merhist.xpat
 def save_thumbnail(handle: merhist.handle.Handle, item: merhist.item.ItemBase, thumb_url: str) -> None:
     driver, _ = handle.get_selenium_driver()
 
+    thumb_path = pathlib.Path(handle.get_thumb_path(item))
+
     with my_lib.selenium_util.browser_tab(driver, thumb_url):
         png_data = driver.find_element(selenium.webdriver.common.by.By.XPATH, "//img").screenshot_as_png
 
-        with pathlib.Path(handle.get_thumb_path(item)).open("wb") as f:
+        if not png_data:
+            raise RuntimeError(f"サムネイル画像データが空です: {thumb_path}")
+
+        with thumb_path.open("wb") as f:
             f.write(png_data)
+
+        if thumb_path.stat().st_size == 0:
+            thumb_path.unlink()
+            raise RuntimeError(f"サムネイル画像のサイズが0です: {thumb_path}")
+
+        try:
+            with PIL.Image.open(thumb_path) as img:
+                img.verify()
+        except Exception as e:
+            thumb_path.unlink()
+            raise RuntimeError(f"サムネイル画像が破損しています: {thumb_path}") from e
 
 
 def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
@@ -738,15 +710,13 @@ def fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool = 
 
 
 def fetch_order_item_list(handle: merhist.handle.Handle, continue_mode: ContinueMode) -> None:
-    global _current_handle
-
     handle.set_status("🤖 巡回ロボットの準備をしています...")
     driver, _ = handle.get_selenium_driver()
 
-    # シグナルハンドラを設定（handle を保存してシグナルハンドラからアクセス可能にする）
-    _current_handle = handle
-    setup_signal_handler()
-    reset_shutdown_flag()
+    # シグナルハンドラを設定
+    my_lib.graceful_shutdown.set_live_display(handle)
+    my_lib.graceful_shutdown.setup_signal_handler()
+    my_lib.graceful_shutdown.reset_shutdown_flag()
 
     handle.set_status("📥 注文履歴の収集を開始します...")
 
