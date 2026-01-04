@@ -8,6 +8,7 @@ import datetime
 import unittest.mock
 
 import openpyxl
+import openpyxl.styles
 import pytest
 
 import merhist.config
@@ -87,7 +88,7 @@ class TestGenerateSheet:
     def handle(self, mock_config):
         """Handle インスタンス"""
         h = merhist.handle.Handle(config=mock_config)
-        h.progress_manager = unittest.mock.MagicMock()
+        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         h.progress_bar = {}
         yield h
         h.finish()
@@ -149,7 +150,7 @@ class TestGenerateTableExcel:
     def handle(self, mock_config):
         """Handle インスタンス"""
         h = merhist.handle.Handle(config=mock_config)
-        h.progress_manager = unittest.mock.MagicMock()
+        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         mock_counter = unittest.mock.MagicMock()
         h.progress_bar = {
             merhist.history.STATUS_ALL: mock_counter,
@@ -351,7 +352,7 @@ class TestExcelOutput:
     def handle(self, mock_config):
         """Handle インスタンス"""
         h = merhist.handle.Handle(config=mock_config)
-        h.progress_manager = unittest.mock.MagicMock()
+        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         mock_counter = unittest.mock.MagicMock()
         h.progress_bar = {
             merhist.history.STATUS_ALL: mock_counter,
