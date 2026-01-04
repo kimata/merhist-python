@@ -29,16 +29,16 @@ import openpyxl.utils
 import merhist.crawler
 import merhist.handle
 
-STATUS_INSERT_SOLD_ITEM: str = "[生成] 販売商品"
-STATUS_INSERT_BOUGHT_ITEM: str = "[生成] 購入商品"
-STATUS_ALL: str = "[生成] Excel"
+_STATUS_INSERT_SOLD_ITEM: str = "[生成] 販売商品"
+_STATUS_INSERT_BOUGHT_ITEM: str = "[生成] 購入商品"
+_STATUS_ALL: str = "[生成] Excel"
 
 
-SHOP_NAME: str = "メルカリ"
+_SHOP_NAME: str = "メルカリ"
 
-SHEET_DEF = {
+_SHEET_DEF = {
     "BOUGHT": {
-        "SHEET_TITLE": f"【{SHOP_NAME}】購入",
+        "SHEET_TITLE": f"【{_SHOP_NAME}】購入",
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": {"default": 80, "without_thumb": 25}},
             "col": {
@@ -47,7 +47,7 @@ SHEET_DEF = {
                     "pos": 2,
                     "width": 15,
                     "format": "@",
-                    "value": SHOP_NAME,
+                    "value": _SHOP_NAME,
                 },
                 "date": {
                     # NOTE: メルカリ向けでは，他のショップで「date」としている内容を
@@ -108,7 +108,7 @@ SHEET_DEF = {
         },
     },
     "SOLD": {
-        "SHEET_TITLE": f"【{SHOP_NAME}】販売",
+        "SHEET_TITLE": f"【{_SHOP_NAME}】販売",
         "TABLE_HEADER": {
             "row": {"pos": 2, "height": {"default": 80, "without_thumb": 25}},
             "col": {
@@ -117,7 +117,7 @@ SHEET_DEF = {
                     "pos": 2,
                     "width": 15,
                     "format": "@",
-                    "value": SHOP_NAME,
+                    "value": _SHOP_NAME,
                 },
                 "date": {
                     # NOTE: メルカリ向けでは，他のショップで「date」としている内容を「purchase_date」
@@ -220,14 +220,14 @@ def _warning_handler(item: my_lib.openpyxl_util.RowData, message: str) -> None:
     logging.warning("⚠️ %s%s: %s", date_str, name, message)
 
 
-def generate_sheet(
+def _generate_sheet(
     handle: merhist.handle.Handle,
     book: openpyxl.Workbook,
     is_need_thumb: bool = True,
 ) -> None:
     transaction_list: list[dict[str, Any]] = [
-        {"mode": "BOUGHT", "item_list": handle.get_bought_item_list(), "status": STATUS_INSERT_BOUGHT_ITEM},
-        {"mode": "SOLD", "item_list": handle.get_sold_item_list(), "status": STATUS_INSERT_SOLD_ITEM},
+        {"mode": "BOUGHT", "item_list": handle.get_bought_item_list(), "status": _STATUS_INSERT_BOUGHT_ITEM},
+        {"mode": "SOLD", "item_list": handle.get_sold_item_list(), "status": _STATUS_INSERT_SOLD_ITEM},
     ]
 
     for transaction_info in transaction_list:
@@ -237,11 +237,11 @@ def generate_sheet(
         my_lib.openpyxl_util.generate_list_sheet(
             book,
             transaction_info["item_list"],
-            SHEET_DEF[transaction_info["mode"]],
+            _SHEET_DEF[transaction_info["mode"]],
             is_need_thumb,
             lambda item: handle.get_thumb_path(item),  # pyright: ignore[reportArgumentType]
             lambda status: handle.set_status(status),
-            lambda: handle.update_progress_bar(STATUS_ALL),
+            lambda: handle.update_progress_bar(_STATUS_ALL),
             lambda status_key=status_key: handle.update_progress_bar(status_key),
             warning_handler=_warning_handler,
         )
@@ -254,18 +254,18 @@ def generate_table_excel(
 ) -> None:
     handle.set_status("📊 エクセルファイルの作成を開始します...")
     # 直接呼び出し 3 回 + generate_list_sheet 内での呼び出し 3 回 × 2 シート
-    handle.set_progress_bar(STATUS_ALL, 3 + 3 * 2)
+    handle.set_progress_bar(_STATUS_ALL, 3 + 3 * 2)
 
     logging.info("Start to Generate excel file")
 
     book = openpyxl.Workbook()
     book._named_styles["Normal"].font = handle.config.excel_font  # pyright: ignore[reportAttributeAccessIssue]
 
-    handle.update_progress_bar(STATUS_ALL)
+    handle.update_progress_bar(_STATUS_ALL)
 
     handle.normalize()
 
-    generate_sheet(handle, book, is_need_thumb)
+    _generate_sheet(handle, book, is_need_thumb)
 
     book.remove(book.worksheets[0])
 
@@ -273,11 +273,11 @@ def generate_table_excel(
 
     book.save(excel_file)
 
-    handle.update_progress_bar(STATUS_ALL)
+    handle.update_progress_bar(_STATUS_ALL)
 
     book.close()
 
-    handle.update_progress_bar(STATUS_ALL)
+    handle.update_progress_bar(_STATUS_ALL)
 
     handle.set_status("🎉 完了しました！")
 

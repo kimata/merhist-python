@@ -11,7 +11,8 @@ from collections.abc import Generator
 import pytest
 
 import merhist.database
-from merhist.database import Database, is_sqlite_file
+from merhist.database import Database
+from merhist.database import _is_sqlite_file as is_sqlite_file
 from merhist.item import BoughtItem, SoldItem
 
 # === テスト用定数 ===
@@ -108,7 +109,7 @@ class TestIsSqliteFile:
     def test_file_with_fake_header(self, tmp_path: pathlib.Path):
         """SQLite ヘッダで始まるが不正なファイル"""
         fake_file = tmp_path / "fake.db"
-        fake_file.write_bytes(merhist.database.SQLITE_MAGIC + b"\x00" * 100)
+        fake_file.write_bytes(merhist.database._SQLITE_MAGIC + b"\x00" * 100)
         assert is_sqlite_file(fake_file) is True  # ヘッダのみで判定
 
 

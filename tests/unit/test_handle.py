@@ -410,9 +410,9 @@ class TestRichStyleValidation:
         import rich.style
 
         # 通常時のスタイル（水色背景・黒文字）
-        normal_style = merhist.handle.STATUS_STYLE_NORMAL
+        normal_style = merhist.handle._STATUS_STYLE_NORMAL
         # エラー時のスタイル（赤背景・白文字）
-        error_style = merhist.handle.STATUS_STYLE_ERROR
+        error_style = merhist.handle._STATUS_STYLE_ERROR
 
         for style_str in [normal_style, error_style]:
             # スタイルが正しくパースされることを確認
