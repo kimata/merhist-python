@@ -31,11 +31,11 @@ import merhist.database
 import merhist.item
 
 # SQLite スキーマファイルのパス（プロジェクトルートからの相対パス）
-SQLITE_SCHEMA_PATH = pathlib.Path(__file__).parent.parent.parent / "schema" / "sqlite.schema"
+_SQLITE_SCHEMA_PATH = pathlib.Path(__file__).parent.parent.parent / "schema" / "sqlite.schema"
 
 # ステータスバーの色定義
-STATUS_STYLE_NORMAL = "bold #FFFFFF on #E72121"  # メルカリレッド
-STATUS_STYLE_ERROR = "bold white on red"
+_STATUS_STYLE_NORMAL = "bold #FFFFFF on #E72121"  # メルカリレッド
+_STATUS_STYLE_ERROR = "bold white on red"
 
 
 @dataclass
@@ -152,7 +152,7 @@ class Handle:
 
         self._db = merhist.database.open_database(
             self.config.cache_file_path,
-            SQLITE_SCHEMA_PATH,
+            _SQLITE_SCHEMA_PATH,
         )
         # メタデータからカウンタを復元
         self.trading.sold_total_count = self._db.get_metadata_int("sold_total_count", 0)
@@ -194,7 +194,7 @@ class Handle:
 
     def _create_status_bar(self) -> rich.table.Table:
         """ステータスバーを作成（左: タイトル、中央: 進捗、右: 時間）"""
-        style = STATUS_STYLE_ERROR if self._status_is_error else STATUS_STYLE_NORMAL
+        style = _STATUS_STYLE_ERROR if self._status_is_error else _STATUS_STYLE_NORMAL
         elapsed = time.time() - self._start_time
         elapsed_str = f"{int(elapsed // 60):02d}:{int(elapsed % 60):02d}"
 

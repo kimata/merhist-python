@@ -22,33 +22,33 @@ class TestSheetDef:
 
     def test_bought_sheet_def_exists(self):
         """購入シート定義が存在"""
-        assert "BOUGHT" in merhist.history.SHEET_DEF
-        assert "SHEET_TITLE" in merhist.history.SHEET_DEF["BOUGHT"]
-        assert "TABLE_HEADER" in merhist.history.SHEET_DEF["BOUGHT"]
+        assert "BOUGHT" in merhist.history._SHEET_DEF
+        assert "SHEET_TITLE" in merhist.history._SHEET_DEF["BOUGHT"]
+        assert "TABLE_HEADER" in merhist.history._SHEET_DEF["BOUGHT"]
 
     def test_sold_sheet_def_exists(self):
         """販売シート定義が存在"""
-        assert "SOLD" in merhist.history.SHEET_DEF
-        assert "SHEET_TITLE" in merhist.history.SHEET_DEF["SOLD"]
-        assert "TABLE_HEADER" in merhist.history.SHEET_DEF["SOLD"]
+        assert "SOLD" in merhist.history._SHEET_DEF
+        assert "SHEET_TITLE" in merhist.history._SHEET_DEF["SOLD"]
+        assert "TABLE_HEADER" in merhist.history._SHEET_DEF["SOLD"]
 
     def test_bought_columns(self):
         """購入シートのカラム定義"""
-        cols = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
         expected_cols = ["shop_name", "date", "name", "image", "count", "price", "condition"]
         for col in expected_cols:
             assert col in cols
 
     def test_sold_columns(self):
         """販売シートのカラム定義"""
-        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
         expected_cols = ["shop_name", "date", "name", "price", "commission", "postage", "profit"]
         for col in expected_cols:
             assert col in cols
 
     def test_link_func_bought(self):
         """購入シートのリンク関数"""
-        cols = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
         item = {"url": "https://example.com/item", "order_url": "https://example.com/order"}
 
         assert cols["id"]["link_func"](item) == "https://example.com/item"
@@ -56,14 +56,14 @@ class TestSheetDef:
 
     def test_link_func_sold(self):
         """販売シートのリンク関数"""
-        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
         item = {"url": "https://example.com/item", "id": "m123", "shop": "mercari.com"}
 
         assert cols["id"]["link_func"](item) == "https://example.com/item"
 
     def test_conv_func_commission_rate(self):
         """手数料率の変換関数"""
-        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
         assert cols["commission_rate"]["conv_func"](10) == 0.1
         assert cols["commission_rate"]["conv_func"](5) == 0.05
 
@@ -98,7 +98,7 @@ class TestGenerateSheet:
         book = openpyxl.Workbook()
 
         with unittest.mock.patch("my_lib.openpyxl_util.generate_list_sheet") as mock_gen:
-            merhist.history.generate_sheet(handle, book, is_need_thumb=True)
+            merhist.history._generate_sheet(handle, book, is_need_thumb=True)
 
             assert mock_gen.call_count == 2
 
@@ -114,7 +114,7 @@ class TestGenerateSheet:
         handle.db.upsert_sold_item(sold_item)
 
         with unittest.mock.patch("my_lib.openpyxl_util.generate_list_sheet") as mock_gen:
-            merhist.history.generate_sheet(handle, book, is_need_thumb=True)
+            merhist.history._generate_sheet(handle, book, is_need_thumb=True)
 
             assert mock_gen.call_count == 2
 
@@ -123,7 +123,7 @@ class TestGenerateSheet:
         book = openpyxl.Workbook()
 
         with unittest.mock.patch("my_lib.openpyxl_util.generate_list_sheet") as mock_gen:
-            merhist.history.generate_sheet(handle, book, is_need_thumb=False)
+            merhist.history._generate_sheet(handle, book, is_need_thumb=False)
 
             # is_need_thumb=False で呼ばれることを確認
             for call in mock_gen.call_args_list:
@@ -153,9 +153,9 @@ class TestGenerateTableExcel:
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         mock_counter = unittest.mock.MagicMock()
         h.progress_bar = {
-            merhist.history.STATUS_ALL: mock_counter,
-            merhist.history.STATUS_INSERT_SOLD_ITEM: mock_counter,
-            merhist.history.STATUS_INSERT_BOUGHT_ITEM: mock_counter,
+            merhist.history._STATUS_ALL: mock_counter,
+            merhist.history._STATUS_INSERT_SOLD_ITEM: mock_counter,
+            merhist.history._STATUS_INSERT_BOUGHT_ITEM: mock_counter,
         }
         yield h
         h.finish()
@@ -224,7 +224,7 @@ class TestGenerateTableExcel:
             # update_progress_bar が適切に呼ばれることを確認
             # STATUS_ALL で少なくとも3回呼ばれる（Workbook作成後、save後、close後）
             status_all_calls = [
-                call for call in mock_update.call_args_list if call[0][0] == merhist.history.STATUS_ALL
+                call for call in mock_update.call_args_list if call[0][0] == merhist.history._STATUS_ALL
             ]
             assert len(status_all_calls) >= 3
 
@@ -314,22 +314,22 @@ class TestStatusConstants:
 
     def test_status_insert_sold_item(self):
         """STATUS_INSERT_SOLD_ITEM が定義されている"""
-        assert merhist.history.STATUS_INSERT_SOLD_ITEM
-        assert "販売" in merhist.history.STATUS_INSERT_SOLD_ITEM
+        assert merhist.history._STATUS_INSERT_SOLD_ITEM
+        assert "販売" in merhist.history._STATUS_INSERT_SOLD_ITEM
 
     def test_status_insert_bought_item(self):
         """STATUS_INSERT_BOUGHT_ITEM が定義されている"""
-        assert merhist.history.STATUS_INSERT_BOUGHT_ITEM
-        assert "購入" in merhist.history.STATUS_INSERT_BOUGHT_ITEM
+        assert merhist.history._STATUS_INSERT_BOUGHT_ITEM
+        assert "購入" in merhist.history._STATUS_INSERT_BOUGHT_ITEM
 
     def test_status_all(self):
         """STATUS_ALL が定義されている"""
-        assert merhist.history.STATUS_ALL
-        assert "Excel" in merhist.history.STATUS_ALL
+        assert merhist.history._STATUS_ALL
+        assert "Excel" in merhist.history._STATUS_ALL
 
     def test_shop_name(self):
         """SHOP_NAME が定義されている"""
-        assert merhist.history.SHOP_NAME == "メルカリ"
+        assert merhist.history._SHOP_NAME == "メルカリ"
 
 
 class TestExcelOutput:
@@ -355,9 +355,9 @@ class TestExcelOutput:
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         mock_counter = unittest.mock.MagicMock()
         h.progress_bar = {
-            merhist.history.STATUS_ALL: mock_counter,
-            merhist.history.STATUS_INSERT_SOLD_ITEM: mock_counter,
-            merhist.history.STATUS_INSERT_BOUGHT_ITEM: mock_counter,
+            merhist.history._STATUS_ALL: mock_counter,
+            merhist.history._STATUS_INSERT_SOLD_ITEM: mock_counter,
+            merhist.history._STATUS_INSERT_BOUGHT_ITEM: mock_counter,
         }
         yield h
         h.finish()
@@ -454,29 +454,29 @@ class TestSheetDefFormats:
 
     def test_bought_date_format(self):
         """購入シートの日付フォーマット"""
-        cols = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
         assert cols["date"]["format"] == 'yyyy"年"mm"月"dd"日 ("aaa")"'
 
     def test_sold_date_format(self):
         """販売シートの日付フォーマット"""
-        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
         assert cols["date"]["format"] == 'yyyy"年"mm"月"dd"日 ("aaa")"'
 
     def test_price_format(self):
         """価格フォーマット（通貨）"""
-        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
         assert "¥" in cols["price"]["format"]
         assert "#,##0" in cols["price"]["format"]
 
     def test_commission_rate_format(self):
         """手数料率フォーマット（パーセント）"""
-        cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
         assert cols["commission_rate"]["format"] == "0%"
 
     def test_row_height_settings(self):
         """行高さの設定"""
-        bought_row = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["row"]
-        sold_row = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["row"]
+        bought_row = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["row"]
+        sold_row = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["row"]
 
         # サムネイルありの場合の高さ
         assert bought_row["height"]["default"] == 80
@@ -488,8 +488,8 @@ class TestSheetDefFormats:
 
     def test_formal_key_mapping(self):
         """formal_key によるフィールドマッピング"""
-        bought_cols = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
-        sold_cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        bought_cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        sold_cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
 
         # date は purchase_date にマッピング
         assert bought_cols["date"]["formal_key"] == "purchase_date"
@@ -501,8 +501,8 @@ class TestSheetDefFormats:
 
     def test_optional_fields(self):
         """オプショナルフィールドの定義"""
-        bought_cols = merhist.history.SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
-        sold_cols = merhist.history.SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        bought_cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        sold_cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
 
         # price は購入シートではオプショナル
         assert bought_cols["price"].get("optional") is True

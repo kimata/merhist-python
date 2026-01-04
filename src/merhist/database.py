@@ -10,16 +10,16 @@ import sqlite3
 
 import merhist.item
 
-SQLITE_MAGIC = b"SQLite format 3\x00"
+_SQLITE_MAGIC = b"SQLite format 3\x00"
 
 
-def is_sqlite_file(path: pathlib.Path) -> bool:
+def _is_sqlite_file(path: pathlib.Path) -> bool:
     """ファイルが SQLite 形式かどうかを判定"""
     if not path.exists() or path.stat().st_size < 16:
         return False
     with path.open("rb") as f:
         header = f.read(16)
-    return header.startswith(SQLITE_MAGIC)
+    return header.startswith(_SQLITE_MAGIC)
 
 
 class Database:

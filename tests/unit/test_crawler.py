@@ -55,10 +55,10 @@ class TestFetchItemDetail:
         )
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_item_description") as mock_desc,
-            unittest.mock.patch("merhist.crawler.fetch_item_transaction") as mock_trans,
+            unittest.mock.patch("merhist.crawler._fetch_item_description") as mock_desc,
+            unittest.mock.patch("merhist.crawler._fetch_item_transaction") as mock_trans,
         ):
-            result = merhist.crawler.fetch_item_detail(handle, item)
+            result = merhist.crawler._fetch_item_detail(handle, item)
 
             mock_desc.assert_called_once_with(handle, item)
             mock_trans.assert_called_once_with(handle, item)
@@ -86,12 +86,14 @@ class TestFetchItemDetail:
                 raise Exception("一時的なエラー")
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_item_description", side_effect=mock_fetch_description),
-            unittest.mock.patch("merhist.crawler.fetch_item_transaction"),
+            unittest.mock.patch(
+                "merhist.crawler._fetch_item_description", side_effect=mock_fetch_description
+            ),
+            unittest.mock.patch("merhist.crawler._fetch_item_transaction"),
             unittest.mock.patch("time.sleep"),
             unittest.mock.patch("my_lib.selenium_util.dump_page"),
         ):
-            result = merhist.crawler.fetch_item_detail(handle, item)
+            result = merhist.crawler._fetch_item_detail(handle, item)
 
             assert call_count == 2
             assert result.id == "m123"
@@ -102,12 +104,12 @@ class TestFetchItemDetail:
 
         with (
             unittest.mock.patch(
-                "merhist.crawler.fetch_item_description", side_effect=Exception("永続的なエラー")
+                "merhist.crawler._fetch_item_description", side_effect=Exception("永続的なエラー")
             ),
             unittest.mock.patch("time.sleep"),
             unittest.mock.patch("my_lib.selenium_util.dump_page"),
         ):
-            result = merhist.crawler.fetch_item_detail(handle, item)
+            result = merhist.crawler._fetch_item_detail(handle, item)
 
             assert result.error == "永続的なエラー"
 
@@ -117,11 +119,11 @@ class TestFetchItemDetail:
         item = merhist.item.BoughtItem(id="m123", name="テスト商品", shop="mercari.com", price=1000)
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_item_description"),
-            unittest.mock.patch("merhist.crawler.fetch_item_transaction"),
+            unittest.mock.patch("merhist.crawler._fetch_item_description"),
+            unittest.mock.patch("merhist.crawler._fetch_item_transaction"),
             unittest.mock.patch("my_lib.pretty.format", return_value="formatted"),
         ):
-            result = merhist.crawler.fetch_item_detail(handle, item)
+            result = merhist.crawler._fetch_item_detail(handle, item)
 
             assert result.id == "m123"
 
@@ -154,7 +156,7 @@ class TestWaitForLoading:
     def test_wait_for_loading_success(self, handle):
         """正常に読み込み完了を待機"""
         with unittest.mock.patch("time.sleep"):
-            merhist.crawler.wait_for_loading(handle, "//div", sec=0.1)
+            merhist.crawler._wait_for_loading(handle, "//div", sec=0.1)
 
             handle.selenium.wait.until.assert_called_once()
 
@@ -166,7 +168,7 @@ class TestWaitForLoading:
         ]
 
         with unittest.mock.patch("time.sleep"):
-            merhist.crawler.wait_for_loading(handle, "//div", sec=0.1, retry=True)
+            merhist.crawler._wait_for_loading(handle, "//div", sec=0.1, retry=True)
 
             assert handle.selenium.wait.until.call_count == 2
             handle.selenium.driver.refresh.assert_called_once()
@@ -179,7 +181,7 @@ class TestWaitForLoading:
             unittest.mock.patch("time.sleep"),
             pytest.raises(selenium.common.exceptions.TimeoutException),
         ):
-            merhist.crawler.wait_for_loading(handle, "//div", sec=0.1, retry=False)
+            merhist.crawler._wait_for_loading(handle, "//div", sec=0.1, retry=False)
 
 
 class TestVisitUrl:
@@ -210,7 +212,7 @@ class TestVisitUrl:
     def test_visit_url(self, handle):
         """URLにアクセス"""
         with unittest.mock.patch("time.sleep"):
-            merhist.crawler.visit_url(handle, "https://example.com", "//div")
+            merhist.crawler._visit_url(handle, "https://example.com", "//div")
 
             handle.selenium.driver.get.assert_called_once_with("https://example.com")
 
@@ -290,7 +292,7 @@ class TestSaveThumbnail:
         ):
             handle.selenium.driver.find_element.return_value = mock_img_element
 
-            merhist.crawler.save_thumbnail(handle, item, "https://example.com/thumb.jpg")
+            merhist.crawler._save_thumbnail(handle, item, "https://example.com/thumb.jpg")
 
             handle.selenium.driver.find_element.assert_called_once()
 
@@ -324,8 +326,8 @@ class TestFetchItemTransaction:
         """通常アイテムのトランザクション取得"""
         item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
 
-        with unittest.mock.patch("merhist.crawler.fetch_item_transaction_normal") as mock_normal:
-            merhist.crawler.fetch_item_transaction(handle, item)
+        with unittest.mock.patch("merhist.crawler._fetch_item_transaction_normal") as mock_normal:
+            merhist.crawler._fetch_item_transaction(handle, item)
 
             mock_normal.assert_called_once_with(handle, item)
 
@@ -333,8 +335,8 @@ class TestFetchItemTransaction:
         """Shopsアイテムのトランザクション取得"""
         item = merhist.item.BoughtItem(id="abc123", shop="mercari-shops.com")
 
-        with unittest.mock.patch("merhist.crawler.fetch_item_transaction_shop") as mock_shop:
-            merhist.crawler.fetch_item_transaction(handle, item)
+        with unittest.mock.patch("merhist.crawler._fetch_item_transaction_shop") as mock_shop:
+            merhist.crawler._fetch_item_transaction(handle, item)
 
             mock_shop.assert_called_once_with(handle, item)
 
@@ -373,14 +375,14 @@ class TestFetchSoldItemList:
         mock_counter.total = 0
         mock_counter.count = 0
         handle.progress_bar = {
-            merhist.crawler.STATUS_SOLD_PAGE: mock_counter,
-            merhist.crawler.STATUS_SOLD_ITEM: mock_counter,
+            merhist.crawler._STATUS_SOLD_PAGE: mock_counter,
+            merhist.crawler._STATUS_SOLD_ITEM: mock_counter,
         }
 
-        with unittest.mock.patch("merhist.crawler.fetch_sold_count") as mock_count:
+        with unittest.mock.patch("merhist.crawler._fetch_sold_count") as mock_count:
             mock_count.side_effect = lambda h: setattr(h.trading, "sold_total_count", 0)
 
-            merhist.crawler.fetch_sold_item_list(handle, continue_mode=True)
+            merhist.crawler._fetch_sold_item_list(handle, continue_mode=True)
 
             mock_count.assert_called_once()
 
@@ -396,15 +398,15 @@ class TestFetchSoldItemList:
         mock_counter.total = 10
         mock_counter.count = 10
         handle.progress_bar = {
-            merhist.crawler.STATUS_SOLD_PAGE: mock_counter,
-            merhist.crawler.STATUS_SOLD_ITEM: mock_counter,
+            merhist.crawler._STATUS_SOLD_PAGE: mock_counter,
+            merhist.crawler._STATUS_SOLD_ITEM: mock_counter,
         }
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_sold_count"),
-            unittest.mock.patch("merhist.crawler.fetch_sold_item_list_by_page") as mock_fetch_page,
+            unittest.mock.patch("merhist.crawler._fetch_sold_count"),
+            unittest.mock.patch("merhist.crawler._fetch_sold_item_list_by_page") as mock_fetch_page,
         ):
-            merhist.crawler.fetch_sold_item_list(handle, continue_mode=True)
+            merhist.crawler._fetch_sold_item_list(handle, continue_mode=True)
 
             # 全てキャッシュ済みなのでページ取得は呼ばれない
             mock_fetch_page.assert_not_called()
@@ -439,10 +441,10 @@ class TestFetchBoughtItemInfoList:
         """正常に購入履歴取得"""
         with (
             unittest.mock.patch(
-                "merhist.crawler.fetch_bought_item_info_list_impl", return_value=[]
+                "merhist.crawler._fetch_bought_item_info_list_impl", return_value=[]
             ) as mock_impl,
         ):
-            result = merhist.crawler.fetch_bought_item_info_list(handle, continue_mode=True)
+            result = merhist.crawler._fetch_bought_item_info_list(handle, continue_mode=True)
 
             mock_impl.assert_called_once()
             assert result == []
@@ -459,10 +461,10 @@ class TestFetchBoughtItemInfoList:
             return []
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_bought_item_info_list_impl", side_effect=mock_impl),
+            unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list_impl", side_effect=mock_impl),
             unittest.mock.patch("time.sleep"),
         ):
-            result = merhist.crawler.fetch_bought_item_info_list(handle, continue_mode=True)
+            result = merhist.crawler._fetch_bought_item_info_list(handle, continue_mode=True)
 
             assert call_count == 2
             assert result == []
@@ -471,12 +473,12 @@ class TestFetchBoughtItemInfoList:
         """最大リトライ回数超過"""
         with (
             unittest.mock.patch(
-                "merhist.crawler.fetch_bought_item_info_list_impl", side_effect=Exception("永続的エラー")
+                "merhist.crawler._fetch_bought_item_info_list_impl", side_effect=Exception("永続的エラー")
             ),
             unittest.mock.patch("time.sleep"),
             pytest.raises(Exception, match="永続的エラー"),
         ):
-            merhist.crawler.fetch_bought_item_info_list(handle, continue_mode=True)
+            merhist.crawler._fetch_bought_item_info_list(handle, continue_mode=True)
 
 
 class TestFetchBoughtItemList:
@@ -508,23 +510,23 @@ class TestFetchBoughtItemList:
     def test_fetch_bought_item_list_empty(self, handle):
         """購入履歴なし"""
         mock_counter = unittest.mock.MagicMock()
-        handle.progress_bar = {merhist.crawler.STATUS_BOUGHT_ITEM: mock_counter}
+        handle.progress_bar = {merhist.crawler._STATUS_BOUGHT_ITEM: mock_counter}
 
-        with unittest.mock.patch("merhist.crawler.fetch_bought_item_info_list", return_value=[]):
-            merhist.crawler.fetch_bought_item_list(handle, continue_mode=True)
+        with unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list", return_value=[]):
+            merhist.crawler._fetch_bought_item_list(handle, continue_mode=True)
 
     def test_fetch_bought_item_list_with_items(self, handle):
         """購入履歴あり"""
         item = merhist.item.BoughtItem(id="m123", name="テスト商品", shop="mercari.com")
 
         mock_counter = unittest.mock.MagicMock()
-        handle.progress_bar = {merhist.crawler.STATUS_BOUGHT_ITEM: mock_counter}
+        handle.progress_bar = {merhist.crawler._STATUS_BOUGHT_ITEM: mock_counter}
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_bought_item_info_list", return_value=[item]),
-            unittest.mock.patch("merhist.crawler.fetch_item_detail", return_value=item) as mock_detail,
+            unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list", return_value=[item]),
+            unittest.mock.patch("merhist.crawler._fetch_item_detail", return_value=item) as mock_detail,
         ):
-            merhist.crawler.fetch_bought_item_list(handle, continue_mode=True)
+            merhist.crawler._fetch_bought_item_list(handle, continue_mode=True)
 
             mock_detail.assert_called_once()
             assert handle.get_bought_checked_count() == 1
@@ -536,13 +538,13 @@ class TestFetchBoughtItemList:
         handle.db.upsert_bought_item(item)
 
         mock_counter = unittest.mock.MagicMock()
-        handle.progress_bar = {merhist.crawler.STATUS_BOUGHT_ITEM: mock_counter}
+        handle.progress_bar = {merhist.crawler._STATUS_BOUGHT_ITEM: mock_counter}
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_bought_item_info_list", return_value=[item]),
-            unittest.mock.patch("merhist.crawler.fetch_item_detail") as mock_detail,
+            unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list", return_value=[item]),
+            unittest.mock.patch("merhist.crawler._fetch_item_detail") as mock_detail,
         ):
-            merhist.crawler.fetch_bought_item_list(handle, continue_mode=True)
+            merhist.crawler._fetch_bought_item_list(handle, continue_mode=True)
 
             # キャッシュ済みなので詳細取得は呼ばれない
             mock_detail.assert_not_called()
@@ -579,8 +581,8 @@ class TestFetchOrderItemList:
         continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_sold_item_list") as mock_sold,
-            unittest.mock.patch("merhist.crawler.fetch_bought_item_list") as mock_bought,
+            unittest.mock.patch("merhist.crawler._fetch_sold_item_list") as mock_sold,
+            unittest.mock.patch("merhist.crawler._fetch_bought_item_list") as mock_bought,
         ):
             merhist.crawler.fetch_order_item_list(handle, continue_mode)
 
@@ -592,8 +594,8 @@ class TestFetchOrderItemList:
         continue_mode: merhist.crawler.ContinueMode = {"bought": False, "sold": False}
 
         with (
-            unittest.mock.patch("merhist.crawler.fetch_sold_item_list") as mock_sold,
-            unittest.mock.patch("merhist.crawler.fetch_bought_item_list") as mock_bought,
+            unittest.mock.patch("merhist.crawler._fetch_sold_item_list") as mock_sold,
+            unittest.mock.patch("merhist.crawler._fetch_bought_item_list") as mock_bought,
         ):
             merhist.crawler.fetch_order_item_list(handle, continue_mode)
 
@@ -655,10 +657,10 @@ class TestFetchItemDescription:
 
         with (
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
-            unittest.mock.patch("merhist.crawler.wait_for_loading"),
+            unittest.mock.patch("merhist.crawler._wait_for_loading"),
             unittest.mock.patch("my_lib.selenium_util.xpath_exists", side_effect=[True, False]),
         ):
-            merhist.crawler.fetch_item_description(handle, item)
+            merhist.crawler._fetch_item_description(handle, item)
 
             assert item.error == "商品情報ページが見つかりませんでした．"
 
@@ -668,10 +670,10 @@ class TestFetchItemDescription:
 
         with (
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
-            unittest.mock.patch("merhist.crawler.wait_for_loading"),
+            unittest.mock.patch("merhist.crawler._wait_for_loading"),
             unittest.mock.patch("my_lib.selenium_util.xpath_exists", side_effect=[False, True]),
         ):
-            merhist.crawler.fetch_item_description(handle, item)
+            merhist.crawler._fetch_item_description(handle, item)
 
             assert item.error == "商品情報ページが削除されています．"
 
@@ -695,10 +697,10 @@ class TestFetchItemDescription:
 
         with (
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
-            unittest.mock.patch("merhist.crawler.wait_for_loading"),
+            unittest.mock.patch("merhist.crawler._wait_for_loading"),
             unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=False),
         ):
-            merhist.crawler.fetch_item_description(handle, item)
+            merhist.crawler._fetch_item_description(handle, item)
 
             assert item.condition == "新品、未使用"
 
@@ -734,11 +736,11 @@ class TestFetchItemTransactionNormal:
         handle.selenium.driver.current_url = "https://example.com/error"
 
         with (
-            unittest.mock.patch("merhist.crawler.visit_url"),
+            unittest.mock.patch("merhist.crawler._visit_url"),
             unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=True),
             pytest.raises(merhist.exceptions.PageLoadError),
         ):
-            merhist.crawler.fetch_item_transaction_normal(handle, item)
+            merhist.crawler._fetch_item_transaction_normal(handle, item)
 
     def test_fetch_item_transaction_normal_no_purchase_date(self, handle):
         """購入日時がない場合"""
@@ -753,11 +755,11 @@ class TestFetchItemTransactionNormal:
         handle.selenium.driver.find_element.return_value = mock_thumb
 
         with (
-            unittest.mock.patch("merhist.crawler.visit_url"),
+            unittest.mock.patch("merhist.crawler._visit_url"),
             unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=False),
             pytest.raises(merhist.exceptions.InvalidPageFormatError),
         ):
-            merhist.crawler.fetch_item_transaction_normal(handle, item)
+            merhist.crawler._fetch_item_transaction_normal(handle, item)
 
 
 class TestGetBoughtItemInfoList:
@@ -792,14 +794,14 @@ class TestGetBoughtItemInfoList:
         item_list: list[merhist.item.BoughtItem] = []
 
         with pytest.raises(merhist.exceptions.HistoryFetchError, match="読み込みが正常にできていません"):
-            merhist.crawler.get_bought_item_info_list(handle, page=1, offset=1, item_list=item_list)
+            merhist.crawler._get_bought_item_info_list(handle, page=1, offset=1, item_list=item_list)
 
     def test_get_bought_item_info_list_empty(self, handle):
         """空リスト"""
         handle.selenium.driver.find_elements.return_value = []
 
         item_list: list[merhist.item.BoughtItem] = []
-        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(
+        list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
             handle, page=1, offset=0, item_list=item_list
         )
 
@@ -835,7 +837,7 @@ class TestGetBoughtItemInfoList:
         handle.selenium.driver.find_element.side_effect = find_element_side_effect
 
         item_list: list[merhist.item.BoughtItem] = []  # type: ignore[name-defined]
-        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(  # type: ignore[attr-defined]
+        list_length, is_found_new = merhist.crawler._get_bought_item_info_list(  # type: ignore[attr-defined]
             handle, page=1, offset=0, item_list=item_list, continue_mode=True
         )
 
@@ -876,7 +878,7 @@ class TestGetBoughtItemInfoList:
         handle.selenium.driver.find_element.side_effect = find_element_side_effect
 
         item_list: list[merhist.item.BoughtItem] = []  # type: ignore[name-defined]
-        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(  # type: ignore[attr-defined]
+        list_length, is_found_new = merhist.crawler._get_bought_item_info_list(  # type: ignore[attr-defined]
             handle, page=1, offset=0, item_list=item_list, continue_mode=True
         )
 
@@ -917,8 +919,8 @@ class TestFetchSoldCount:
         mock_paging.text = "1～20/全42件"  # parse_sold_count が期待するフォーマット
         handle.selenium.driver.find_element.return_value = mock_paging
 
-        with unittest.mock.patch("merhist.crawler.visit_url"):
-            merhist.crawler.fetch_sold_count(handle)
+        with unittest.mock.patch("merhist.crawler._visit_url"):
+            merhist.crawler._fetch_sold_count(handle)
 
             assert handle.trading.sold_total_count == 42
 
@@ -939,22 +941,21 @@ class TestConstantsAndUrls:
 
     def test_mercari_normal_constant(self):
         """MERCARI_NORMAL 定数"""
-        assert merhist.crawler.MERCARI_NORMAL == "mercari.com"
+        assert merhist.crawler._MERCARI_NORMAL == "mercari.com"
 
     def test_mercari_shop_constant(self):
         """MERCARI_SHOP 定数"""
-        assert merhist.crawler.MERCARI_SHOP == "mercari-shops.com"
+        assert merhist.crawler._MERCARI_SHOP == "mercari-shops.com"
 
     def test_status_constants(self):
         """ステータス定数"""
-        assert merhist.crawler.STATUS_SOLD_PAGE == "[収集] 販売ページ"
-        assert merhist.crawler.STATUS_SOLD_ITEM == "[収集] 販売商品"
-        assert merhist.crawler.STATUS_BOUGHT_ITEM == "[収集] 購入商品"
+        assert merhist.crawler._STATUS_SOLD_PAGE == "[収集] 販売ページ"
+        assert merhist.crawler._STATUS_SOLD_ITEM == "[収集] 販売商品"
+        assert merhist.crawler._STATUS_BOUGHT_ITEM == "[収集] 購入商品"
 
     def test_retry_constants(self):
         """リトライ定数"""
-        assert merhist.crawler.LOGIN_RETRY_COUNT == 2
-        assert merhist.crawler.FETCH_RETRY_COUNT == 3
+        assert merhist.crawler._FETCH_RETRY_COUNT == 3
 
 
 class TestLoginError:

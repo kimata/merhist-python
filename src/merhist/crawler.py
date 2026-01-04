@@ -48,11 +48,11 @@ import merhist.xpath
 # pydub の ffmpeg 警告を抑制（speechrecognition 経由で使用）
 warnings.filterwarnings("ignore", message="Couldn't find ffmpeg or avconv")
 
-T = TypeVar("T", bound=merhist.item.ItemBase)
+_T = TypeVar("_T", bound=merhist.item.ItemBase)
 
-STATUS_SOLD_PAGE: str = "[収集] 販売ページ"
-STATUS_SOLD_ITEM: str = "[収集] 販売商品"
-STATUS_BOUGHT_ITEM: str = "[収集] 購入商品"
+_STATUS_SOLD_PAGE: str = "[収集] 販売ページ"
+_STATUS_SOLD_ITEM: str = "[収集] 販売商品"
+_STATUS_BOUGHT_ITEM: str = "[収集] 購入商品"
 
 
 # Graceful shutdown 用のエイリアス（my_lib.graceful_shutdown を使用）
@@ -61,11 +61,10 @@ def is_shutdown_requested() -> bool:
     return my_lib.graceful_shutdown.is_shutdown_requested()
 
 
-LOGIN_RETRY_COUNT: int = 2
-FETCH_RETRY_COUNT: int = 3
+_FETCH_RETRY_COUNT: int = 3
 
-MERCARI_NORMAL: str = "mercari.com"
-MERCARI_SHOP: str = "mercari-shops.com"
+_MERCARI_NORMAL: str = "mercari.com"
+_MERCARI_SHOP: str = "mercari-shops.com"
 
 
 class ContinueMode(TypedDict):
@@ -91,7 +90,7 @@ def execute_login(handle: merhist.handle.Handle) -> None:
         raise my_lib.store.mercari.exceptions.LoginError(f"メルカリへのログインに失敗しました: {e}") from e
 
 
-def wait_for_loading(
+def _wait_for_loading(
     handle: merhist.handle.Handle,
     xpath: str = merhist.xpath.NOTIFICATION_BUTTON,
     sec: float = 1,
@@ -109,50 +108,50 @@ def wait_for_loading(
         if retry:
             logging.warning("Timeout waiting for element, retrying: %s", xpath)
             driver.refresh()
-            wait_for_loading(handle, xpath, sec, retry=False)
+            _wait_for_loading(handle, xpath, sec, retry=False)
         else:
             raise
     time.sleep(sec)
 
 
-def gen_sell_hist_url(page: int) -> str:
+def _gen_sell_hist_url(page: int) -> str:
     return merhist.const.SOLD_HIST_URL.format(page=page)
 
 
 def gen_item_transaction_url(item: merhist.item.ItemBase) -> str:
-    if item.shop == MERCARI_SHOP:
+    if item.shop == _MERCARI_SHOP:
         return merhist.const.ITEM_SHOP_TRANSACTION_URL.format(id=item.id)
     else:
         return merhist.const.ITEM_NORMAL_TRANSACTION_URL.format(id=item.id)
 
 
-def gen_item_description_url(item: merhist.item.ItemBase) -> str:
-    if item.shop == MERCARI_SHOP:
+def _gen_item_description_url(item: merhist.item.ItemBase) -> str:
+    if item.shop == _MERCARI_SHOP:
         return merhist.const.ITEM_SHOP_DESCRIPTION_URL.format(id=item.id)
     else:
         return merhist.const.ITEM_NORMAL_DESCRIPTION_URL.format(id=item.id)
 
 
-def set_item_id_from_order_url(item: merhist.item.ItemBase) -> None:
+def _set_item_id_from_order_url(item: merhist.item.ItemBase) -> None:
     if match := re.match(r".*/.*mercari\.com.*/(m\d+)/?", item.order_url):
         item.id = match.group(1)
-        item.shop = MERCARI_NORMAL
+        item.shop = _MERCARI_NORMAL
     elif match := re.match(r".*.mercari-shops\.com.*/orders/(\w+)/?", item.order_url):
         item.id = match.group(1)
-        item.shop = MERCARI_SHOP
+        item.shop = _MERCARI_SHOP
     else:
         logging.error("Unexpected URL format: %s", item.order_url)
         raise merhist.exceptions.InvalidURLFormatError("URL の形式が想定と異なります", item.order_url)
 
 
-def visit_url(handle: merhist.handle.Handle, url: str, xpath: str = merhist.xpath.NAVIGATION_TOP) -> None:
+def _visit_url(handle: merhist.handle.Handle, url: str, xpath: str = merhist.xpath.NAVIGATION_TOP) -> None:
     driver, _ = handle.get_selenium_driver()
     driver.get(url)
 
-    wait_for_loading(handle, xpath)
+    _wait_for_loading(handle, xpath)
 
 
-def save_thumbnail(handle: merhist.handle.Handle, item: merhist.item.ItemBase, thumb_url: str) -> None:
+def _save_thumbnail(handle: merhist.handle.Handle, item: merhist.item.ItemBase, thumb_url: str) -> None:
     driver, _ = handle.get_selenium_driver()
 
     thumb_path = pathlib.Path(handle.get_thumb_path(item))
@@ -178,7 +177,7 @@ def save_thumbnail(handle: merhist.handle.Handle, item: merhist.item.ItemBase, t
             raise RuntimeError(f"サムネイル画像が破損しています: {thumb_path}") from e
 
 
-def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
+def _fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
     ROW_DEF_LIST: list[dict[str, str]] = [
         {"title": "カテゴリー", "type": "category", "name": "category"},
         {"title": "商品の状態", "type": "text", "name": "condition"},
@@ -189,8 +188,8 @@ def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.Ite
 
     driver, _ = handle.get_selenium_driver()
 
-    with my_lib.selenium_util.browser_tab(driver, gen_item_description_url(item)):
-        wait_for_loading(handle)
+    with my_lib.selenium_util.browser_tab(driver, _gen_item_description_url(item)):
+        _wait_for_loading(handle)
 
         if my_lib.selenium_util.xpath_exists(driver, merhist.xpath.ITEM_DESC_NOT_FOUND):
             logging.warning("Description page not found: %s", driver.current_url)
@@ -228,7 +227,7 @@ def fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.Ite
                     item.set_field(row_def["name"], [x.text for x in breadcrumb_list])
 
 
-def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
+def _fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
     ROW_DEF_LIST: list[dict[str, str]] = [
         {"title": "購入日時", "type": "datetime", "name": "purchase_date"},
         {"title": "商品代金", "type": "price", "name": "price"},
@@ -237,7 +236,7 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
 
     driver, _ = handle.get_selenium_driver()
 
-    visit_url(handle, gen_item_transaction_url(item), merhist.xpath.TRANSACTION_INFO_ROW)
+    _visit_url(handle, gen_item_transaction_url(item), merhist.xpath.TRANSACTION_INFO_ROW)
 
     if my_lib.selenium_util.xpath_exists(driver, merhist.xpath.TRANSACTION_PAGE_ERROR):
         logging.warning("Failed to load page: %s", driver.current_url)
@@ -291,7 +290,7 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
     ).get_attribute("src")
 
     if thumb_url is not None:
-        save_thumbnail(handle, item, thumb_url)
+        _save_thumbnail(handle, item, thumb_url)
 
     if not has_purchase_date:
         logging.error("Unexpected page format: %s", gen_item_transaction_url(item))
@@ -300,10 +299,10 @@ def fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.i
         )
 
 
-def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.item.BoughtItem) -> None:
+def _fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.item.BoughtItem) -> None:
     driver, _ = handle.get_selenium_driver()
 
-    visit_url(handle, gen_item_transaction_url(item), merhist.xpath.SHOP_TRANSACTION_PHOTO_NAME)
+    _visit_url(handle, gen_item_transaction_url(item), merhist.xpath.SHOP_TRANSACTION_PHOTO_NAME)
 
     info_xpath = merhist.xpath.SHOP_TRANSACTION_INFO
     item.price = int(
@@ -319,31 +318,31 @@ def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.ite
         selenium.webdriver.common.by.By.XPATH, info_xpath + merhist.xpath.SHOP_TRANSACTION_THUMBNAIL
     ).get_attribute("src")
     if thumb_url is not None:
-        save_thumbnail(handle, item, thumb_url)
+        _save_thumbnail(handle, item, thumb_url)
 
 
-def fetch_item_transaction(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
-    if item.shop == MERCARI_SHOP:
+def _fetch_item_transaction(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
+    if item.shop == _MERCARI_SHOP:
         assert isinstance(item, merhist.item.BoughtItem)  # noqa: S101
-        fetch_item_transaction_shop(handle, item)
+        _fetch_item_transaction_shop(handle, item)
     else:
-        fetch_item_transaction_normal(handle, item)
+        _fetch_item_transaction_normal(handle, item)
 
 
-def fetch_item_detail(handle: merhist.handle.Handle, item: T) -> T:
+def _fetch_item_detail(handle: merhist.handle.Handle, item: _T) -> _T:
     error_message = ""
     error_detail = ""
 
-    for i in range(FETCH_RETRY_COUNT):
+    for i in range(_FETCH_RETRY_COUNT):
         if i != 0:
             logging.info("Retry %s", gen_item_transaction_url(item))
             time.sleep(5 * i)
 
         try:
             item.count = 1
-            item.url = gen_item_description_url(item)
-            fetch_item_description(handle, item)
-            fetch_item_transaction(handle, item)
+            item.url = _gen_item_description_url(item)
+            _fetch_item_description(handle, item)
+            _fetch_item_transaction(handle, item)
 
             if handle.debug_mode:
                 logging.debug(my_lib.pretty.format(item.to_dict()))
@@ -378,7 +377,7 @@ def fetch_item_detail(handle: merhist.handle.Handle, item: T) -> T:
     return item
 
 
-def fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, continue_mode: bool) -> bool:
+def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, continue_mode: bool) -> bool:
     COL_DEF_LIST: list[dict[str, Any]] = [
         {"index": 1, "type": "text", "name": "name", "link": {"name": "order_url"}},
         {"index": 2, "type": "price", "name": "price"},
@@ -394,7 +393,7 @@ def fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, conti
 
     handle.set_status(f"販売履歴を解析しています... {page}/{total_page} ページ")
 
-    visit_url(handle, gen_sell_hist_url(page), merhist.xpath.SOLD_PAGING)
+    _visit_url(handle, _gen_sell_hist_url(page), merhist.xpath.SOLD_PAGING)
 
     logging.info("Check sell history page %d/%d", page, total_page)
 
@@ -437,7 +436,7 @@ def fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, conti
                     ),
                 )
 
-        set_item_id_from_order_url(item)
+        _set_item_id_from_order_url(item)
 
         item_list.append(item)
 
@@ -449,7 +448,7 @@ def fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, conti
     for item in item_list:
         if not continue_mode or not handle.get_sold_item_stat(item):
             # 強制取得モードまたは未キャッシュの場合は取得
-            fetch_item_detail(handle, item)
+            _fetch_item_detail(handle, item)
 
             if item.error and is_first_fetch:
                 # 最初のfetchが失敗した場合は収集を停止
@@ -465,21 +464,21 @@ def fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, conti
             logging.info("%s %s円 [cached]", item.name, f"{item.price:,}")
 
         # キャッシュ済みでも「確認した」としてプログレスを更新
-        handle.progress_bar[STATUS_SOLD_ITEM].update()
+        handle.progress_bar[_STATUS_SOLD_ITEM].update()
 
     time.sleep(1)
 
     return is_found_new
 
 
-def fetch_sold_count(handle: merhist.handle.Handle) -> None:
+def _fetch_sold_count(handle: merhist.handle.Handle) -> None:
     driver, _ = handle.get_selenium_driver()
 
     handle.set_status("🔍 販売件数を取得しています...")
 
-    logging.info(gen_sell_hist_url(0))
+    logging.info(_gen_sell_hist_url(0))
 
-    visit_url(handle, gen_sell_hist_url(0), merhist.xpath.SOLD_PAGING)
+    _visit_url(handle, _gen_sell_hist_url(0), merhist.xpath.SOLD_PAGING)
 
     paging_text = driver.find_element(selenium.webdriver.common.by.By.XPATH, merhist.xpath.SOLD_PAGING).text
     sold_count = merhist.parser.parse_sold_count(paging_text)
@@ -489,15 +488,15 @@ def fetch_sold_count(handle: merhist.handle.Handle) -> None:
     handle.trading.sold_total_count = sold_count
 
 
-def fetch_sold_item_list(handle: merhist.handle.Handle, continue_mode: bool = True) -> None:
+def _fetch_sold_item_list(handle: merhist.handle.Handle, continue_mode: bool = True) -> None:
     handle.set_status("📥 販売履歴の収集を開始します...")
 
-    fetch_sold_count(handle)
+    _fetch_sold_count(handle)
 
     total_page = math.ceil(handle.trading.sold_total_count / merhist.const.SOLD_ITEM_PER_PAGE)
 
-    handle.set_progress_bar(STATUS_SOLD_PAGE, total_page)
-    handle.set_progress_bar(STATUS_SOLD_ITEM, handle.trading.sold_total_count)
+    handle.set_progress_bar(_STATUS_SOLD_PAGE, total_page)
+    handle.set_progress_bar(_STATUS_SOLD_ITEM, handle.trading.sold_total_count)
     # NOTE: 各アイテムを確認するたびに update するため、初期 update は不要
 
     page = 1
@@ -512,12 +511,12 @@ def fetch_sold_item_list(handle: merhist.handle.Handle, continue_mode: bool = Tr
                 logging.info("No new items")
             break
 
-        is_found_new = fetch_sold_item_list_by_page(handle, page, continue_mode)
+        is_found_new = _fetch_sold_item_list_by_page(handle, page, continue_mode)
 
         if continue_mode and (not is_found_new):
             logging.info("Leaving as it seems there are no more new items...")
             break
-        handle.progress_bar[STATUS_SOLD_PAGE].update()
+        handle.progress_bar[_STATUS_SOLD_PAGE].update()
 
         if page == total_page:
             break
@@ -530,12 +529,12 @@ def fetch_sold_item_list(handle: merhist.handle.Handle, continue_mode: bool = Tr
     # NOTE: continue_mode で早期終了した場合、残りのページのアイテムはキャッシュ済みと見なし、
     # プログレスバーを完了に持っていく（スキップされたページのアイテムは未カウントのため）
     if not is_shutdown_requested():
-        handle.progress_bar[STATUS_SOLD_ITEM].update(
-            handle.progress_bar[STATUS_SOLD_ITEM].total - handle.progress_bar[STATUS_SOLD_ITEM].count
+        handle.progress_bar[_STATUS_SOLD_ITEM].update(
+            handle.progress_bar[_STATUS_SOLD_ITEM].total - handle.progress_bar[_STATUS_SOLD_ITEM].count
         )
 
-        handle.progress_bar[STATUS_SOLD_PAGE].update(
-            handle.progress_bar[STATUS_SOLD_PAGE].total - handle.progress_bar[STATUS_SOLD_PAGE].count
+        handle.progress_bar[_STATUS_SOLD_PAGE].update(
+            handle.progress_bar[_STATUS_SOLD_PAGE].total - handle.progress_bar[_STATUS_SOLD_PAGE].count
         )
 
     handle.store_trading_info()
@@ -544,7 +543,7 @@ def fetch_sold_item_list(handle: merhist.handle.Handle, continue_mode: bool = Tr
         handle.set_status("✅ 販売履歴の収集が完了しました")
 
 
-def get_bought_item_info_list(
+def _get_bought_item_info_list(
     handle: merhist.handle.Handle,
     page: int,
     offset: int,
@@ -585,7 +584,7 @@ def get_bought_item_info_list(
 
         item.purchase_date = merhist.parser.parse_datetime(datetime_text, False)
 
-        set_item_id_from_order_url(item)
+        _set_item_id_from_order_url(item)
 
         if not handle.get_bought_item_stat(item):
             item_list.append(item)
@@ -599,20 +598,20 @@ def get_bought_item_info_list(
     return (list_length, is_found_new)
 
 
-def fetch_bought_item_info_list_impl(
+def _fetch_bought_item_info_list_impl(
     handle: merhist.handle.Handle, continue_mode: bool
 ) -> list[merhist.item.BoughtItem]:
     driver, wait = handle.get_selenium_driver()
 
     handle.set_status("🔍 購入履歴の件数を確認しています...")
 
-    visit_url(handle, merhist.const.BOUGHT_HIST_URL, merhist.xpath.BOUGHT_LIST)
+    _visit_url(handle, merhist.const.BOUGHT_HIST_URL, merhist.xpath.BOUGHT_LIST)
 
     item_list: list[merhist.item.BoughtItem] = []
     page = 1
     offset = 0
     while True:
-        offset, is_found_new = get_bought_item_info_list(handle, page, offset, item_list, continue_mode)
+        offset, is_found_new = _get_bought_item_info_list(handle, page, offset, item_list, continue_mode)
         page += 1
 
         if continue_mode and (not is_found_new):
@@ -640,22 +639,22 @@ def fetch_bought_item_info_list_impl(
     return item_list
 
 
-def fetch_bought_item_info_list(
+def _fetch_bought_item_info_list(
     handle: merhist.handle.Handle, continue_mode: bool
 ) -> list[merhist.item.BoughtItem]:
     driver, _ = handle.get_selenium_driver()
 
     handle.set_status("🔍 購入履歴の件数を確認しています...")
 
-    for i in range(FETCH_RETRY_COUNT):
+    for i in range(_FETCH_RETRY_COUNT):
         if i != 0:
             logging.info("Retry %s", driver.current_url)
             time.sleep(5)
 
         try:
-            return fetch_bought_item_info_list_impl(handle, continue_mode)
+            return _fetch_bought_item_info_list_impl(handle, continue_mode)
         except Exception:
-            if i == FETCH_RETRY_COUNT - 1:
+            if i == _FETCH_RETRY_COUNT - 1:
                 logging.error("Give up to fetch %s", driver.current_url)
                 raise
             else:
@@ -664,16 +663,16 @@ def fetch_bought_item_info_list(
     return []  # NOTE: ここには来ない
 
 
-def fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool = True) -> None:
+def _fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool = True) -> None:
     driver, _ = handle.get_selenium_driver()
 
     handle.set_status("📥 購入履歴の収集を開始します...")
 
-    item_list = fetch_bought_item_info_list(handle, continue_mode)
+    item_list = _fetch_bought_item_info_list(handle, continue_mode)
 
     handle.set_status("🔍 購入履歴の詳細情報を収集しています...")
 
-    handle.set_progress_bar(STATUS_BOUGHT_ITEM, len(item_list))
+    handle.set_progress_bar(_STATUS_BOUGHT_ITEM, len(item_list))
 
     is_first_fetch = True
     for item in item_list:
@@ -684,7 +683,7 @@ def fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool = 
 
         if not continue_mode or not handle.get_bought_item_stat(item):
             # 強制取得モードまたは未キャッシュの場合は取得
-            fetch_item_detail(handle, item)
+            _fetch_item_detail(handle, item)
 
             if item.error and is_first_fetch:
                 # 最初のfetchが失敗した場合は収集を停止
@@ -697,7 +696,7 @@ def fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool = 
             logging.info("%s [cached]", item.name)
 
         # キャッシュ済みでも「確認した」としてプログレスを更新
-        handle.progress_bar[STATUS_BOUGHT_ITEM].update()
+        handle.progress_bar[_STATUS_BOUGHT_ITEM].update()
 
         handle.store_trading_info()
 
@@ -719,9 +718,9 @@ def fetch_order_item_list(handle: merhist.handle.Handle, continue_mode: Continue
 
     handle.set_status("📥 注文履歴の収集を開始します...")
 
-    fetch_sold_item_list(handle, continue_mode["sold"])
+    _fetch_sold_item_list(handle, continue_mode["sold"])
     if not is_shutdown_requested():
-        fetch_bought_item_list(handle, continue_mode["bought"])
+        _fetch_bought_item_list(handle, continue_mode["bought"])
 
     if is_shutdown_requested():
         handle.set_status("🛑 注文履歴の収集を中断しました")
@@ -760,16 +759,16 @@ if __name__ == "__main__":
         if order_id is not None:
             item = merhist.item.SoldItem(id=order_id)
             if order_id.startswith("m"):
-                item.shop = MERCARI_NORMAL
+                item.shop = _MERCARI_NORMAL
             else:
-                item.shop = MERCARI_SHOP
+                item.shop = _MERCARI_SHOP
 
-            fetch_item_transaction(handle, item)
+            _fetch_item_transaction(handle, item)
             logging.info(item.to_dict())
         elif bought_list or force_bought:
-            fetch_bought_item_list(handle, continue_mode=not force_bought)
+            _fetch_bought_item_list(handle, continue_mode=not force_bought)
         elif sold_list or force_sold:
-            fetch_sold_item_list(handle, continue_mode=not force_sold)
+            _fetch_sold_item_list(handle, continue_mode=not force_sold)
         else:
             logging.warning("No command found to execute")
 

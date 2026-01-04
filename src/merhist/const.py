@@ -13,8 +13,6 @@ SOLD_ITEM_PER_PAGE: int = 20
 # Selenium プロファイル名
 SELENIUM_PROFILE_NAME: str = "Merhist"
 
-MERCARI_URL: str = "https://jp.mercari.com"
-
 BOUGHT_HIST_URL: str = "https://jp.mercari.com/mypage/purchases"
 
 SOLD_HIST_URL: str = "https://jp.mercari.com/mypage/listings/sold?page={page}"

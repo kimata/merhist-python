@@ -46,7 +46,7 @@ class TestExecuteFetch:
             unittest.mock.patch("merhist.crawler.execute_login") as mock_login,
             unittest.mock.patch("merhist.crawler.fetch_order_item_list") as mock_fetch,
         ):
-            app.execute_fetch(handle, continue_mode)
+            app._execute_fetch(handle, continue_mode)
 
             mock_login.assert_called_once_with(handle)
             mock_fetch.assert_called_once_with(handle, continue_mode)
@@ -60,7 +60,7 @@ class TestExecuteFetch:
             unittest.mock.patch("my_lib.selenium_util.dump_page") as mock_dump,
             pytest.raises(Exception, match="ログインエラー"),
         ):
-            app.execute_fetch(handle, continue_mode)
+            app._execute_fetch(handle, continue_mode)
 
             mock_dump.assert_called_once()
 
@@ -86,7 +86,7 @@ class TestExecute:
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
-            unittest.mock.patch("app.execute_fetch") as mock_fetch,
+            unittest.mock.patch("app._execute_fetch") as mock_fetch,
         ):
             app.execute(mock_config, continue_mode, export_mode=True, debug_mode=True)
 
@@ -99,7 +99,7 @@ class TestExecute:
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
-            unittest.mock.patch("app.execute_fetch") as mock_fetch,
+            unittest.mock.patch("app._execute_fetch") as mock_fetch,
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
         ):
             app.execute(mock_config, continue_mode, export_mode=False, debug_mode=True)
@@ -113,7 +113,7 @@ class TestExecute:
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
-            unittest.mock.patch("app.execute_fetch", side_effect=Exception("フェッチエラー")),
+            unittest.mock.patch("app._execute_fetch", side_effect=Exception("フェッチエラー")),
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
         ):
             app.execute(mock_config, continue_mode, export_mode=False, debug_mode=True)
@@ -129,7 +129,7 @@ class TestExecute:
             unittest.mock.patch(
                 "merhist.history.generate_table_excel", side_effect=Exception("Excel生成エラー")
             ),
-            unittest.mock.patch("app.execute_fetch"),
+            unittest.mock.patch("app._execute_fetch"),
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
         ):
             # エラーは発生しない（内部でキャッチ）

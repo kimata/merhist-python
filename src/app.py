@@ -34,12 +34,12 @@ import merhist.crawler
 import merhist.handle
 import merhist.history
 
-SCHEMA_CONFIG: str = "schema/config.schema"
+_SCHEMA_CONFIG: str = "schema/config.schema"
 
 _MAX_SESSION_RETRY_COUNT = 1
 
 
-def execute_fetch(
+def _execute_fetch(
     handle: merhist.handle.Handle,
     continue_mode: merhist.crawler.ContinueMode,
 ) -> None:
@@ -90,7 +90,7 @@ def execute(
         if not export_mode:
             for retry in range(_MAX_SESSION_RETRY_COUNT + 1):
                 try:
-                    execute_fetch(handle, continue_mode)
+                    _execute_fetch(handle, continue_mode)
                     break  # 成功したらループを抜ける
                 except selenium.common.exceptions.InvalidSessionIdException:
                     handle.quit_selenium()
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         log_format=log_format,
     )
 
-    config = merhist.config.Config.load(my_lib.config.load(config_file, pathlib.Path(SCHEMA_CONFIG)))
+    config = merhist.config.Config.load(my_lib.config.load(config_file, pathlib.Path(_SCHEMA_CONFIG)))
 
     sys.exit(
         execute(config, is_continue_mode, export_mode, need_thumb, debug_mode, clear_profile_on_browser_error)
