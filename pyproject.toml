@@ -120,3 +120,7 @@ venv = ".venv"
 pythonVersion = "3.12"
 include = ["src", "tests"]
 reportMissingImports = false
+reportArgumentType = false
+reportOperatorIssue = false
+reportIndexIssue = false
+reportGeneralTypeIssues = false

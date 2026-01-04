@@ -25,10 +25,10 @@
 ### 課題
 
 - `crawler.py` が最大のモジュール（774行）で、以下が混在：
-  - Selenium操作（ブラウザ制御、要素取得）
-  - ページ解析ロジック（HTML要素からデータ抽出）
-  - URL生成・解析（純粋関数）
-  - 日付パース（純粋関数）
+    - Selenium操作（ブラウザ制御、要素取得）
+    - ページ解析ロジック（HTML要素からデータ抽出）
+    - URL生成・解析（純粋関数）
+    - 日付パース（純粋関数）
 - Selenium依存が強く、単体テストが困難
 - XPath がハードコードされている
 
@@ -141,9 +141,9 @@ class MercariSelectors:
 **Phase 2** (2025-12-28)
 
 - `src/merhist/parser.py`: パース関数を集約
-  - `parse_date()`, `parse_datetime()`
-  - `parse_price()`, `parse_rate()`
-  - `parse_sold_count()`, `parse_price_with_shipping()`
+    - `parse_date()`, `parse_datetime()`
+    - `parse_price()`, `parse_rate()`
+    - `parse_sold_count()`, `parse_price_with_shipping()`
 - `tests/unit/test_parser.py`: パース関数テスト
 
 **Phase 3** (2025-12-28)
