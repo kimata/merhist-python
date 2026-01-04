@@ -3,6 +3,7 @@
 """
 日付解析関数のテスト
 """
+
 import datetime
 
 import pytest

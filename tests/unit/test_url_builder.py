@@ -3,6 +3,7 @@
 """
 URL生成・解析関数のテスト
 """
+
 import pytest
 
 import merhist.crawler

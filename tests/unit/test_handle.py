@@ -3,6 +3,7 @@
 """
 Handle クラスのテスト
 """
+
 import datetime
 import unittest.mock
 
@@ -71,15 +72,9 @@ class TestHandleItemOperations:
 
     def test_get_sold_item_list_sorted(self, handle):
         """販売アイテムリストが completion_date でソートされる"""
-        item1 = merhist.item.SoldItem(
-            id="m1", completion_date=datetime.datetime(2025, 1, 20)
-        )
-        item2 = merhist.item.SoldItem(
-            id="m2", completion_date=datetime.datetime(2025, 1, 10)
-        )
-        item3 = merhist.item.SoldItem(
-            id="m3", completion_date=datetime.datetime(2025, 1, 15)
-        )
+        item1 = merhist.item.SoldItem(id="m1", completion_date=datetime.datetime(2025, 1, 20))
+        item2 = merhist.item.SoldItem(id="m2", completion_date=datetime.datetime(2025, 1, 10))
+        item3 = merhist.item.SoldItem(id="m3", completion_date=datetime.datetime(2025, 1, 15))
 
         handle.record_sold_item(item1)
         handle.record_sold_item(item2)
@@ -127,15 +122,9 @@ class TestHandleItemOperations:
 
     def test_get_bought_item_list_sorted(self, handle):
         """購入アイテムリストが purchase_date でソートされる"""
-        item1 = merhist.item.BoughtItem(
-            id="m1", purchase_date=datetime.datetime(2025, 1, 20)
-        )
-        item2 = merhist.item.BoughtItem(
-            id="m2", purchase_date=datetime.datetime(2025, 1, 10)
-        )
-        item3 = merhist.item.BoughtItem(
-            id="m3", purchase_date=datetime.datetime(2025, 1, 15)
-        )
+        item1 = merhist.item.BoughtItem(id="m1", purchase_date=datetime.datetime(2025, 1, 20))
+        item2 = merhist.item.BoughtItem(id="m2", purchase_date=datetime.datetime(2025, 1, 10))
+        item3 = merhist.item.BoughtItem(id="m3", purchase_date=datetime.datetime(2025, 1, 15))
 
         handle.record_bought_item(item1)
         handle.record_bought_item(item2)
@@ -282,7 +271,9 @@ class TestHandleSelenium:
         mock_wait = unittest.mock.MagicMock()
 
         with (
-            unittest.mock.patch("my_lib.selenium_util.create_driver", return_value=mock_driver) as mock_create,
+            unittest.mock.patch(
+                "my_lib.selenium_util.create_driver", return_value=mock_driver
+            ) as mock_create,
             unittest.mock.patch("my_lib.selenium_util.clear_cache") as mock_clear,
             unittest.mock.patch("selenium.webdriver.support.wait.WebDriverWait", return_value=mock_wait),
         ):
@@ -818,7 +809,7 @@ class TestHandleSeleniumError:
                 "my_lib.selenium_util.create_driver",
                 side_effect=Exception("起動失敗"),
             ),
-            unittest.mock.patch("my_lib.selenium_util.delete_profile") as mock_delete,
+            unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
             pytest.raises(my_lib.selenium_util.SeleniumError),
         ):
             handle.get_selenium_driver()
@@ -838,7 +829,7 @@ class TestHandleSeleniumError:
                 "my_lib.selenium_util.create_driver",
                 side_effect=Exception("起動失敗"),
             ),
-            unittest.mock.patch("my_lib.selenium_util.delete_profile") as mock_delete,
+            unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
             pytest.raises(my_lib.selenium_util.SeleniumError),
         ):
             handle.get_selenium_driver()

@@ -42,9 +42,9 @@ cp config.example.yaml config.yaml
 
 ```yaml
 login:
-    line:
-        user: LINE のユーザ ID
-        pass: LINE のログインパスワード
+  line:
+    user: LINE のユーザ ID
+    pass: LINE のログインパスワード
 ```
 
 メルカリに LINE アカウントでログインするため、LINE の認証情報が必要です。
@@ -55,12 +55,12 @@ login:
 
 ```yaml
 slack:
-    bot_token: xoxp-XXXXXXXXXXXX-XXXXXXXXXXXX-XXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    from: Mercari History
-    captcha:
-        channel:
-            name: "#captcha"
-            id: XXXXXXXXXXX
+  bot_token: xoxp-XXXXXXXXXXXX-XXXXXXXXXXXX-XXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  from: Mercari History
+  captcha:
+    channel:
+      name: "#captcha"
+      id: XXXXXXXXXXX
 ```
 
 設定しない場合は、標準入出力経由で認証コードをやり取りします。

@@ -3,16 +3,15 @@
 """
 データベースアクセス層（Database）のテスト
 """
+
 import datetime
 import pathlib
-import tempfile
 
 import pytest
 
 import merhist.database
 from merhist.database import Database, is_sqlite_file
 from merhist.item import BoughtItem, SoldItem
-
 
 # === テスト用定数 ===
 SCHEMA_PATH = pathlib.Path(__file__).parent.parent.parent / "schema" / "sqlite.schema"
@@ -128,9 +127,7 @@ class TestDatabaseInit:
     def test_creates_tables(self, db: Database):
         """テーブルが作成される"""
         conn = db._get_conn()
-        cursor = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-        )
+        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
         tables = [row[0] for row in cursor.fetchall()]
 
         assert "sold_items" in tables
@@ -373,9 +370,7 @@ class TestBoughtItemCRUD:
         items = db.get_bought_item_list()
         assert [i.id for i in items] == ["m002", "m003", "m001"]
 
-    def test_bought_item_all_fields_preserved(
-        self, db: Database, sample_bought_item: BoughtItem
-    ):
+    def test_bought_item_all_fields_preserved(self, db: Database, sample_bought_item: BoughtItem):
         """全フィールドが保存・復元される"""
         db.upsert_bought_item(sample_bought_item)
         items = db.get_bought_item_list()

@@ -17,10 +17,6 @@ Options:
 
 from __future__ import annotations
 
-import warnings
-
-warnings.filterwarnings("ignore", message="Couldn't find ffmpeg or avconv")
-
 import logging
 import math
 import pathlib
@@ -28,10 +24,19 @@ import random
 import re
 import time
 import traceback
+import warnings
 from typing import Any, TypedDict, TypeVar
 
 import my_lib.graceful_shutdown
+import my_lib.pretty
+import my_lib.selenium_util
+import my_lib.store.mercari.exceptions
+import my_lib.store.mercari.login
 import PIL.Image
+import selenium.common.exceptions
+import selenium.webdriver.common.by
+import selenium.webdriver.support.expected_conditions
+import selenium.webdriver.support.wait
 
 import merhist.const
 import merhist.exceptions
@@ -40,16 +45,10 @@ import merhist.item
 import merhist.parser
 import merhist.xpath
 
-T = TypeVar("T", bound=merhist.item.ItemBase)
+# pydub の ffmpeg 警告を抑制（speechrecognition 経由で使用）
+warnings.filterwarnings("ignore", message="Couldn't find ffmpeg or avconv")
 
-import my_lib.pretty
-import my_lib.selenium_util
-import my_lib.store.mercari.exceptions
-import my_lib.store.mercari.login
-import selenium.common.exceptions
-import selenium.webdriver.common.by
-import selenium.webdriver.support.expected_conditions
-import selenium.webdriver.support.wait
+T = TypeVar("T", bound=merhist.item.ItemBase)
 
 STATUS_SOLD_PAGE: str = "[収集] 販売ページ"
 STATUS_SOLD_ITEM: str = "[収集] 販売商品"
@@ -325,7 +324,7 @@ def fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.ite
 
 def fetch_item_transaction(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
     if item.shop == MERCARI_SHOP:
-        assert isinstance(item, merhist.item.BoughtItem)
+        assert isinstance(item, merhist.item.BoughtItem)  # noqa: S101
         fetch_item_transaction_shop(handle, item)
     else:
         fetch_item_transaction_normal(handle, item)
@@ -737,7 +736,7 @@ if __name__ == "__main__":
 
     import merhist.config
 
-    assert __doc__ is not None
+    assert __doc__ is not None  # noqa: S101
     args = docopt.docopt(__doc__)
 
     config_file = args["-c"]

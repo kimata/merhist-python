@@ -3,6 +3,7 @@
 """
 app.py のテスト
 """
+
 import unittest.mock
 
 import pytest

@@ -10,6 +10,7 @@ Options:
   -o EXCEL          : 生成する Excel ファイルを指定します。 [default: merhist.xlsx]
   -N                : サムネイル画像を含めないようにします。
 """
+
 from __future__ import annotations
 
 import datetime
@@ -17,8 +18,6 @@ import logging
 import pathlib
 from typing import Any
 
-import merhist.crawler
-import merhist.handle
 import my_lib.openpyxl_util
 import openpyxl
 import openpyxl.drawing.image
@@ -26,6 +25,9 @@ import openpyxl.drawing.spreadsheet_drawing
 import openpyxl.drawing.xdr
 import openpyxl.styles
 import openpyxl.utils
+
+import merhist.crawler
+import merhist.handle
 
 STATUS_INSERT_SOLD_ITEM: str = "[生成] 販売商品"
 STATUS_INSERT_BOUGHT_ITEM: str = "[生成] 購入商品"
@@ -209,7 +211,7 @@ SHEET_DEF = {
 
 def _warning_handler(item: my_lib.openpyxl_util.RowData, message: str) -> None:
     """警告メッセージを「⚠️ YY年MM月DD日 商品名: 警告メッセージ」の形式で出力する。"""
-    name = item["name"] if "name" in item else "不明"
+    name = item["name"] if "name" in item else "不明"  # noqa: SIM401
     date_str = ""
     if "purchase_date" in item and item["purchase_date"] is not None:
         date_val = item["purchase_date"]
@@ -257,7 +259,7 @@ def generate_table_excel(
     logging.info("Start to Generate excel file")
 
     book = openpyxl.Workbook()
-    book._named_styles["Normal"].font = handle.config.excel_font  # pyright: ignore[reportAttributeAccessIssue] # noqa: SLF001
+    book._named_styles["Normal"].font = handle.config.excel_font  # pyright: ignore[reportAttributeAccessIssue]
 
     handle.update_progress_bar(STATUS_ALL)
 
@@ -289,7 +291,7 @@ if __name__ == "__main__":
 
     import merhist.config
 
-    assert __doc__ is not None
+    assert __doc__ is not None  # noqa: S101
     args = docopt.docopt(__doc__)
 
     my_lib.logger.init("test", level=logging.INFO)

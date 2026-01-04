@@ -3,6 +3,7 @@
 """
 カスタム例外クラスのテスト
 """
+
 import pytest
 
 import merhist.exceptions

@@ -51,9 +51,7 @@ class ItemBase:
         value = getattr(self, key)
         if value is None:
             return False
-        if isinstance(value, list) and len(value) == 0:
-            return False
-        return True
+        return not (isinstance(value, list) and len(value) == 0)
 
     def set_field(self, name: str, value: Any) -> None:
         """フィールド名を検証して値を設定する（タイポ防止）"""

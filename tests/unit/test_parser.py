@@ -3,6 +3,7 @@
 """
 パース関数のテスト
 """
+
 import pytest
 
 import merhist.exceptions

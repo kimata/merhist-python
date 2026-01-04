@@ -23,6 +23,7 @@ import pathlib
 import random
 import sys
 
+import my_lib.chrome_util
 import my_lib.selenium_util
 import my_lib.store.mercari.exceptions
 import selenium.common.exceptions
@@ -102,7 +103,7 @@ def execute(
                         handle.set_status(
                             f"🔄 セッションエラー、リトライ中... ({retry + 1}/{_MAX_SESSION_RETRY_COUNT})"
                         )
-                        my_lib.selenium_util.delete_profile(
+                        my_lib.chrome_util.delete_profile(
                             merhist.const.SELENIUM_PROFILE_NAME, config.selenium_data_dir_path
                         )
                         continue
@@ -151,7 +152,7 @@ if __name__ == "__main__":
     import my_lib.config
     import my_lib.logger
 
-    assert __doc__ is not None
+    assert __doc__ is not None  # noqa: S101
     args = docopt.docopt(__doc__)
 
     config_file: str = args["-c"]
