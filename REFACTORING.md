@@ -12,15 +12,15 @@
 
 ### モジュール構成
 
-| ファイル | 行数 | 役割 |
-|----------|------|------|
-| crawler.py | 774 | Webスクレイピング（Selenium使用） |
-| history.py | 291 | Excel生成 |
-| config.py | 193 | 設定管理 |
-| handle.py | 172 | 状態管理 |
-| item.py | 83 | データモデル |
-| exceptions.py | 38 | カスタム例外 |
-| const.py | 23 | 定数定義 |
+| ファイル      | 行数 | 役割                              |
+| ------------- | ---- | --------------------------------- |
+| crawler.py    | 774  | Webスクレイピング（Selenium使用） |
+| history.py    | 291  | Excel生成                         |
+| config.py     | 193  | 設定管理                          |
+| handle.py     | 172  | 状態管理                          |
+| item.py       | 83   | データモデル                      |
+| exceptions.py | 38   | カスタム例外                      |
+| const.py      | 23   | 定数定義                          |
 
 ### 課題
 
@@ -40,17 +40,17 @@
 
 対象となる純粋ロジック：
 
-| 関数/クラス | ファイル | 説明 |
-|-------------|----------|------|
-| `gen_sell_hist_url()` | crawler.py | 販売履歴URLの生成 |
-| `gen_item_transaction_url()` | crawler.py | 取引情報URLの生成 |
-| `gen_item_description_url()` | crawler.py | 商品説明URLの生成 |
-| `parse_date()` | crawler.py | 日付文字列のパース |
-| `parse_datetime()` | crawler.py | 日時文字列のパース |
-| `set_item_id_from_order_url()` | crawler.py | URLからアイテムIDを抽出 |
-| `ItemBase`, `SoldItem`, `BoughtItem` | item.py | データモデル |
-| `Config.load()` | config.py | 設定のパース |
-| `SHEET_DEF` | history.py | Excel定義 |
+| 関数/クラス                          | ファイル   | 説明                    |
+| ------------------------------------ | ---------- | ----------------------- |
+| `gen_sell_hist_url()`                | crawler.py | 販売履歴URLの生成       |
+| `gen_item_transaction_url()`         | crawler.py | 取引情報URLの生成       |
+| `gen_item_description_url()`         | crawler.py | 商品説明URLの生成       |
+| `parse_date()`                       | crawler.py | 日付文字列のパース      |
+| `parse_datetime()`                   | crawler.py | 日時文字列のパース      |
+| `set_item_id_from_order_url()`       | crawler.py | URLからアイテムIDを抽出 |
+| `ItemBase`, `SoldItem`, `BoughtItem` | item.py    | データモデル            |
+| `Config.load()`                      | config.py  | 設定のパース            |
+| `SHEET_DEF`                          | history.py | Excel定義               |
 
 作成するテストファイル：
 
@@ -122,15 +122,16 @@ class MercariSelectors:
 
 ## 実装スケジュール
 
-| Phase | 内容 | 状態 | リファクタリング |
-|-------|------|------|------------------|
-| 1 | 既存純粋ロジックのテスト作成 | ✅ 完了 | 不要 |
-| 2 | パース関数の分離とテスト | ✅ 完了 | 必要 |
-| 3 | XPathセレクタ定数化 | ✅ 完了 | 必要 |
+| Phase | 内容                         | 状態    | リファクタリング |
+| ----- | ---------------------------- | ------- | ---------------- |
+| 1     | 既存純粋ロジックのテスト作成 | ✅ 完了 | 不要             |
+| 2     | パース関数の分離とテスト     | ✅ 完了 | 必要             |
+| 3     | XPathセレクタ定数化          | ✅ 完了 | 必要             |
 
 ### 実装結果
 
 **Phase 1** (2025-12-28)
+
 - `tests/conftest.py`: 共通フィクスチャ
 - `tests/unit/test_url_builder.py`: URL生成・解析テスト
 - `tests/unit/test_date_parser.py`: 日付解析テスト
@@ -138,6 +139,7 @@ class MercariSelectors:
 - `tests/unit/test_config.py`: 設定パーステスト
 
 **Phase 2** (2025-12-28)
+
 - `src/merhist/parser.py`: パース関数を集約
   - `parse_date()`, `parse_datetime()`
   - `parse_price()`, `parse_rate()`
@@ -145,6 +147,7 @@ class MercariSelectors:
 - `tests/unit/test_parser.py`: パース関数テスト
 
 **Phase 3** (2025-12-28)
+
 - `src/merhist/xpath.py`: XPathセレクタを集約（selectors.pyは標準ライブラリと競合するため改名）
 - `src/merhist/const.py`: URLとページ設定のみに整理
 

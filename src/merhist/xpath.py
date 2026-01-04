@@ -5,6 +5,7 @@ XPath セレクタ定義
 メルカリのページ要素を特定するための XPath セレクタを集約します。
 UI変更時はこのファイルのみを修正すれば対応できます。
 """
+
 from __future__ import annotations
 
 # =============================================================================
@@ -35,14 +36,15 @@ ITEM_DESC_DELETED = '//div[contains(@class, "merEmptyState")]//p[contains(text()
 # =============================================================================
 
 TRANSACTION_INFO_ROW = (
-    '//div[contains(@data-testid, "transaction:information-for-")]'
-    '//div[contains(@class, "merDisplayRow")]'
+    '//div[contains(@data-testid, "transaction:information-for-")]//div[contains(@class, "merDisplayRow")]'
 )
 TRANSACTION_ROW_TITLE = '//div[contains(@class, "title__")]/*[self::span or self::div]'
 TRANSACTION_ROW_BODY = '//div[contains(@class, "body__")]'
 TRANSACTION_ROW_BODY_SPAN = '//div[contains(@class, "body__")]/span'
 TRANSACTION_ROW_NUMBER = './/span[contains(@class, "number__")]'
-TRANSACTION_PAGE_ERROR = '//div[contains(@class, "merEmptyState")]//p[contains(text(), "ページの読み込みに失敗")]'
+TRANSACTION_PAGE_ERROR = (
+    '//div[contains(@class, "merEmptyState")]//p[contains(text(), "ページの読み込みに失敗")]'
+)
 TRANSACTION_THUMBNAIL = '//img[contains(@alt, "サムネイル")]'
 
 # =============================================================================

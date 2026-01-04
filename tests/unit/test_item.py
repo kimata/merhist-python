@@ -3,6 +3,7 @@
 """
 データモデル（ItemBase, SoldItem, BoughtItem）のテスト
 """
+
 import datetime
 
 import pytest

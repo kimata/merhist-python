@@ -1,123 +1,121 @@
-image: gitlab.green-rabbit.net:5050/kimata/local-ubuntu:251228_620c5aae
+image: gitlab.green-rabbit.net:5050/kimata/local-ubuntu:260104_3efe597c
 
 variables:
-    UV_LINK_MODE: copy
-    UV_CACHE_DIR: .uv-cache
-    PYRIGHT_PYTHON_FORCE_VERSION: latest
+  UV_LINK_MODE: copy
+  UV_CACHE_DIR: .uv-cache
+  PYRIGHT_PYTHON_FORCE_VERSION: latest
 
 stages:
-    - pre-test
-    - test
-    - renovate
+  - pre-test
+  - test
+  - renovate
 
 test-prepare:
-    stage: pre-test
+  stage: pre-test
 
-    needs: []
+  needs: []
 
-    script:
-        - uv sync --locked --no-editable
+  script:
+    - uv sync --locked --no-editable
 
-    artifacts:
-        paths:
-            - $UV_CACHE_DIR
-        expire_in: 1 hour
+  artifacts:
+    paths:
+      - $UV_CACHE_DIR
+    expire_in: 1 hour
 
-    cache:
-        - key:
-              files:
-                  - uv.lock
-          paths:
-              - $UV_CACHE_DIR
+  cache:
+    - key:
+        files:
+          - uv.lock
+      paths:
+        - $UV_CACHE_DIR
 
 test-typecheck:
-    stage: test
+  stage: test
 
-    needs:
-        - test-prepare
+  needs:
+    - test-prepare
 
-    script:
-        - uv run python -m pyright src/
-        - uv run mypy src/
+  script:
+    - uv run python -m pyright src/
+    - uv run mypy src/
 
-    cache:
-        - key:
-              files:
-                  - uv.lock
-          paths:
-              - ${UV_CACHE_DIR}
-
+  cache:
+    - key:
+        files:
+          - uv.lock
+      paths:
+        - ${UV_CACHE_DIR}
 
 test-walk-through:
-    stage: test
+  stage: test
 
-    needs:
-        - test-prepare
+  needs:
+    - test-prepare
 
-    script:
-        - uv run pytest
+  script:
+    - uv run pytest
 
-    cache:
-        - key:
-              files:
-                  - uv.lock
-          paths:
-              - ${UV_CACHE_DIR}
+  cache:
+    - key:
+        files:
+          - uv.lock
+      paths:
+        - ${UV_CACHE_DIR}
 
-    artifacts:
-        when: always
-        paths:
-            - data/debug/**
-            - reports/**
-        reports:
-            junit: reports/junit-report.xml
-
+  artifacts:
+    when: always
+    paths:
+      - data/debug/**
+      - reports/**
+    reports:
+      junit: reports/junit-report.xml
 
 test-smoke:
-    stage: test
+  stage: test
 
-    needs:
-        - test-prepare
-        - job: test-walk-through
-          artifacts: false
+  needs:
+    - test-prepare
+    - job: test-walk-through
+      artifacts: false
 
-    script:
-        - 'echo "Building: ${CI_REGISTRY_IMAGE}:${TAG}"'
-        - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.green-rabbit.net/kimata/bot-config.git
-        - mv bot-config/merhist.yaml config.yaml
-        - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.green-rabbit.net/kimata/font.git private_font
-        - mv private_font/* font
+  script:
+    - 'echo "Building: ${CI_REGISTRY_IMAGE}:${TAG}"'
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.green-rabbit.net/kimata/bot-config.git
+    - mv bot-config/merhist.yaml config.yaml
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.green-rabbit.net/kimata/font.git private_font
+    - mv private_font/* font
 
-        - export LANG=ja_JP.UTF-8
-        - export LANGUAGE=ja_JP:ja
-        - export LC_ALL=ja_JP.UTF-8
-        - export TERM=xterm-256color
+    - export LANG=ja_JP.UTF-8
+    - export LANGUAGE=ja_JP:ja
+    - export LC_ALL=ja_JP.UTF-8
+    - export TERM=xterm-256color
 
-        - uv run python src/app.py -D -R
-        - sync
+    - uv run python src/app.py -D -R
+    - sync
 
-    cache:
-        - key: ${CI_PROJECT_NAME}-selenium
-          paths:
-              - data/chrome
-          when: on_success
+  cache:
+    - key: ${CI_PROJECT_NAME}-selenium
+      paths:
+        - data/chrome
+      when: on_success
 
-    artifacts:
-        when: always
-        paths:
-            - data/debug/**
+  artifacts:
+    when: always
+    paths:
+      - data/debug/**
 
 renovate:
-    stage: renovate
-    image:
-        name: gitlab.green-rabbit.net:5050/kimata/local-renovate:250715_3b8866ff
+  stage: renovate
+  image:
+    name: gitlab.green-rabbit.net:5050/kimata/local-renovate:260104_3da7b77b
 
-    script:
-        - renovate --platform gitlab --token ${RENOVATE_TOKEN} --endpoint ${CI_SERVER_URL}/api/v4 ${CI_PROJECT_PATH}
+  script:
+    - renovate --platform gitlab --token ${RENOVATE_TOKEN} --endpoint ${CI_SERVER_URL}/api/v4 ${CI_PROJECT_PATH}
 
-    rules:
-        - if: '$CI_COMMIT_BRANCH != "master"'
-          when: never
-        - if: '$CI_PIPELINE_SOURCE == "schedule"'
-        - changes:
-              - renovate.json
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "master"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - changes:
+        - renovate.json

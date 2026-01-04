@@ -3,8 +3,8 @@
 """
 history.py のテスト
 """
+
 import datetime
-import pathlib
 import unittest.mock
 
 import openpyxl
@@ -166,12 +166,10 @@ class TestGenerateTableExcel:
 
         # ダミーデータを追加
         bought_item = merhist.item.BoughtItem(
-            id="m123", name="テスト購入商品", price=1000,
-            purchase_date=datetime.datetime(2025, 1, 15)
+            id="m123", name="テスト購入商品", price=1000, purchase_date=datetime.datetime(2025, 1, 15)
         )
         sold_item = merhist.item.SoldItem(
-            id="s456", name="テスト販売商品", price=2000,
-            completion_date=datetime.datetime(2025, 1, 20)
+            id="s456", name="テスト販売商品", price=2000, completion_date=datetime.datetime(2025, 1, 20)
         )
         handle.db.upsert_bought_item(bought_item)
         handle.db.upsert_sold_item(sold_item)

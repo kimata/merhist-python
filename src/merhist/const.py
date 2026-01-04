@@ -5,6 +5,7 @@
 URL やページ設定など、XPath セレクタ以外の定数を定義します。
 XPath セレクタは selectors.py を参照してください。
 """
+
 from __future__ import annotations
 
 SOLD_ITEM_PER_PAGE: int = 20

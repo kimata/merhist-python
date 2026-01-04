@@ -8,8 +8,9 @@ import pathlib
 import time
 import zoneinfo
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
+import my_lib.chrome_util
 import my_lib.selenium_util
 import rich.console
 import rich.live
@@ -65,7 +66,7 @@ class _DisplayRenderable:
 class _NullProgress:
     """非TTY環境用の何もしない Progress（Null Object パターン）"""
 
-    tasks: list[rich.progress.Task] = []
+    tasks: ClassVar[list[rich.progress.Task]] = []
 
     def add_task(self, description: str, total: float | None = None) -> rich.progress.TaskID:
         return rich.progress.TaskID(0)
@@ -264,7 +265,7 @@ class Handle:
             return (driver, wait)
         except Exception as e:
             if self.clear_profile_on_browser_error:
-                my_lib.selenium_util.delete_profile(
+                my_lib.chrome_util.delete_profile(
                     merhist.const.SELENIUM_PROFILE_NAME, self.config.selenium_data_dir_path
                 )
             raise my_lib.selenium_util.SeleniumError(f"Selenium の起動に失敗しました: {e}") from e

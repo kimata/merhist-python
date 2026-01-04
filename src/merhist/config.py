@@ -175,11 +175,9 @@ class Config:
         # このプロジェクトでは captcha 有りの設定、または設定なしのパターンのみ対応
         if not isinstance(
             slack,
-            (
-                my_lib.notify.slack.SlackConfig,
-                my_lib.notify.slack.SlackCaptchaOnlyConfig,
-                my_lib.notify.slack.SlackEmptyConfig,
-            ),
+            my_lib.notify.slack.SlackConfig
+            | my_lib.notify.slack.SlackCaptchaOnlyConfig
+            | my_lib.notify.slack.SlackEmptyConfig,
         ):
             raise ValueError("Slack 設定には captcha が必要です（または設定なし）")
 

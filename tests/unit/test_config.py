@@ -3,6 +3,7 @@
 """
 設定パースのテスト
 """
+
 import pathlib
 import unittest.mock
 
