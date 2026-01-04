@@ -361,7 +361,7 @@ class TestFetchSoldItemList:
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
         h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-        h.progress_manager = unittest.mock.MagicMock()
+        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -501,7 +501,7 @@ class TestFetchBoughtItemList:
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
         h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-        h.progress_manager = unittest.mock.MagicMock()
+        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -570,7 +570,7 @@ class TestFetchOrderItemList:
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
         h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-        h.progress_manager = unittest.mock.MagicMock()
+        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -834,8 +834,8 @@ class TestGetBoughtItemInfoList:
 
         handle.selenium.driver.find_element.side_effect = find_element_side_effect
 
-        item_list: list[merhist.item.BoughtItem] = []
-        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(
+        item_list: list[merhist.item.BoughtItem] = []  # type: ignore[name-defined]
+        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(  # type: ignore[attr-defined]
             handle, page=1, offset=0, item_list=item_list, continue_mode=True
         )
 
@@ -850,7 +850,7 @@ class TestGetBoughtItemInfoList:
         import merhist.xpath
 
         # DBにキャッシュを追加
-        cached_item = merhist.item.BoughtItem(id="m12345", name="キャッシュ済み")
+        cached_item = merhist.item.BoughtItem(id="m12345", name="キャッシュ済み")  # type: ignore[attr-defined]
         handle.db.upsert_bought_item(cached_item)
 
         # モック要素
@@ -875,8 +875,8 @@ class TestGetBoughtItemInfoList:
 
         handle.selenium.driver.find_element.side_effect = find_element_side_effect
 
-        item_list: list[merhist.item.BoughtItem] = []
-        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(
+        item_list: list[merhist.item.BoughtItem] = []  # type: ignore[name-defined]
+        list_length, is_found_new = merhist.crawler.get_bought_item_info_list(  # type: ignore[attr-defined]
             handle, page=1, offset=0, item_list=item_list, continue_mode=True
         )
 

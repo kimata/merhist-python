@@ -6,6 +6,7 @@
 
 import datetime
 import pathlib
+from collections.abc import Generator
 
 import pytest
 
@@ -19,7 +20,7 @@ SCHEMA_PATH = pathlib.Path(__file__).parent.parent.parent / "schema" / "sqlite.s
 
 # === フィクスチャ ===
 @pytest.fixture
-def db(tmp_path: pathlib.Path) -> Database:
+def db(tmp_path: pathlib.Path) -> Generator[Database, None, None]:
     """テスト用データベースフィクスチャ"""
     db_path = tmp_path / "test.db"
     database = Database(db_path, SCHEMA_PATH)
