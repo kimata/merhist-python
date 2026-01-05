@@ -4,6 +4,7 @@
 crawler.py のテスト
 """
 
+import pathlib
 import unittest.mock
 
 import my_lib.graceful_shutdown
@@ -295,6 +296,91 @@ class TestSaveThumbnail:
             merhist.crawler._save_thumbnail(handle, item, "https://example.com/thumb.jpg")
 
             handle.selenium.driver.find_element.assert_called_once()
+
+    def test_save_thumbnail_empty_png_data(self, handle):
+        """サムネイル画像データが空の場合"""
+        item = merhist.item.SoldItem(id="m123")
+
+        mock_img_element = unittest.mock.MagicMock()
+        mock_img_element.screenshot_as_png = b""  # 空データ
+
+        with (
+            unittest.mock.patch("my_lib.selenium_util.browser_tab"),
+            pytest.raises(RuntimeError, match="サムネイル画像データが空です"),
+        ):
+            handle.selenium.driver.find_element.return_value = mock_img_element
+
+            merhist.crawler._save_thumbnail(handle, item, "https://example.com/thumb.jpg")
+
+    def test_save_thumbnail_zero_size_file(self, handle, tmp_path):
+        """保存後のファイルサイズが0の場合"""
+        import os
+
+        item = merhist.item.SoldItem(id="m123")
+
+        mock_img_element = unittest.mock.MagicMock()
+        mock_img_element.screenshot_as_png = b"fake_png_data"
+
+        # サムネイル保存先のパスを取得
+        thumb_path = pathlib.Path(handle.get_thumb_path(item))
+        thumb_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # 空のファイルを作成しておく
+        thumb_path.touch()
+
+        # stat をモックしてサイズを0に
+        original_stat = os.stat
+
+        def mock_stat(path, *args, **kwargs):
+            result = original_stat(path, *args, **kwargs)
+            # st_size を上書きするためにnamedtupleから変換
+            return os.stat_result(
+                (
+                    result.st_mode,
+                    result.st_ino,
+                    result.st_dev,
+                    result.st_nlink,
+                    result.st_uid,
+                    result.st_gid,
+                    0,
+                    result.st_atime,
+                    result.st_mtime,
+                    result.st_ctime,
+                )
+            )
+
+        with (
+            unittest.mock.patch("my_lib.selenium_util.browser_tab"),
+            unittest.mock.patch.object(
+                pathlib.Path, "stat", side_effect=lambda: unittest.mock.MagicMock(st_size=0)
+            ),
+            pytest.raises(RuntimeError, match="サムネイル画像のサイズが0です"),
+        ):
+            handle.selenium.driver.find_element.return_value = mock_img_element
+
+            merhist.crawler._save_thumbnail(handle, item, "https://example.com/thumb.jpg")
+
+    def test_save_thumbnail_corrupted_image(self, handle, tmp_path):
+        """画像が破損している場合"""
+        item = merhist.item.SoldItem(id="m123")
+
+        mock_img_element = unittest.mock.MagicMock()
+        mock_img_element.screenshot_as_png = b"fake_png_data"
+
+        with (
+            unittest.mock.patch("my_lib.selenium_util.browser_tab"),
+            unittest.mock.patch("PIL.Image.open") as mock_image_open,
+            pytest.raises(RuntimeError, match="サムネイル画像が破損しています"),
+        ):
+            handle.selenium.driver.find_element.return_value = mock_img_element
+            # verify() で例外を発生させる
+            mock_img = unittest.mock.MagicMock()
+            mock_img.verify.side_effect = Exception("Invalid image")
+            mock_img.__enter__ = unittest.mock.MagicMock(return_value=mock_img)
+            mock_img.__exit__ = unittest.mock.MagicMock(return_value=False)
+            mock_image_open.return_value = mock_img
+
+            merhist.crawler._save_thumbnail(handle, item, "https://example.com/thumb.jpg")
 
 
 class TestFetchItemTransaction:
@@ -704,6 +790,40 @@ class TestFetchItemDescription:
 
             assert item.condition == "新品、未使用"
 
+    def test_fetch_item_description_category(self, handle):
+        """カテゴリー情報を取得"""
+        item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
+
+        # モック要素を作成
+        mock_row_title = unittest.mock.MagicMock()
+        mock_row_title.text = "カテゴリー"
+
+        # カテゴリーのパンくずリスト
+        mock_breadcrumb1 = unittest.mock.MagicMock()
+        mock_breadcrumb1.text = "家電"
+        mock_breadcrumb2 = unittest.mock.MagicMock()
+        mock_breadcrumb2.text = "スマートフォン"
+
+        def find_element_side_effect(by, xpath):
+            return mock_row_title
+
+        def find_elements_side_effect(by, xpath):
+            if "a" in xpath.lower() or "link" in xpath.lower():
+                return [mock_breadcrumb1, mock_breadcrumb2]
+            return [unittest.mock.MagicMock()]  # 1行
+
+        handle.selenium.driver.find_elements.side_effect = find_elements_side_effect
+        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+
+        with (
+            unittest.mock.patch("my_lib.selenium_util.browser_tab"),
+            unittest.mock.patch("merhist.crawler._wait_for_loading"),
+            unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=False),
+        ):
+            merhist.crawler._fetch_item_description(handle, item)
+
+            assert item.category == ["家電", "スマートフォン"]
+
 
 class TestFetchItemTransactionNormal:
     """fetch_item_transaction_normal のテスト"""
@@ -760,6 +880,84 @@ class TestFetchItemTransactionNormal:
             pytest.raises(merhist.exceptions.InvalidPageFormatError),
         ):
             merhist.crawler._fetch_item_transaction_normal(handle, item)
+
+    def test_fetch_item_transaction_normal_success(self, handle, tmp_path):
+        """正常に取引情報を取得"""
+        item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
+
+        # サムネイルディレクトリを作成
+        (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
+
+        # 情報行のモック
+        mock_row = unittest.mock.MagicMock()
+
+        # タイトルと本文のモック
+        mock_title = unittest.mock.MagicMock()
+        mock_title.text = "購入日時"
+        mock_body_span = unittest.mock.MagicMock()
+        mock_body_span.text = "2024年1月15日 10:30"
+        mock_thumb_elem = unittest.mock.MagicMock()
+        mock_thumb_elem.get_attribute.return_value = None  # サムネイルなし
+
+        call_count = 0
+
+        def find_element_side_effect(by, xpath):
+            nonlocal call_count
+            call_count += 1
+            if "thumbnail" in xpath.lower() or "img" in xpath.lower():
+                return mock_thumb_elem
+            if "title" in xpath.lower() or "dt" in xpath.lower():
+                return mock_title
+            return mock_body_span
+
+        handle.selenium.driver.find_elements.return_value = [mock_row]  # 1行
+        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+
+        with (
+            unittest.mock.patch("merhist.crawler._visit_url"),
+            unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=False),
+            unittest.mock.patch("merhist.parser.parse_datetime", return_value="2024-01-15 10:30:00"),
+        ):
+            merhist.crawler._fetch_item_transaction_normal(handle, item)
+
+            assert item.purchase_date == "2024-01-15 10:30:00"
+
+    def test_fetch_item_transaction_normal_with_thumbnail(self, handle, tmp_path):
+        """サムネイル付きで取引情報を取得"""
+        item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
+
+        # サムネイルディレクトリを作成
+        (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
+
+        # 情報行のモック
+        mock_row = unittest.mock.MagicMock()
+        mock_title = unittest.mock.MagicMock()
+        mock_title.text = "購入日時"
+        mock_body_span = unittest.mock.MagicMock()
+        mock_body_span.text = "2024年1月15日 10:30"
+        mock_thumb_elem = unittest.mock.MagicMock()
+        mock_thumb_elem.get_attribute.return_value = "https://example.com/thumb.jpg"
+
+        def find_element_side_effect(by, xpath):
+            if "thumbnail" in xpath.lower() or "img" in xpath.lower():
+                return mock_thumb_elem
+            if "title" in xpath.lower() or "dt" in xpath.lower():
+                return mock_title
+            return mock_body_span
+
+        handle.selenium.driver.find_elements.return_value = [mock_row]
+        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+
+        with (
+            unittest.mock.patch("merhist.crawler._visit_url"),
+            unittest.mock.patch("my_lib.selenium_util.xpath_exists", return_value=False),
+            unittest.mock.patch("merhist.parser.parse_datetime", return_value="2024-01-15 10:30:00"),
+            unittest.mock.patch("merhist.crawler._save_thumbnail") as mock_save,
+        ):
+            merhist.crawler._fetch_item_transaction_normal(handle, item)
+
+            assert item.purchase_date == "2024-01-15 10:30:00"
+            mock_save.assert_called_once()
 
 
 class TestGetBoughtItemInfoList:
