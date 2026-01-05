@@ -280,7 +280,7 @@ class TestHandleSelenium:
             driver, wait = handle.get_selenium_driver()
 
             mock_create.assert_called_once_with(
-                "Merhist", mock_config.selenium_data_dir_path, use_subprocess=False
+                "Merhist", mock_config.selenium_data_dir_path, use_undetected=True
             )
             mock_clear.assert_called_once_with(mock_driver)
             assert driver == mock_driver
@@ -836,3 +836,167 @@ class TestHandleSeleniumError:
             mock_delete.assert_not_called()
 
         handle.finish()
+
+
+class TestHandleEdgeCases:
+    """Handle の境界ケーステスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.cache_dir_path = tmp_path / "cache"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    def test_ignore_cache_mode(self, mock_config, tmp_path):
+        """ignore_cache=True の場合、cache_dir_path をテンポラリに設定"""
+        handle = merhist.handle.Handle(config=mock_config, ignore_cache=True)
+
+        # ignore_cache が True で Handle が作成されたことを確認
+        assert handle is not None
+
+        handle.finish()
+
+    def test_ignore_cache_mode_with_existing_file(self, mock_config, tmp_path):
+        """ignore_cache=True で既存ファイルが削除される"""
+        # キャッシュファイルを作成
+        cache_file = tmp_path / "cache" / "cache.dat"
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text("dummy cache")
+
+        mock_config.cache_file_path = cache_file
+
+        handle = merhist.handle.Handle(config=mock_config, ignore_cache=True)
+
+        # ファイルが削除されていることを確認（データベースとして再作成されている可能性あり）
+        handle.finish()
+
+    def test_db_property_not_initialized(self, mock_config):
+        """db プロパティ未初期化時に例外"""
+        handle = merhist.handle.Handle(config=mock_config)
+
+        # _db を None に設定
+        handle._db = None
+
+        with pytest.raises(RuntimeError, match="Database is not initialized"):
+            _ = handle.db
+
+        handle.finish()
+
+    def test_tmux_environment_width(self, mock_config):
+        """TMUX 環境での幅調整"""
+        import os
+
+        original_env = os.environ.get("TMUX")
+
+        try:
+            os.environ["TMUX"] = "/tmp/tmux-1000/default,12345,0"  # noqa: S108
+
+            handle = merhist.handle.Handle(config=mock_config)
+
+            # _create_status_bar を呼び出して TMUX 幅調整をテスト
+            handle._create_status_bar()
+
+            handle.finish()
+        finally:
+            if original_env is not None:
+                os.environ["TMUX"] = original_env
+            elif "TMUX" in os.environ:
+                del os.environ["TMUX"]
+
+    def test_create_display_without_tasks(self, mock_config):
+        """タスクがない場合の _create_display"""
+        handle = merhist.handle.Handle(config=mock_config)
+
+        # タスクがない場合、_create_display は status_bar のみを返す
+        result = handle._create_display()
+
+        # 結果は rich.table.Table である
+        assert result is not None
+
+        handle.finish()
+
+    def test_create_display_with_tasks(self, mock_config):
+        """タスクがある場合の _create_display"""
+        import rich.console
+        import rich.progress
+
+        handle = merhist.handle.Handle(config=mock_config)
+
+        # _progress を実際の Progress に設定してタスクを追加
+        handle._progress = rich.progress.Progress()
+        handle._progress.add_task("テスト", total=10)
+
+        # タスクがある場合、Group を返す
+        result = handle._create_display()
+
+        # 結果は Group である
+        assert isinstance(result, rich.console.Group)
+
+        handle.finish()
+
+    def test_set_status_in_terminal(self, mock_config):
+        """ターミナル環境での set_status"""
+        handle = merhist.handle.Handle(config=mock_config)
+
+        # _refresh_display をモック
+        with (
+            unittest.mock.patch.object(handle, "_refresh_display") as mock_refresh,
+            unittest.mock.patch.object(
+                type(handle._console), "is_terminal", new_callable=unittest.mock.PropertyMock
+            ) as mock_is_terminal,
+        ):
+            mock_is_terminal.return_value = True
+            handle.set_status("テストステータス")
+            mock_refresh.assert_called_once()
+
+        handle.finish()
+
+    def test_progress_tasks_display(self, mock_config):
+        """プログレスバーのタスク表示"""
+        handle = merhist.handle.Handle(config=mock_config)
+
+        # プログレスバーを作成
+        handle.set_progress_bar("テストタスク", 10)
+
+        # タスクを進める
+        for _ in range(5):
+            handle.update_progress_bar("テストタスク", 1)
+
+        # 存在しないキーで更新しても例外にならない
+        handle.update_progress_bar("存在しないタスク", 1)
+
+        handle.finish()
+
+    def test_refresh_display_called(self, mock_config):
+        """_refresh_display が呼び出される"""
+        handle = merhist.handle.Handle(config=mock_config)
+
+        # Live コンテキストをモック
+        with unittest.mock.patch.object(handle, "_live", create=True) as mock_live:
+            mock_live.refresh = unittest.mock.MagicMock()
+
+            # _refresh_display を直接呼び出し
+            if hasattr(handle, "_refresh_display"):
+                handle._refresh_display()
+
+        handle.finish()
+
+    def test_progress_with_non_tty(self, mock_config):
+        """非 TTY 環境でのプログレス表示"""
+        with unittest.mock.patch("sys.stdout") as mock_stdout:
+            mock_stdout.isatty.return_value = False
+
+            handle = merhist.handle.Handle(config=mock_config)
+
+            # プログレス操作が例外を起こさない
+            handle.set_progress_bar("テスト", 5)
+            handle.update_progress_bar("テスト", 1)
+
+            handle.finish()

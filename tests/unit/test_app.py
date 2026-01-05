@@ -64,6 +64,40 @@ class TestExecuteFetch:
 
             mock_dump.assert_called_once()
 
+    def test_execute_fetch_invalid_session_id_exception(self, handle):
+        """InvalidSessionIdException は特別扱い（ダンプなし）"""
+        import selenium.common.exceptions
+
+        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+
+        with (
+            unittest.mock.patch(
+                "merhist.crawler.execute_login",
+                side_effect=selenium.common.exceptions.InvalidSessionIdException("セッション切れ"),
+            ),
+            unittest.mock.patch("my_lib.selenium_util.dump_page") as mock_dump,
+            pytest.raises(selenium.common.exceptions.InvalidSessionIdException),
+        ):
+            app._execute_fetch(handle, continue_mode)
+
+            # InvalidSessionIdException ではダンプされない
+            mock_dump.assert_not_called()
+
+    def test_execute_fetch_error_skips_dump_on_shutdown(self, handle):
+        """シャットダウン要求時はダンプをスキップ"""
+        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+
+        with (
+            unittest.mock.patch("merhist.crawler.execute_login", side_effect=Exception("エラー")),
+            unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=True),
+            unittest.mock.patch("my_lib.selenium_util.dump_page") as mock_dump,
+        ):
+            # シャットダウン要求時はエラーが再スローされない
+            app._execute_fetch(handle, continue_mode)
+
+            # ダンプはスキップされる
+            mock_dump.assert_not_called()
+
 
 class TestExecute:
     """execute のテスト"""
@@ -168,3 +202,140 @@ class TestExecute:
             app.execute(mock_config, continue_mode, export_mode=True, debug_mode=False)
 
             mock_input.assert_called_once()
+
+    def test_execute_session_retry_on_invalid_session(self, mock_config):
+        """InvalidSessionIdException でリトライ"""
+        import selenium.common.exceptions
+
+        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+
+        call_count = 0
+
+        def side_effect_fn(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise selenium.common.exceptions.InvalidSessionIdException("セッション切れ")
+            # 2回目以降は成功
+
+        with (
+            unittest.mock.patch("merhist.history.generate_table_excel"),
+            unittest.mock.patch("app._execute_fetch", side_effect=side_effect_fn),
+            unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
+            unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
+        ):
+            result = app.execute(
+                mock_config,
+                continue_mode,
+                export_mode=False,
+                debug_mode=True,
+                clear_profile_on_browser_error=True,
+            )
+
+            assert result == 0
+            mock_delete.assert_called_once()
+
+    def test_execute_session_retry_max_exceeded(self, mock_config):
+        """InvalidSessionIdException でリトライ上限超過"""
+        import selenium.common.exceptions
+
+        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+
+        with (
+            unittest.mock.patch("merhist.history.generate_table_excel"),
+            unittest.mock.patch(
+                "app._execute_fetch",
+                side_effect=selenium.common.exceptions.InvalidSessionIdException("セッション切れ"),
+            ),
+            unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
+            unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
+        ):
+            result = app.execute(
+                mock_config,
+                continue_mode,
+                export_mode=False,
+                debug_mode=True,
+                clear_profile_on_browser_error=True,
+            )
+
+            assert result == 1
+            # リトライ回数分呼ばれる
+            assert mock_delete.call_count >= 1
+
+    def test_execute_session_error_no_retry_when_disabled(self, mock_config):
+        """clear_profile_on_browser_error=False ではリトライしない"""
+        import selenium.common.exceptions
+
+        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+
+        with (
+            unittest.mock.patch("merhist.history.generate_table_excel"),
+            unittest.mock.patch(
+                "app._execute_fetch",
+                side_effect=selenium.common.exceptions.InvalidSessionIdException("セッション切れ"),
+            ),
+            unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
+            unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
+        ):
+            result = app.execute(
+                mock_config,
+                continue_mode,
+                export_mode=False,
+                debug_mode=True,
+                clear_profile_on_browser_error=False,
+            )
+
+            assert result == 1
+            # プロファイル削除は呼ばれない
+            mock_delete.assert_not_called()
+
+    def test_execute_selenium_error(self, mock_config):
+        """SeleniumError が発生した場合"""
+        import my_lib.selenium_util
+
+        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+
+        with (
+            unittest.mock.patch("merhist.history.generate_table_excel"),
+            unittest.mock.patch(
+                "app._execute_fetch",
+                side_effect=my_lib.selenium_util.SeleniumError("Selenium エラー"),
+            ),
+            unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
+        ):
+            result = app.execute(mock_config, continue_mode, export_mode=False, debug_mode=True)
+
+            assert result == 1
+
+    def test_execute_login_error(self, mock_config):
+        """LoginError が発生した場合"""
+        import my_lib.store.mercari.exceptions
+
+        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+
+        with (
+            unittest.mock.patch("merhist.history.generate_table_excel"),
+            unittest.mock.patch(
+                "app._execute_fetch",
+                side_effect=my_lib.store.mercari.exceptions.LoginError("ログインエラー"),
+            ),
+            unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
+        ):
+            result = app.execute(mock_config, continue_mode, export_mode=False, debug_mode=True)
+
+            assert result == 1
+
+    def test_execute_general_error_skips_on_shutdown(self, mock_config):
+        """シャットダウン要求時は一般エラーをスキップ"""
+        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+
+        with (
+            unittest.mock.patch("merhist.history.generate_table_excel"),
+            unittest.mock.patch("app._execute_fetch", side_effect=Exception("一般エラー")),
+            unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=True),
+            unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
+        ):
+            result = app.execute(mock_config, continue_mode, export_mode=False, debug_mode=True)
+
+            # シャットダウン要求時は正常終了扱い
+            assert result == 0
