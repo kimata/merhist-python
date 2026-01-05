@@ -254,7 +254,7 @@ class Handle:
 
         try:
             driver = my_lib.selenium_util.create_driver(
-                merhist.const.SELENIUM_PROFILE_NAME, self.config.selenium_data_dir_path, use_subprocess=False
+                merhist.const.SELENIUM_PROFILE_NAME, self.config.selenium_data_dir_path, use_undetected=True
             )
             wait = selenium.webdriver.support.wait.WebDriverWait(driver, 5)
 
