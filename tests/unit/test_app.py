@@ -35,7 +35,7 @@ class TestExecuteFetch:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
         return h
 
     def test_execute_fetch_success(self, handle):

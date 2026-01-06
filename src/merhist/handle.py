@@ -8,11 +8,8 @@ import zoneinfo
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-import my_lib.chrome_util
+import my_lib.browser_manager
 import my_lib.cui_progress
-import my_lib.selenium_util
-import selenium.webdriver.remote.webdriver
-import selenium.webdriver.support.wait
 
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webdriver import WebDriver
@@ -36,20 +33,16 @@ class TradingState:
 
 
 @dataclass
-class SeleniumInfo:
-    driver: selenium.webdriver.remote.webdriver.WebDriver
-    wait: selenium.webdriver.support.wait.WebDriverWait
-
-
-@dataclass
 class Handle:
     config: merhist.config.Config
     clear_profile_on_browser_error: bool = False
     debug_mode: bool = False
     ignore_cache: bool = False
     trading: TradingState = field(default_factory=TradingState)
-    selenium: SeleniumInfo | None = None
     _db: merhist.database.Database | None = field(default=None, repr=False)
+    _browser_manager: my_lib.browser_manager.BrowserManager | None = field(
+        default=None, init=False, repr=False
+    )
 
     # プログレス管理
     _progress_manager: my_lib.cui_progress.ProgressManager = field(
@@ -63,6 +56,11 @@ class Handle:
     def __post_init__(self) -> None:
         self._prepare_directory()
         self._init_database()
+        self._browser_manager = my_lib.browser_manager.BrowserManager(
+            profile_name=merhist.const.SELENIUM_PROFILE_NAME,
+            data_dir=self.config.selenium_data_dir_path,
+            clear_profile_on_error=self.clear_profile_on_browser_error,
+        )
 
     def _init_database(self) -> None:
         """データベースを初期化"""
@@ -95,29 +93,11 @@ class Handle:
         self._progress_manager.resume_live()
 
     # --- Selenium 関連 ---
-    def get_selenium_driver(
-        self,
-    ) -> tuple[WebDriver, WebDriverWait]:
-        if self.selenium is not None:
-            return (self.selenium.driver, self.selenium.wait)
-
-        try:
-            driver = my_lib.selenium_util.create_driver(
-                merhist.const.SELENIUM_PROFILE_NAME, self.config.selenium_data_dir_path, use_undetected=True
-            )
-            wait = selenium.webdriver.support.wait.WebDriverWait(driver, 5)
-
-            my_lib.selenium_util.clear_cache(driver)
-
-            self.selenium = SeleniumInfo(driver=driver, wait=wait)
-
-            return (driver, wait)
-        except Exception as e:
-            if self.clear_profile_on_browser_error:
-                my_lib.chrome_util.delete_profile(
-                    merhist.const.SELENIUM_PROFILE_NAME, self.config.selenium_data_dir_path
-                )
-            raise my_lib.selenium_util.SeleniumError(f"Selenium の起動に失敗しました: {e}") from e
+    def get_selenium_driver(self) -> tuple[WebDriver, WebDriverWait]:
+        """Selenium ドライバーを取得（必要に応じて起動）"""
+        if self._browser_manager is None:
+            raise RuntimeError("BrowserManager is not initialized")
+        return self._browser_manager.get_driver()
 
     # --- 販売アイテム関連 ---
     def record_sold_item(self, item: merhist.item.SoldItem) -> None:
@@ -181,10 +161,10 @@ class Handle:
 
     # --- 終了処理 ---
     def quit_selenium(self) -> None:
-        if self.selenium is not None:
+        """Selenium ドライバーを終了"""
+        if self._browser_manager is not None and self._browser_manager.has_driver():
             self.set_status("🛑 クローラを終了しています...")
-            my_lib.selenium_util.quit_driver_gracefully(self.selenium.driver, wait_sec=5)
-            self.selenium = None
+            self._browser_manager.quit()
 
     def finish(self) -> None:
         self.quit_selenium()

@@ -42,7 +42,10 @@ class TestFetchItemDetail:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -151,7 +154,10 @@ class TestWaitForLoading:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -160,11 +166,11 @@ class TestWaitForLoading:
         with unittest.mock.patch("time.sleep"):
             merhist.crawler._wait_for_loading(handle, "//div", sec=0.1)
 
-            handle.selenium.wait.until.assert_called_once()
+            handle._test_mock_wait.until.assert_called_once()
 
     def test_wait_for_loading_timeout_retry(self, handle):
         """タイムアウト時にリトライ"""
-        handle.selenium.wait.until.side_effect = [
+        handle._test_mock_wait.until.side_effect = [
             selenium.common.exceptions.TimeoutException(),
             None,
         ]
@@ -172,12 +178,12 @@ class TestWaitForLoading:
         with unittest.mock.patch("time.sleep"):
             merhist.crawler._wait_for_loading(handle, "//div", sec=0.1, retry=True)
 
-            assert handle.selenium.wait.until.call_count == 2
-            handle.selenium.driver.refresh.assert_called_once()
+            assert handle._test_mock_wait.until.call_count == 2
+            handle._test_mock_driver.refresh.assert_called_once()
 
     def test_wait_for_loading_timeout_no_retry(self, handle):
         """リトライなしでタイムアウト"""
-        handle.selenium.wait.until.side_effect = selenium.common.exceptions.TimeoutException()
+        handle._test_mock_wait.until.side_effect = selenium.common.exceptions.TimeoutException()
 
         with (
             unittest.mock.patch("time.sleep"),
@@ -207,7 +213,10 @@ class TestVisitUrl:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -216,7 +225,7 @@ class TestVisitUrl:
         with unittest.mock.patch("time.sleep"):
             merhist.crawler._visit_url(handle, "https://example.com", "//div")
 
-            handle.selenium.driver.get.assert_called_once_with("https://example.com")
+            handle._test_mock_driver.get.assert_called_once_with("https://example.com")
 
 
 class TestExecuteLogin:
@@ -242,7 +251,10 @@ class TestExecuteLogin:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -275,7 +287,9 @@ class TestSaveThumbnail:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         # サムネイルディレクトリを作成
         (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
         yield h
@@ -292,11 +306,11 @@ class TestSaveThumbnail:
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
             unittest.mock.patch("PIL.Image.open"),
         ):
-            handle.selenium.driver.find_element.return_value = mock_img_element
+            handle._test_mock_driver.find_element.return_value = mock_img_element
 
             merhist.crawler._save_thumbnail(handle, item, "https://example.com/thumb.jpg")
 
-            handle.selenium.driver.find_element.assert_called_once()
+            handle._test_mock_driver.find_element.assert_called_once()
 
     def test_save_thumbnail_empty_png_data(self, handle):
         """サムネイル画像データが空の場合"""
@@ -309,7 +323,7 @@ class TestSaveThumbnail:
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
             pytest.raises(RuntimeError, match="サムネイル画像データが空です"),
         ):
-            handle.selenium.driver.find_element.return_value = mock_img_element
+            handle._test_mock_driver.find_element.return_value = mock_img_element
 
             merhist.crawler._save_thumbnail(handle, item, "https://example.com/thumb.jpg")
 
@@ -357,7 +371,7 @@ class TestSaveThumbnail:
             ),
             pytest.raises(RuntimeError, match="サムネイル画像のサイズが0です"),
         ):
-            handle.selenium.driver.find_element.return_value = mock_img_element
+            handle._test_mock_driver.find_element.return_value = mock_img_element
 
             merhist.crawler._save_thumbnail(handle, item, "https://example.com/thumb.jpg")
 
@@ -373,7 +387,7 @@ class TestSaveThumbnail:
             unittest.mock.patch("PIL.Image.open") as mock_image_open,
             pytest.raises(RuntimeError, match="サムネイル画像が破損しています"),
         ):
-            handle.selenium.driver.find_element.return_value = mock_img_element
+            handle._test_mock_driver.find_element.return_value = mock_img_element
             # verify() で例外を発生させる
             mock_img = unittest.mock.MagicMock()
             mock_img.verify.side_effect = Exception("Invalid image")
@@ -405,7 +419,10 @@ class TestFetchItemTransaction:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -449,7 +466,9 @@ class TestFetchSoldItemList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
@@ -514,7 +533,10 @@ class TestFetchBoughtItemInfoList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -583,7 +605,9 @@ class TestFetchBoughtItemList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
@@ -652,7 +676,9 @@ class TestFetchOrderItemList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
@@ -728,7 +754,10 @@ class TestFetchItemDescription:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -773,8 +802,8 @@ class TestFetchItemDescription:
                 return mock_row_title
             return mock_row_body
 
-        handle.selenium.driver.find_elements.return_value = [unittest.mock.MagicMock()]  # 1行
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_elements.return_value = [unittest.mock.MagicMock()]  # 1行
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
@@ -807,8 +836,8 @@ class TestFetchItemDescription:
                 return [mock_breadcrumb1, mock_breadcrumb2]
             return [unittest.mock.MagicMock()]  # 1行
 
-        handle.selenium.driver.find_elements.side_effect = find_elements_side_effect
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_elements.side_effect = find_elements_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
@@ -841,14 +870,17 @@ class TestFetchItemTransactionNormal:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
     def test_fetch_item_transaction_normal_page_error(self, handle):
         """ページエラーの場合"""
         item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
-        handle.selenium.driver.current_url = "https://example.com/error"
+        handle._test_mock_driver.current_url = "https://example.com/error"
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -862,12 +894,12 @@ class TestFetchItemTransactionNormal:
         item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
 
         # 空のリストを返す（行がない）
-        handle.selenium.driver.find_elements.return_value = []
+        handle._test_mock_driver.find_elements.return_value = []
 
         # サムネイル用モック
         mock_thumb = unittest.mock.MagicMock()
         mock_thumb.get_attribute.return_value = None
-        handle.selenium.driver.find_element.return_value = mock_thumb
+        handle._test_mock_driver.find_element.return_value = mock_thumb
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -905,8 +937,8 @@ class TestFetchItemTransactionNormal:
                 return mock_title
             return mock_body_span
 
-        handle.selenium.driver.find_elements.return_value = [mock_row]  # 1行
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_elements.return_value = [mock_row]  # 1行
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -940,8 +972,8 @@ class TestFetchItemTransactionNormal:
                 return mock_title
             return mock_body_span
 
-        handle.selenium.driver.find_elements.return_value = [mock_row]
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_elements.return_value = [mock_row]
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -976,13 +1008,16 @@ class TestGetBoughtItemInfoList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
     def test_get_bought_item_info_list_offset_error(self, handle):
         """オフセットがリスト長より大きい場合"""
-        handle.selenium.driver.find_elements.return_value = []  # 0件
+        handle._test_mock_driver.find_elements.return_value = []  # 0件
 
         item_list: list[merhist.item.BoughtItem] = []
 
@@ -991,7 +1026,7 @@ class TestGetBoughtItemInfoList:
 
     def test_get_bought_item_info_list_empty(self, handle):
         """空リスト"""
-        handle.selenium.driver.find_elements.return_value = []
+        handle._test_mock_driver.find_elements.return_value = []
 
         item_list: list[merhist.item.BoughtItem] = []
         list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
@@ -1007,7 +1042,7 @@ class TestGetBoughtItemInfoList:
 
         # モック要素を作成
         mock_item_elem = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_item_elem]
+        handle._test_mock_driver.find_elements.return_value = [mock_item_elem]
 
         # find_element のモック
         mock_name = unittest.mock.MagicMock()
@@ -1026,7 +1061,7 @@ class TestGetBoughtItemInfoList:
                 return mock_datetime
             return mock_name
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         item_list: list[merhist.item.BoughtItem] = []  # type: ignore[name-defined]
         list_length, is_found_new = merhist.crawler._get_bought_item_info_list(  # type: ignore[attr-defined]
@@ -1048,7 +1083,7 @@ class TestGetBoughtItemInfoList:
 
         # モック要素
         mock_item_elem = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_item_elem]
+        handle._test_mock_driver.find_elements.return_value = [mock_item_elem]
 
         mock_name = unittest.mock.MagicMock()
         mock_name.text = "テスト商品"
@@ -1066,7 +1101,7 @@ class TestGetBoughtItemInfoList:
                 return mock_datetime
             return mock_name
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         item_list: list[merhist.item.BoughtItem] = []  # type: ignore[name-defined]
         list_length, is_found_new = merhist.crawler._get_bought_item_info_list(  # type: ignore[attr-defined]
@@ -1100,7 +1135,10 @@ class TestFetchSoldCount:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -1108,7 +1146,7 @@ class TestFetchSoldCount:
         """販売件数取得"""
         mock_paging = unittest.mock.MagicMock()
         mock_paging.text = "1～20/全42件"  # parse_sold_count が期待するフォーマット
-        handle.selenium.driver.find_element.return_value = mock_paging
+        handle._test_mock_driver.find_element.return_value = mock_paging
 
         with unittest.mock.patch("merhist.crawler._visit_url"):
             merhist.crawler._fetch_sold_count(handle)
@@ -1170,7 +1208,9 @@ class TestFetchItemTransactionShop:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
         yield h
         h.finish()
@@ -1194,7 +1234,7 @@ class TestFetchItemTransactionShop:
                 return mock_thumb_elem
             return mock_price_elem
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1222,7 +1262,7 @@ class TestFetchItemTransactionShop:
                 return mock_thumb_elem
             return mock_price_elem
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1255,7 +1295,9 @@ class TestFetchItemTransactionNormalPriceParsing:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
         yield h
         h.finish()
@@ -1303,8 +1345,8 @@ class TestFetchItemTransactionNormalPriceParsing:
                 return mock_body
             return mock_thumb
 
-        handle.selenium.driver.find_elements.side_effect = find_elements_side_effect
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_elements.side_effect = find_elements_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1360,8 +1402,8 @@ class TestFetchItemTransactionNormalPriceParsing:
                 return mock_body
             return mock_thumb
 
-        handle.selenium.driver.find_elements.side_effect = find_elements_side_effect
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_elements.side_effect = find_elements_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1397,7 +1439,9 @@ class TestFetchSoldItemListByPage:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         # モックカウンターを作成し get_progress_bar がこれを返すようにする
         mock_counter = unittest.mock.MagicMock()
         h.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
@@ -1407,7 +1451,7 @@ class TestFetchSoldItemListByPage:
 
     def test_fetch_sold_item_list_by_page_empty(self, handle):
         """空のページ"""
-        handle.selenium.driver.find_elements.return_value = []
+        handle._test_mock_driver.find_elements.return_value = []
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1421,7 +1465,7 @@ class TestFetchSoldItemListByPage:
         """アイテムありのページ"""
 
         mock_row = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_row]
+        handle._test_mock_driver.find_elements.return_value = [mock_row]
 
         # link 要素のモック
         mock_link = unittest.mock.MagicMock()
@@ -1448,7 +1492,7 @@ class TestFetchSoldItemListByPage:
             # rate と date はカラム位置で判断（それ以外のカラム）
             return mock_date
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1471,7 +1515,7 @@ class TestFetchSoldItemListByPage:
         handle.db.upsert_sold_item(cached_item)
 
         mock_row = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_row]
+        handle._test_mock_driver.find_elements.return_value = [mock_row]
 
         mock_link = unittest.mock.MagicMock()
         mock_link.text = "テスト商品"
@@ -1488,7 +1532,7 @@ class TestFetchSoldItemListByPage:
                 return mock_price
             return mock_date
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1508,7 +1552,7 @@ class TestFetchSoldItemListByPage:
         """最初のアイテム取得失敗でエラー"""
 
         mock_row = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_row]
+        handle._test_mock_driver.find_elements.return_value = [mock_row]
 
         mock_link = unittest.mock.MagicMock()
         mock_link.text = "テスト商品"
@@ -1525,7 +1569,7 @@ class TestFetchSoldItemListByPage:
                 return mock_price
             return mock_date
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         def mock_fetch_detail(h, item):
             item.error = "取得失敗"
@@ -1548,7 +1592,7 @@ class TestFetchSoldItemListByPage:
 
         mock_row1 = unittest.mock.MagicMock()
         mock_row2 = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_row1, mock_row2]
+        handle._test_mock_driver.find_elements.return_value = [mock_row1, mock_row2]
 
         mock_link = unittest.mock.MagicMock()
         mock_link.text = "テスト商品"
@@ -1565,7 +1609,7 @@ class TestFetchSoldItemListByPage:
                 return mock_price
             return mock_date
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1602,7 +1646,9 @@ class TestFetchSoldItemListShutdown:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
@@ -1711,13 +1757,16 @@ class TestFetchBoughtItemInfoListImpl:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
     def test_fetch_bought_item_info_list_impl_empty(self, handle):
         """空の購入履歴"""
-        handle.selenium.driver.find_elements.return_value = []
+        handle._test_mock_driver.find_elements.return_value = []
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1731,7 +1780,7 @@ class TestFetchBoughtItemInfoListImpl:
         """リスト終端（もっと見るボタンなし）"""
 
         mock_item = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_item]
+        handle._test_mock_driver.find_elements.return_value = [mock_item]
 
         mock_name = unittest.mock.MagicMock()
         mock_name.text = "テスト商品"
@@ -1749,7 +1798,7 @@ class TestFetchBoughtItemInfoListImpl:
                 return mock_datetime
             return mock_name
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1765,7 +1814,7 @@ class TestFetchBoughtItemInfoListImpl:
 
         # 最初のページ
         mock_item = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_item]
+        handle._test_mock_driver.find_elements.return_value = [mock_item]
 
         mock_name = unittest.mock.MagicMock()
         mock_name.text = "テスト商品"
@@ -1783,7 +1832,7 @@ class TestFetchBoughtItemInfoListImpl:
                 return mock_datetime
             return mock_name
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         # 1回目: ボタンあり、2回目: ボタンなし
         button_exists = [True, False]
@@ -1815,7 +1864,7 @@ class TestFetchBoughtItemInfoListImpl:
         handle.debug_mode = True
 
         mock_item = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_item]
+        handle._test_mock_driver.find_elements.return_value = [mock_item]
 
         mock_name = unittest.mock.MagicMock()
         mock_name.text = "テスト商品"
@@ -1833,7 +1882,7 @@ class TestFetchBoughtItemInfoListImpl:
                 return mock_datetime
             return mock_name
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
@@ -1868,7 +1917,9 @@ class TestFetchBoughtItemListBranches:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
@@ -1950,7 +2001,9 @@ class TestFetchOrderItemListShutdown:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         yield h
         h.finish()
@@ -1994,7 +2047,10 @@ class TestGetBoughtItemInfoListForceMod:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 
@@ -2006,7 +2062,7 @@ class TestGetBoughtItemInfoListForceMod:
         handle.db.upsert_bought_item(cached_item)
 
         mock_item_elem = unittest.mock.MagicMock()
-        handle.selenium.driver.find_elements.return_value = [mock_item_elem]
+        handle._test_mock_driver.find_elements.return_value = [mock_item_elem]
 
         mock_name = unittest.mock.MagicMock()
         mock_name.text = "テスト商品"
@@ -2024,7 +2080,7 @@ class TestGetBoughtItemInfoListForceMod:
                 return mock_datetime
             return mock_name
 
-        handle.selenium.driver.find_element.side_effect = find_element_side_effect
+        handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
         item_list: list[merhist.item.BoughtItem] = []
         list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
@@ -2063,7 +2119,10 @@ class TestLoginError:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+
+        h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
+        h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
         h.finish()
 

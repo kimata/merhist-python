@@ -285,13 +285,13 @@ class TestHandleSelenium:
             mock_clear.assert_called_once_with(mock_driver)
             assert driver == mock_driver
             assert wait == mock_wait
-            assert handle.selenium is not None
+            assert handle._browser_manager.has_driver()
 
     def test_get_selenium_driver_returns_existing(self, handle):
         """既存のドライバーを返す"""
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        handle.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+        handle.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
 
         with unittest.mock.patch("my_lib.selenium_util.create_driver") as mock_create:
             driver, wait = handle.get_selenium_driver()
@@ -303,18 +303,20 @@ class TestHandleSelenium:
     def test_quit_selenium(self, handle):
         """Selenium を終了"""
         mock_driver = unittest.mock.MagicMock()
-        mock_wait = unittest.mock.MagicMock()
-        handle.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+
+        # BrowserManager の内部状態を設定してドライバーを起動済みにする
+        handle._browser_manager._driver = mock_driver  # type: ignore[union-attr]
+        handle._browser_manager._wait = unittest.mock.MagicMock()  # type: ignore[union-attr]
 
         with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully") as mock_quit:
             handle.quit_selenium()
 
             mock_quit.assert_called_once_with(mock_driver, wait_sec=5)
-            assert handle.selenium is None
+            assert not handle._browser_manager.has_driver()
 
     def test_quit_selenium_no_driver(self, handle):
         """ドライバーがない場合は何もしない"""
-        handle.selenium = None
+        # ドライバー未起動の状態（デフォルト）
 
         with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully") as mock_quit:
             handle.quit_selenium()
@@ -324,13 +326,15 @@ class TestHandleSelenium:
     def test_finish(self, handle):
         """finish で Selenium とプログレスマネージャーを終了"""
         mock_driver = unittest.mock.MagicMock()
-        mock_wait = unittest.mock.MagicMock()
-        handle.selenium = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
+
+        # BrowserManager の内部状態を設定してドライバーを起動済みにする
+        handle._browser_manager._driver = mock_driver  # type: ignore[union-attr]
+        handle._browser_manager._wait = unittest.mock.MagicMock()  # type: ignore[union-attr]
 
         with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"):
             handle.finish()
 
-            assert handle.selenium is None
+            assert not handle._browser_manager.has_driver()
 
 
 class TestHandleProgressBar:
@@ -567,20 +571,6 @@ class TestTradingState:
 
         assert state.sold_total_count == 100
         assert state.bought_total_count == 50
-
-
-class TestSeleniumInfo:
-    """SeleniumInfo データクラスのテスト"""
-
-    def test_creation(self):
-        """インスタンス作成"""
-        mock_driver = unittest.mock.MagicMock()
-        mock_wait = unittest.mock.MagicMock()
-
-        info = merhist.handle.SeleniumInfo(driver=mock_driver, wait=mock_wait)
-
-        assert info.driver == mock_driver
-        assert info.wait == mock_wait
 
 
 class TestHandleSeleniumError:
