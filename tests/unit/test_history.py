@@ -88,8 +88,8 @@ class TestGenerateSheet:
     def handle(self, mock_config):
         """Handle インスタンス"""
         h = merhist.handle.Handle(config=mock_config)
-        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
-        h.progress_bar = {}
+        mock_counter = unittest.mock.MagicMock()
+        h.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
         yield h
         h.finish()
 
@@ -150,13 +150,8 @@ class TestGenerateTableExcel:
     def handle(self, mock_config):
         """Handle インスタンス"""
         h = merhist.handle.Handle(config=mock_config)
-        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         mock_counter = unittest.mock.MagicMock()
-        h.progress_bar = {
-            merhist.history._STATUS_ALL: mock_counter,
-            merhist.history._STATUS_INSERT_SOLD_ITEM: mock_counter,
-            merhist.history._STATUS_INSERT_BOUGHT_ITEM: mock_counter,
-        }
+        h.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
         yield h
         h.finish()
 
@@ -352,13 +347,8 @@ class TestExcelOutput:
     def handle(self, mock_config):
         """Handle インスタンス"""
         h = merhist.handle.Handle(config=mock_config)
-        h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
         mock_counter = unittest.mock.MagicMock()
-        h.progress_bar = {
-            merhist.history._STATUS_ALL: mock_counter,
-            merhist.history._STATUS_INSERT_SOLD_ITEM: mock_counter,
-            merhist.history._STATUS_INSERT_BOUGHT_ITEM: mock_counter,
-        }
+        h.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
         yield h
         h.finish()
 

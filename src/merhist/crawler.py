@@ -267,7 +267,7 @@ def _fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.
                 has_purchase_date = True
             elif row_def["type"] == "price":
                 if not hasattr(item, row_def["name"]):
-                    continue
+                    continue  # pragma: no cover  # 現状全アイテムに price フィールドがあるため
                 body_elem = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
                     row_xpath + merhist.xpath.TRANSACTION_ROW_BODY,
@@ -464,7 +464,7 @@ def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, cont
             logging.info("%s %s円 [cached]", item.name, f"{item.price:,}")
 
         # キャッシュ済みでも「確認した」としてプログレスを更新
-        handle.progress_bar[_STATUS_SOLD_ITEM].update()
+        handle.get_progress_bar(_STATUS_SOLD_ITEM).update()
 
     time.sleep(1)
 
@@ -516,7 +516,7 @@ def _fetch_sold_item_list(handle: merhist.handle.Handle, continue_mode: bool = T
         if continue_mode and (not is_found_new):
             logging.info("Leaving as it seems there are no more new items...")
             break
-        handle.progress_bar[_STATUS_SOLD_PAGE].update()
+        handle.get_progress_bar(_STATUS_SOLD_PAGE).update()
 
         if page == total_page:
             break
@@ -529,13 +529,11 @@ def _fetch_sold_item_list(handle: merhist.handle.Handle, continue_mode: bool = T
     # NOTE: continue_mode で早期終了した場合、残りのページのアイテムはキャッシュ済みと見なし、
     # プログレスバーを完了に持っていく（スキップされたページのアイテムは未カウントのため）
     if not is_shutdown_requested():
-        handle.progress_bar[_STATUS_SOLD_ITEM].update(
-            handle.progress_bar[_STATUS_SOLD_ITEM].total - handle.progress_bar[_STATUS_SOLD_ITEM].count
-        )
+        sold_item_bar = handle.get_progress_bar(_STATUS_SOLD_ITEM)
+        sold_item_bar.update(sold_item_bar.total - sold_item_bar.count)
 
-        handle.progress_bar[_STATUS_SOLD_PAGE].update(
-            handle.progress_bar[_STATUS_SOLD_PAGE].total - handle.progress_bar[_STATUS_SOLD_PAGE].count
-        )
+        sold_page_bar = handle.get_progress_bar(_STATUS_SOLD_PAGE)
+        sold_page_bar.update(sold_page_bar.total - sold_page_bar.count)
 
     handle.store_trading_info()
 
@@ -660,7 +658,7 @@ def _fetch_bought_item_info_list(
             else:
                 logging.exception("Failed to fetch %s", driver.current_url)
 
-    return []  # NOTE: ここには来ない
+    return []  # pragma: no cover  # NOTE: ここには来ない
 
 
 def _fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool = True) -> None:
@@ -696,7 +694,7 @@ def _fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool =
             logging.info("%s [cached]", item.name)
 
         # キャッシュ済みでも「確認した」としてプログレスを更新
-        handle.progress_bar[_STATUS_BOUGHT_ITEM].update()
+        handle.get_progress_bar(_STATUS_BOUGHT_ITEM).update()
 
         handle.store_trading_info()
 

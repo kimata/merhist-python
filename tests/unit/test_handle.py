@@ -355,69 +355,75 @@ class TestHandleProgressBar:
         yield h
         h.finish()
 
-    @pytest.fixture
-    def handle_tty(self, mock_config):
-        """TTY環境をシミュレートした Handle インスタンス"""
-        with unittest.mock.patch(
-            "rich.console.Console.is_terminal", new_callable=lambda: property(lambda self: True)
-        ):
-            h = merhist.handle.Handle(config=mock_config)
-            yield h
-            h.finish()
+    def test_set_progress_bar(self, handle):
+        """プログレスバーを設定"""
+        handle.set_progress_bar("テスト", 100)
 
-    def test_set_progress_bar(self, handle_tty):
-        """プログレスバーを設定（TTY環境）"""
-        handle_tty.set_progress_bar("テスト", 100)
+        assert handle.has_progress_bar("テスト")
+        task = handle.get_progress_bar("テスト")
+        assert task.total == 100
 
-        assert "テスト" in handle_tty.progress_bar
-        assert handle_tty.progress_bar["テスト"].total == 100
+    def test_update_progress_bar(self, handle):
+        """プログレスバーを更新"""
+        handle.set_progress_bar("テスト", 100)
+        handle.update_progress_bar("テスト", 10)
 
-        handle_tty.finish()
+        task = handle.get_progress_bar("テスト")
+        assert task.count == 10
 
-    def test_set_status_creates_new(self, handle):
+    def test_update_progress_bar_nonexistent(self, handle):
+        """存在しないプログレスバーの更新は何もしない"""
+        # エラーにならないことを確認
+        handle.update_progress_bar("存在しない", 10)
+
+    def test_has_progress_bar(self, handle):
+        """プログレスバーの存在確認"""
+        assert not handle.has_progress_bar("テスト")
+
+        handle.set_progress_bar("テスト", 100)
+
+        assert handle.has_progress_bar("テスト")
+
+    def test_set_status(self, handle):
         """ステータスを設定"""
         handle.set_status("処理中...")
-
-        assert handle._status_text == "処理中..."
-        assert handle._status_is_error is False
-
-        handle.finish()
-
-    def test_set_status_updates_existing(self, handle):
-        """ステータスを更新"""
-        handle.set_status("処理中...")
-        handle.set_status("更新中...")
-
-        assert handle._status_text == "更新中..."
-
-        handle.finish()
+        # ステータスが設定される（内部実装は my_lib.cui_progress に委譲）
 
     def test_set_status_error(self, handle):
-        """エラー時のフラグ設定"""
+        """エラー時のステータス設定"""
         handle.set_status("エラー発生", is_error=True)
-
-        assert handle._status_text == "エラー発生"
-        assert handle._status_is_error is True
-
-        handle.finish()
+        # エラーステータスが設定される（内部実装は my_lib.cui_progress に委譲）
 
 
-class TestRichStyleValidation:
-    """rich のスタイル文字列が有効かを検証するテスト"""
+class TestHandleLiveControl:
+    """Live表示制御のテスト"""
 
-    def test_status_bar_styles_are_valid(self):
-        """set_status で使用するスタイル文字列が rich で有効か検証"""
-        import rich.style
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
 
-        # 通常時のスタイル（水色背景・黒文字）
-        normal_style = merhist.handle._STATUS_STYLE_NORMAL
-        # エラー時のスタイル（赤背景・白文字）
-        error_style = merhist.handle._STATUS_STYLE_ERROR
+    @pytest.fixture
+    def handle(self, mock_config):
+        """Handle インスタンス（非TTY）"""
+        h = merhist.handle.Handle(config=mock_config)
+        yield h
+        h.finish()
 
-        for style_str in [normal_style, error_style]:
-            # スタイルが正しくパースされることを確認
-            style = rich.style.Style.parse(style_str)
-            assert style is not None, f"Invalid style: {style_str}"
+    def test_pause_live(self, handle):
+        """pause_live が呼び出せる"""
+        handle.pause_live()  # エラーなく完了
+
+    def test_resume_live(self, handle):
+        """resume_live が呼び出せる"""
+        handle.resume_live()  # エラーなく完了
 
 
 class TestHandleSerialization:
@@ -505,131 +511,6 @@ class TestHandlePrepareDirectory:
         handle.finish()
 
 
-class TestHandleProgressTask:
-    """ProgressTask クラスのテスト"""
-
-    @pytest.fixture
-    def mock_config(self, tmp_path):
-        """モック Config"""
-        config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "cache.dat"
-        config.selenium_data_dir_path = tmp_path / "selenium"
-        config.debug_dir_path = tmp_path / "debug"
-        config.thumb_dir_path = tmp_path / "thumb"
-        config.captcha_file_path = tmp_path / "captcha.png"
-        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
-        return config
-
-    @pytest.fixture
-    def handle(self, mock_config):
-        """Handle インスタンス"""
-        h = merhist.handle.Handle(config=mock_config)
-        yield h
-        h.finish()
-
-    def test_progress_task_properties(self, handle):
-        """ProgressTask のプロパティ"""
-        import rich.progress
-
-        task = merhist.handle.ProgressTask(handle, rich.progress.TaskID(1), total=100)
-
-        assert task.total == 100
-        assert task.count == 0
-
-    def test_progress_task_update(self, handle):
-        """ProgressTask.update でカウントが進む"""
-        import rich.progress
-
-        task = merhist.handle.ProgressTask(handle, rich.progress.TaskID(1), total=100)
-
-        task.update(10)
-        assert task.count == 10
-
-        task.update(5)
-        assert task.count == 15
-
-
-class TestHandleProgressBarNonTty:
-    """非TTY環境でのプログレスバーテスト"""
-
-    @pytest.fixture
-    def mock_config(self, tmp_path):
-        """モック Config"""
-        config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "cache.dat"
-        config.selenium_data_dir_path = tmp_path / "selenium"
-        config.debug_dir_path = tmp_path / "debug"
-        config.thumb_dir_path = tmp_path / "thumb"
-        config.captcha_file_path = tmp_path / "captcha.png"
-        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
-        return config
-
-    @pytest.fixture
-    def handle(self, mock_config):
-        """Handle インスタンス（非TTY）"""
-        h = merhist.handle.Handle(config=mock_config)
-        yield h
-        h.finish()
-
-    def test_set_progress_bar_non_tty(self, handle):
-        """非TTY環境でもプログレスバーが作成される（ダミー）"""
-        handle.set_progress_bar("テスト", 100)
-
-        assert "テスト" in handle.progress_bar
-        assert handle.progress_bar["テスト"].total == 100
-
-    def test_update_progress_bar_non_tty(self, handle):
-        """非TTY環境でもupdate_progress_barが動作"""
-        handle.set_progress_bar("テスト", 100)
-
-        handle.update_progress_bar("テスト", 10)
-
-        assert handle.progress_bar["テスト"].count == 10
-
-    def test_update_progress_bar_nonexistent(self, handle):
-        """存在しないプログレスバーの更新は何もしない"""
-        # エラーにならないことを確認
-        handle.update_progress_bar("存在しない", 10)
-
-
-class TestHandleLiveControl:
-    """Live表示制御のテスト"""
-
-    @pytest.fixture
-    def mock_config(self, tmp_path):
-        """モック Config"""
-        config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "cache.dat"
-        config.selenium_data_dir_path = tmp_path / "selenium"
-        config.debug_dir_path = tmp_path / "debug"
-        config.thumb_dir_path = tmp_path / "thumb"
-        config.captcha_file_path = tmp_path / "captcha.png"
-        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
-        return config
-
-    @pytest.fixture
-    def handle(self, mock_config):
-        """Handle インスタンス（非TTY）"""
-        h = merhist.handle.Handle(config=mock_config)
-        yield h
-        h.finish()
-
-    def test_pause_live_null_object(self, handle):
-        """非TTY環境では _NullLive が使用される（Null Object パターン）"""
-        assert isinstance(handle._live, merhist.handle._NullLive)
-        handle.pause_live()  # _NullLive.stop() は何もしない
-
-    def test_resume_live_null_object(self, handle):
-        """非TTY環境では _NullLive が使用される（Null Object パターン）"""
-        assert isinstance(handle._live, merhist.handle._NullLive)
-        handle.resume_live()  # _NullLive.start() は何もしない
-
-    def test_refresh_display_null_object(self, handle):
-        """非TTY環境では _NullLive が使用される（Null Object パターン）"""
-        assert isinstance(handle._live, merhist.handle._NullLive)
-        handle._refresh_display()  # _NullLive.refresh() は何もしない
-
-
 class TestHandleDatabase:
     """Handle のデータベース関連テスト"""
 
@@ -670,34 +551,6 @@ class TestHandleDatabase:
         handle2.finish()
 
 
-class TestDisplayRenderable:
-    """_DisplayRenderable クラスのテスト"""
-
-    @pytest.fixture
-    def mock_config(self, tmp_path):
-        """モック Config"""
-        config = unittest.mock.MagicMock(spec=merhist.config.Config)
-        config.cache_file_path = tmp_path / "cache" / "cache.dat"
-        config.selenium_data_dir_path = tmp_path / "selenium"
-        config.debug_dir_path = tmp_path / "debug"
-        config.thumb_dir_path = tmp_path / "thumb"
-        config.captcha_file_path = tmp_path / "captcha.png"
-        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
-        return config
-
-    def test_rich_method(self, mock_config):
-        """__rich__ メソッドが _create_display を呼び出す"""
-        handle = merhist.handle.Handle(config=mock_config)
-        renderable = merhist.handle._DisplayRenderable(handle)
-
-        with unittest.mock.patch.object(handle, "_create_display", return_value="test") as mock_create:
-            result = renderable.__rich__()
-            mock_create.assert_called_once()
-            assert result == "test"
-
-        handle.finish()
-
-
 class TestTradingState:
     """TradingState データクラスのテスト"""
 
@@ -728,58 +581,6 @@ class TestSeleniumInfo:
 
         assert info.driver == mock_driver
         assert info.wait == mock_wait
-
-
-class TestNullProgress:
-    """_NullProgress クラスのテスト（Null Object パターン）"""
-
-    def test_tasks_is_empty(self):
-        """tasks は常に空"""
-        progress = merhist.handle._NullProgress()
-        assert progress.tasks == []
-
-    def test_add_task_returns_task_id(self):
-        """add_task は TaskID(0) を返す"""
-        import rich.progress
-
-        progress = merhist.handle._NullProgress()
-        task_id = progress.add_task("テスト", total=100)
-        assert task_id == rich.progress.TaskID(0)
-
-    def test_update_does_nothing(self):
-        """update は何もしない"""
-        import rich.progress
-
-        progress = merhist.handle._NullProgress()
-        progress.update(rich.progress.TaskID(0), advance=10)  # エラーにならない
-
-    def test_rich_returns_empty_text(self):
-        """__rich__ は空の Text を返す"""
-        import rich.text
-
-        progress = merhist.handle._NullProgress()
-        result = progress.__rich__()
-        assert isinstance(result, rich.text.Text)
-        assert str(result) == ""
-
-
-class TestNullLive:
-    """_NullLive クラスのテスト（Null Object パターン）"""
-
-    def test_start_does_nothing(self):
-        """start は何もしない"""
-        live = merhist.handle._NullLive()
-        live.start()  # エラーにならない
-
-    def test_stop_does_nothing(self):
-        """stop は何もしない"""
-        live = merhist.handle._NullLive()
-        live.stop()  # エラーにならない
-
-    def test_refresh_does_nothing(self):
-        """refresh は何もしない"""
-        live = merhist.handle._NullLive()
-        live.refresh()  # エラーにならない
 
 
 class TestHandleSeleniumError:
@@ -889,75 +690,6 @@ class TestHandleEdgeCases:
 
         handle.finish()
 
-    def test_tmux_environment_width(self, mock_config):
-        """TMUX 環境での幅調整"""
-        import os
-
-        original_env = os.environ.get("TMUX")
-
-        try:
-            os.environ["TMUX"] = "/tmp/tmux-1000/default,12345,0"  # noqa: S108
-
-            handle = merhist.handle.Handle(config=mock_config)
-
-            # _create_status_bar を呼び出して TMUX 幅調整をテスト
-            handle._create_status_bar()
-
-            handle.finish()
-        finally:
-            if original_env is not None:
-                os.environ["TMUX"] = original_env
-            elif "TMUX" in os.environ:
-                del os.environ["TMUX"]
-
-    def test_create_display_without_tasks(self, mock_config):
-        """タスクがない場合の _create_display"""
-        handle = merhist.handle.Handle(config=mock_config)
-
-        # タスクがない場合、_create_display は status_bar のみを返す
-        result = handle._create_display()
-
-        # 結果は rich.table.Table である
-        assert result is not None
-
-        handle.finish()
-
-    def test_create_display_with_tasks(self, mock_config):
-        """タスクがある場合の _create_display"""
-        import rich.console
-        import rich.progress
-
-        handle = merhist.handle.Handle(config=mock_config)
-
-        # _progress を実際の Progress に設定してタスクを追加
-        handle._progress = rich.progress.Progress()
-        handle._progress.add_task("テスト", total=10)
-
-        # タスクがある場合、Group を返す
-        result = handle._create_display()
-
-        # 結果は Group である
-        assert isinstance(result, rich.console.Group)
-
-        handle.finish()
-
-    def test_set_status_in_terminal(self, mock_config):
-        """ターミナル環境での set_status"""
-        handle = merhist.handle.Handle(config=mock_config)
-
-        # _refresh_display をモック
-        with (
-            unittest.mock.patch.object(handle, "_refresh_display") as mock_refresh,
-            unittest.mock.patch.object(
-                type(handle._console), "is_terminal", new_callable=unittest.mock.PropertyMock
-            ) as mock_is_terminal,
-        ):
-            mock_is_terminal.return_value = True
-            handle.set_status("テストステータス")
-            mock_refresh.assert_called_once()
-
-        handle.finish()
-
     def test_progress_tasks_display(self, mock_config):
         """プログレスバーのタスク表示"""
         handle = merhist.handle.Handle(config=mock_config)
@@ -974,29 +706,28 @@ class TestHandleEdgeCases:
 
         handle.finish()
 
-    def test_refresh_display_called(self, mock_config):
-        """_refresh_display が呼び出される"""
+
+class TestHandleProgressManager:
+    """Handle の ProgressManager 統合テスト"""
+
+    @pytest.fixture
+    def mock_config(self, tmp_path):
+        """モック Config"""
+        config = unittest.mock.MagicMock(spec=merhist.config.Config)
+        config.cache_file_path = tmp_path / "cache" / "cache.dat"
+        config.selenium_data_dir_path = tmp_path / "selenium"
+        config.debug_dir_path = tmp_path / "debug"
+        config.thumb_dir_path = tmp_path / "thumb"
+        config.captcha_file_path = tmp_path / "captcha.png"
+        config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+        return config
+
+    def test_progress_manager_is_initialized(self, mock_config):
+        """ProgressManager が正しく初期化される"""
         handle = merhist.handle.Handle(config=mock_config)
 
-        # Live コンテキストをモック
-        with unittest.mock.patch.object(handle, "_live", create=True) as mock_live:
-            mock_live.refresh = unittest.mock.MagicMock()
-
-            # _refresh_display を直接呼び出し
-            if hasattr(handle, "_refresh_display"):
-                handle._refresh_display()
+        # メルカリ固有の設定が適用されている
+        assert handle._progress_manager._color == "#E72121"
+        assert handle._progress_manager._title == " 🛒メルカリ "
 
         handle.finish()
-
-    def test_progress_with_non_tty(self, mock_config):
-        """非 TTY 環境でのプログレス表示"""
-        with unittest.mock.patch("sys.stdout") as mock_stdout:
-            mock_stdout.isatty.return_value = False
-
-            handle = merhist.handle.Handle(config=mock_config)
-
-            # プログレス操作が例外を起こさない
-            handle.set_progress_bar("テスト", 5)
-            handle.update_progress_bar("テスト", 1)
-
-            handle.finish()
