@@ -244,7 +244,7 @@ class TestExecute:
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
             unittest.mock.patch(
-                "app._execute_fetch",
+                "merhist.cli._execute_fetch",
                 side_effect=selenium.common.exceptions.InvalidSessionIdException("セッション切れ"),
             ),
             unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
@@ -271,7 +271,7 @@ class TestExecute:
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
             unittest.mock.patch(
-                "app._execute_fetch",
+                "merhist.cli._execute_fetch",
                 side_effect=selenium.common.exceptions.InvalidSessionIdException("セッション切れ"),
             ),
             unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
@@ -298,7 +298,7 @@ class TestExecute:
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
             unittest.mock.patch(
-                "app._execute_fetch",
+                "merhist.cli._execute_fetch",
                 side_effect=my_lib.selenium_util.SeleniumError("Selenium エラー"),
             ),
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
@@ -316,7 +316,7 @@ class TestExecute:
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
             unittest.mock.patch(
-                "app._execute_fetch",
+                "merhist.cli._execute_fetch",
                 side_effect=my_lib.store.mercari.exceptions.LoginError("ログインエラー"),
             ),
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
