@@ -35,3 +35,28 @@ class InvalidPageFormatError(PageError):
 
 class HistoryFetchError(MerhisError):
     """履歴取得失敗"""
+
+
+class ThumbnailError(MerhisError):
+    """サムネイル画像エラーの基底クラス"""
+
+    def __init__(self, message: str, path: str = "") -> None:
+        super().__init__(message)
+        self.path = path
+
+    def __str__(self) -> str:
+        if self.path:
+            return f"{self.args[0]}: {self.path}"
+        return str(self.args[0])
+
+
+class ThumbnailEmptyError(ThumbnailError):
+    """サムネイル画像データが空"""
+
+
+class ThumbnailSizeError(ThumbnailError):
+    """サムネイル画像のサイズが0"""
+
+
+class ThumbnailCorruptError(ThumbnailError):
+    """サムネイル画像が破損"""

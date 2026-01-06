@@ -321,7 +321,7 @@ class TestSaveThumbnail:
 
         with (
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
-            pytest.raises(RuntimeError, match="サムネイル画像データが空です"),
+            pytest.raises(merhist.exceptions.ThumbnailEmptyError),
         ):
             handle._test_mock_driver.find_element.return_value = mock_img_element
 
@@ -369,7 +369,7 @@ class TestSaveThumbnail:
             unittest.mock.patch.object(
                 pathlib.Path, "stat", side_effect=lambda: unittest.mock.MagicMock(st_size=0)
             ),
-            pytest.raises(RuntimeError, match="サムネイル画像のサイズが0です"),
+            pytest.raises(merhist.exceptions.ThumbnailSizeError),
         ):
             handle._test_mock_driver.find_element.return_value = mock_img_element
 
@@ -385,7 +385,7 @@ class TestSaveThumbnail:
         with (
             unittest.mock.patch("my_lib.selenium_util.browser_tab"),
             unittest.mock.patch("PIL.Image.open") as mock_image_open,
-            pytest.raises(RuntimeError, match="サムネイル画像が破損しています"),
+            pytest.raises(merhist.exceptions.ThumbnailCorruptError),
         ):
             handle._test_mock_driver.find_element.return_value = mock_img_element
             # verify() で例外を発生させる
