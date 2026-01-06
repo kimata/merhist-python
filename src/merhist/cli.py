@@ -3,7 +3,7 @@
 メルカリから販売履歴や購入履歴を収集して、Excel ファイルとして出力します。
 
 Usage:
-  merhist.py [-c CONFIG] [-e] [--fA|--fB|--fS] [-N] [-D] [-R]
+  merhist [-c CONFIG] [-e] [--fA|--fB|--fS] [-N] [-D] [-R]
 
 Options:
   -c CONFIG         : CONFIG を設定ファイルとして読み込んで実行します。[default: config.yaml]
@@ -135,13 +135,15 @@ def execute(
     return exit_code
 
 
-######################################################################
-if __name__ == "__main__":
+def main() -> None:
+    """CLI エントリポイント"""
     import docopt
     import my_lib.config
     import my_lib.logger
 
-    assert __doc__ is not None  # noqa: S101
+    if __doc__ is None:
+        raise RuntimeError("__doc__ is not set")
+
     args = docopt.docopt(__doc__)
 
     config_file: str = args["-c"]
@@ -170,3 +172,7 @@ if __name__ == "__main__":
     sys.exit(
         execute(config, is_continue_mode, export_mode, need_thumb, debug_mode, clear_profile_on_browser_error)
     )
+
+
+if __name__ == "__main__":
+    main()

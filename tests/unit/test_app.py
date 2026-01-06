@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # ruff: noqa: S101
 """
-app.py のテスト
+cli.py のテスト
 """
 
 import unittest.mock
 
 import pytest
 
-import app
+import merhist.cli as app
 import merhist.config
 import merhist.crawler
 import merhist.handle
@@ -120,7 +120,7 @@ class TestExecute:
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
-            unittest.mock.patch("app._execute_fetch") as mock_fetch,
+            unittest.mock.patch("merhist.cli._execute_fetch") as mock_fetch,
         ):
             app.execute(mock_config, continue_mode, export_mode=True, debug_mode=True)
 
@@ -133,7 +133,7 @@ class TestExecute:
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
-            unittest.mock.patch("app._execute_fetch") as mock_fetch,
+            unittest.mock.patch("merhist.cli._execute_fetch") as mock_fetch,
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
         ):
             app.execute(mock_config, continue_mode, export_mode=False, debug_mode=True)
@@ -147,7 +147,7 @@ class TestExecute:
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
-            unittest.mock.patch("app._execute_fetch", side_effect=Exception("フェッチエラー")),
+            unittest.mock.patch("merhist.cli._execute_fetch", side_effect=Exception("フェッチエラー")),
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
         ):
             app.execute(mock_config, continue_mode, export_mode=False, debug_mode=True)
@@ -163,7 +163,7 @@ class TestExecute:
             unittest.mock.patch(
                 "merhist.history.generate_table_excel", side_effect=Exception("Excel生成エラー")
             ),
-            unittest.mock.patch("app._execute_fetch"),
+            unittest.mock.patch("merhist.cli._execute_fetch"),
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
         ):
             # エラーは発生しない（内部でキャッチ）
@@ -220,7 +220,7 @@ class TestExecute:
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
-            unittest.mock.patch("app._execute_fetch", side_effect=side_effect_fn),
+            unittest.mock.patch("merhist.cli._execute_fetch", side_effect=side_effect_fn),
             unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
         ):
@@ -331,7 +331,7 @@ class TestExecute:
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
-            unittest.mock.patch("app._execute_fetch", side_effect=Exception("一般エラー")),
+            unittest.mock.patch("merhist.cli._execute_fetch", side_effect=Exception("一般エラー")),
             unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=True),
             unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"),
         ):
