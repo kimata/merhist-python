@@ -8,7 +8,7 @@ on:
 
 env:
     PROJECT_NAME: merhist
-    SCRIPT_NAME: src/app.py
+    SCRIPT_NAME: src/merhist/__main__.py
 
 jobs:
     prepare:
