@@ -12,7 +12,6 @@ import pytest
 
 import merhist.database
 from merhist.database import Database
-from merhist.database import _is_sqlite_file as is_sqlite_file
 from merhist.item import BoughtItem, SoldItem
 
 # === テスト用定数 ===
@@ -72,45 +71,6 @@ def sample_bought_item() -> BoughtItem:
         purchase_date=datetime.datetime(2025, 1, 20, 15, 45),
         price=25000,
     )
-
-
-# === is_sqlite_file テスト ===
-class TestIsSqliteFile:
-    """is_sqlite_file 関数のテスト"""
-
-    def test_valid_sqlite_file(self, db: Database, tmp_path: pathlib.Path):
-        """SQLite ファイルを正しく判定"""
-        db_path = tmp_path / "test.db"
-        assert is_sqlite_file(db_path) is True
-
-    def test_nonexistent_file(self, tmp_path: pathlib.Path):
-        """存在しないファイルは False"""
-        nonexistent = tmp_path / "nonexistent.db"
-        assert is_sqlite_file(nonexistent) is False
-
-    def test_empty_file(self, tmp_path: pathlib.Path):
-        """空ファイルは False"""
-        empty_file = tmp_path / "empty.db"
-        empty_file.touch()
-        assert is_sqlite_file(empty_file) is False
-
-    def test_small_file(self, tmp_path: pathlib.Path):
-        """16バイト未満のファイルは False"""
-        small_file = tmp_path / "small.db"
-        small_file.write_bytes(b"short")
-        assert is_sqlite_file(small_file) is False
-
-    def test_non_sqlite_file(self, tmp_path: pathlib.Path):
-        """SQLite 以外のファイルは False"""
-        text_file = tmp_path / "text.txt"
-        text_file.write_text("This is not a SQLite file" * 10)
-        assert is_sqlite_file(text_file) is False
-
-    def test_file_with_fake_header(self, tmp_path: pathlib.Path):
-        """SQLite ヘッダで始まるが不正なファイル"""
-        fake_file = tmp_path / "fake.db"
-        fake_file.write_bytes(merhist.database._SQLITE_MAGIC + b"\x00" * 100)
-        assert is_sqlite_file(fake_file) is True  # ヘッダのみで判定
 
 
 # === Database 初期化テスト ===
