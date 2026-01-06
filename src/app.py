@@ -23,7 +23,6 @@ import pathlib
 import random
 import sys
 
-import my_lib.chrome_util
 import my_lib.selenium_util
 import my_lib.store.mercari.exceptions
 import selenium.common.exceptions
@@ -88,47 +87,37 @@ def execute(
 
     try:
         if not export_mode:
-            for retry in range(_MAX_SESSION_RETRY_COUNT + 1):
-                try:
-                    _execute_fetch(handle, continue_mode)
-                    break  # 成功したらループを抜ける
-                except selenium.common.exceptions.InvalidSessionIdException:
-                    handle.quit_selenium()
-                    if retry < _MAX_SESSION_RETRY_COUNT and clear_profile_on_browser_error:
-                        logging.warning(
-                            "セッションエラーが発生しました。プロファイルを削除してリトライします（%d/%d）",
-                            retry + 1,
-                            _MAX_SESSION_RETRY_COUNT,
-                        )
-                        handle.set_status(
-                            f"🔄 セッションエラー、リトライ中... ({retry + 1}/{_MAX_SESSION_RETRY_COUNT})"
-                        )
-                        my_lib.chrome_util.delete_profile(
-                            merhist.const.SELENIUM_PROFILE_NAME, config.selenium_data_dir_path
-                        )
-                        continue
-                    # リトライ限度を超えた、または clear_profile_on_browser_error=False
-                    logging.exception("セッションエラーが発生しました（リトライ不可）")
-                    handle.set_status("❌ セッションエラー", is_error=True)
-                    return 1
-                except my_lib.selenium_util.SeleniumError as e:
-                    logging.exception("Selenium の起動に失敗しました")
-                    handle.set_status(f"❌ {e}", is_error=True)
-                    return 1
-                except my_lib.store.mercari.exceptions.LoginError as e:
-                    logging.exception("メルカリへのログインに失敗しました")
-                    handle.set_status(f"❌ {e}", is_error=True)
-                    return 1
-                except Exception:
-                    # シャットダウン要求時は正常終了扱い（tracebackを出さない）
-                    if not merhist.crawler.is_shutdown_requested():
-                        driver, _ = handle.get_selenium_driver()
-                        logging.exception("Failed to fetch data: %s", driver.current_url)
-                        handle.set_status("❌ データの収集中にエラーが発生しました", is_error=True)
-                        exit_code = 1
-                    break  # 他の例外ではリトライしない
-                finally:
-                    handle.quit_selenium()
+            try:
+                my_lib.selenium_util.with_session_retry(
+                    lambda: _execute_fetch(handle, continue_mode),
+                    driver_name=merhist.const.SELENIUM_PROFILE_NAME,
+                    data_dir=config.selenium_data_dir_path,
+                    max_retries=_MAX_SESSION_RETRY_COUNT,
+                    clear_profile_on_error=clear_profile_on_browser_error,
+                    on_retry=lambda a, m: handle.set_status(f"🔄 セッションエラー、リトライ中... ({a}/{m})"),
+                    before_retry=handle.quit_selenium,
+                )
+            except selenium.common.exceptions.InvalidSessionIdException:
+                logging.exception("セッションエラーが発生しました（リトライ不可）")
+                handle.set_status("❌ セッションエラー", is_error=True)
+                return 1
+            except my_lib.selenium_util.SeleniumError as e:
+                logging.exception("Selenium の起動に失敗しました")
+                handle.set_status(f"❌ {e}", is_error=True)
+                return 1
+            except my_lib.store.mercari.exceptions.LoginError as e:
+                logging.exception("メルカリへのログインに失敗しました")
+                handle.set_status(f"❌ {e}", is_error=True)
+                return 1
+            except Exception:
+                # シャットダウン要求時は正常終了扱い（tracebackを出さない）
+                if not merhist.crawler.is_shutdown_requested():
+                    driver, _ = handle.get_selenium_driver()
+                    logging.exception("Failed to fetch data: %s", driver.current_url)
+                    handle.set_status("❌ データの収集中にエラーが発生しました", is_error=True)
+                    exit_code = 1
+            finally:
+                handle.quit_selenium()
 
         try:
             merhist.history.generate_table_excel(handle, handle.config.excel_file_path, need_thumb)
