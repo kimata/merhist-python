@@ -160,21 +160,23 @@ def _save_thumbnail(handle: merhist.handle.Handle, item: merhist.item.ItemBase, 
         png_data = driver.find_element(selenium.webdriver.common.by.By.XPATH, "//img").screenshot_as_png
 
         if not png_data:
-            raise RuntimeError(f"サムネイル画像データが空です: {thumb_path}")
+            raise merhist.exceptions.ThumbnailEmptyError("サムネイル画像データが空です", path=str(thumb_path))
 
         with thumb_path.open("wb") as f:
             f.write(png_data)
 
         if thumb_path.stat().st_size == 0:
             thumb_path.unlink()
-            raise RuntimeError(f"サムネイル画像のサイズが0です: {thumb_path}")
+            raise merhist.exceptions.ThumbnailSizeError("サムネイル画像のサイズが0です", path=str(thumb_path))
 
         try:
             with PIL.Image.open(thumb_path) as img:
                 img.verify()
         except Exception as e:
             thumb_path.unlink()
-            raise RuntimeError(f"サムネイル画像が破損しています: {thumb_path}") from e
+            raise merhist.exceptions.ThumbnailCorruptError(
+                "サムネイル画像が破損しています", path=str(thumb_path)
+            ) from e
 
 
 def _fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
