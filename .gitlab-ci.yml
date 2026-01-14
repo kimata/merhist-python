@@ -17,6 +17,9 @@ test-typecheck:
 
     needs: []
 
+    before_script:
+        - uv sync --locked --no-editable
+
     script:
         - uv run python -m pyright src/
         - uv run mypy src/
@@ -33,6 +36,9 @@ test-walk-through:
     stage: test
 
     needs: []
+
+    before_script:
+        - uv sync --locked --no-editable
 
     script:
         - uv run pytest
@@ -58,6 +64,9 @@ test-smoke:
     needs:
         - job: test-walk-through
           artifacts: false
+
+    before_script:
+        - uv sync --locked --no-editable
 
     script:
         - 'echo "Building: ${CI_REGISTRY_IMAGE}:${TAG}"'
