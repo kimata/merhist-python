@@ -55,7 +55,6 @@ test-smoke:
     stage: test
 
     needs:
-        - test-prepare
         - job: test-walk-through
           artifacts: false
 
