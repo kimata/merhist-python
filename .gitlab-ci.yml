@@ -9,7 +9,6 @@ variables:
     UV_INSECURE_HOST: "proxy"
 
 stages:
-    - pre-test
     - test
     - renovate
 
