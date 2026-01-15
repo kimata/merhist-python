@@ -29,6 +29,8 @@ test-typecheck:
         - key:
               files:
                   - uv.lock
+          fallback_keys:
+              - uv-cache-${CI_PROJECT_ID}
           paths:
               - ${UV_CACHE_DIR}
 
@@ -47,6 +49,8 @@ test-walk-through:
         - key:
               files:
                   - uv.lock
+          fallback_keys:
+              - uv-cache-${CI_PROJECT_ID}
           paths:
               - ${UV_CACHE_DIR}
 
@@ -84,7 +88,7 @@ test-smoke:
         - sync
 
     cache:
-        - key: ${CI_PROJECT_NAME}-selenium
+        - key: selenium-${CI_PROJECT_ID}
           paths:
               - data/chrome
           when: on_success
