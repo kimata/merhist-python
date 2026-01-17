@@ -35,7 +35,7 @@ class ItemBase:
             if value is None:
                 continue
             # 空リストは除外
-            if isinstance(value, list) and len(value) == 0:
+            if isinstance(value, list) and not value:
                 continue
             result[f.name] = value
         return result
@@ -51,7 +51,7 @@ class ItemBase:
         value = getattr(self, key)
         if value is None:
             return False
-        return not (isinstance(value, list) and len(value) == 0)
+        return not (isinstance(value, list) and not value)
 
     def set_field(self, name: str, value: Any) -> None:
         """フィールド名を検証して値を設定する（タイポ防止）"""

@@ -20,7 +20,6 @@ from __future__ import annotations
 import logging
 import math
 import pathlib
-import random
 import re
 import time
 import traceback
@@ -63,6 +62,11 @@ def is_shutdown_requested() -> bool:
 
 
 _FETCH_RETRY_COUNT: int = 3
+
+# 待機時間（秒）
+_RETRY_WAIT_BASE: int = 5  # リトライ時の基本待機時間（i倍される）
+_PAGE_TRANSITION_WAIT: int = 1  # ページ遷移後の待機時間
+_MORE_LOAD_WAIT: int = 3  # 「もっと読み込む」後の待機時間
 
 _MERCARI_NORMAL: str = "mercari.com"
 _MERCARI_SHOP: str = "mercari-shops.com"
@@ -225,11 +229,11 @@ def _fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.It
 
         if my_lib.selenium_util.xpath_exists(driver, merhist.xpath.ITEM_DESC_NOT_FOUND):
             logging.warning("Description page not found: %s", driver.current_url)
-            item.error = "商品情報ページが見つかりませんでした．"
+            item.error = "商品情報ページが見つかりませんでした"
             return
         elif my_lib.selenium_util.xpath_exists(driver, merhist.xpath.ITEM_DESC_DELETED):
             logging.warning("Description page has been deleted: %s", driver.current_url)
-            item.error = "商品情報ページが削除されています．"
+            item.error = "商品情報ページが削除されています"
             return
 
         info_row_xpath = merhist.xpath.ITEM_DESC_INFO_ROW
@@ -368,7 +372,7 @@ def _fetch_item_detail(handle: merhist.handle.Handle, item: _T) -> _T:
     for i in range(_FETCH_RETRY_COUNT):
         if i != 0:
             logging.info("Retry %s", gen_item_transaction_url(item))
-            time.sleep(5 * i)
+            time.sleep(_RETRY_WAIT_BASE * i)
 
         try:
             item.count = 1
@@ -395,7 +399,7 @@ def _fetch_item_detail(handle: merhist.handle.Handle, item: _T) -> _T:
             driver, _ = handle.get_selenium_driver()
             my_lib.selenium_util.dump_page(
                 driver,
-                int(random.random() * 100),  # noqa: S311
+                merhist.const.gen_debug_dump_id(),
                 handle.config.debug_dir_path,
             )
 
@@ -498,7 +502,7 @@ def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, cont
         # キャッシュ済みでも「確認した」としてプログレスを更新
         handle.get_progress_bar(_STATUS_SOLD_ITEM).update()
 
-    time.sleep(1)
+    time.sleep(_PAGE_TRANSITION_WAIT)
 
     return is_found_new
 
@@ -633,8 +637,6 @@ def _fetch_bought_item_info_list_impl(
 ) -> list[merhist.item.BoughtItem]:
     driver, wait = handle.get_selenium_driver()
 
-    handle.set_status("🔍 購入履歴の件数を確認しています...")
-
     _visit_url(handle, merhist.const.BOUGHT_HIST_URL, merhist.xpath.BOUGHT_LIST)
 
     item_list: list[merhist.item.BoughtItem] = []
@@ -664,7 +666,7 @@ def _fetch_bought_item_info_list_impl(
         if handle.debug_mode:
             break
 
-        time.sleep(3)
+        time.sleep(_MORE_LOAD_WAIT)
 
     return item_list
 
@@ -679,7 +681,7 @@ def _fetch_bought_item_info_list(
     for i in range(_FETCH_RETRY_COUNT):
         if i != 0:
             logging.info("Retry %s", driver.current_url)
-            time.sleep(5)
+            time.sleep(_RETRY_WAIT_BASE)
 
         try:
             return _fetch_bought_item_info_list_impl(handle, continue_mode)
@@ -739,7 +741,7 @@ def _fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool =
 
 def fetch_order_item_list(handle: merhist.handle.Handle, continue_mode: ContinueMode) -> None:
     handle.set_status("🤖 巡回ロボットの準備をしています...")
-    driver, _ = handle.get_selenium_driver()
+    handle.get_selenium_driver()  # ドライバを初期化
 
     # シグナルハンドラを設定
     my_lib.graceful_shutdown.set_live_display(handle)
@@ -781,7 +783,7 @@ if __name__ == "__main__":
     config = merhist.config.Config.load(my_lib.config.load(config_file))
     handle = merhist.handle.Handle(config, debug_mode=debug_mode)
 
-    driver, _ = handle.get_selenium_driver()
+    handle.get_selenium_driver()  # ドライバを初期化
 
     try:
         execute_login(handle)
@@ -807,7 +809,7 @@ if __name__ == "__main__":
         driver, _ = handle.get_selenium_driver()
         my_lib.selenium_util.dump_page(
             driver,
-            int(random.random() * 100),  # noqa: S311
+            merhist.const.gen_debug_dump_id(),
             handle.config.debug_dir_path,
         )
     finally:

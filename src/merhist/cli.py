@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import logging
 import pathlib
-import random
 import sys
 
 import my_lib.selenium_util
@@ -33,7 +32,9 @@ import merhist.crawler
 import merhist.handle
 import merhist.history
 
-_SCHEMA_CONFIG: str = "schema/config.schema"
+_SCHEMA_CONFIG: pathlib.Path = (
+    pathlib.Path(__file__).resolve().parent.parent.parent / "schema" / "config.schema"
+)
 
 _MAX_SESSION_RETRY_COUNT = 1
 
@@ -55,7 +56,7 @@ def _execute_fetch(
             driver, _ = handle.get_selenium_driver()
             my_lib.selenium_util.dump_page(
                 driver,
-                int(random.random() * 100),  # noqa: S311
+                merhist.const.gen_debug_dump_id(),
                 handle.config.debug_dir_path,
             )
             raise

@@ -339,6 +339,20 @@ Protocol の導入は以下の場合にのみ検討する：
 - 対象箇所が限定的で効果が小さい場合
 - 工数がメリットを上回る場合
 
+#### RowData Protocol との互換性
+
+`ItemBase` クラス（`item.py`）は `my_lib.openpyxl_util.RowData` Protocol を実装している：
+
+```python
+class RowData(Protocol):
+    def __getitem__(self, key: str, /) -> Any: ...
+    def __contains__(self, key: object, /) -> bool: ...
+```
+
+- `__getitem__`, `__contains__` メソッドは Protocol 実装のため**削除不可**
+- これにより `my_lib.openpyxl_util.generate_list_sheet` との互換性を確保
+- `type: ignore` コメント（`history.py`）は型チェッカーの Protocol 認識限界によるもので、実行時は安全
+
 ### 後方互換性コードの扱い
 
 後方互換性のためのコードは原則として削除し、コードをシンプルに保つ。
@@ -365,6 +379,113 @@ Protocol の導入は以下の場合にのみ検討する：
 - **Excel 操作**: `my_lib.openpyxl_util` を使用
 
 自前実装を追加する前に、my_lib に同等の機能がないか確認すること。
+
+### ファイルパスの管理
+
+ファイルパスは Config クラスで統一管理する：
+
+- `base_dir` は設定ファイルから読み込み、Config クラスで保持
+- すべてのパスは Config のプロパティとして定義（`self.base_dir / ...`）
+- pathlib.Path の `/` 演算子を使用して型安全にパスを構築
+
+```python
+# 推奨: Config プロパティ経由でパスを取得
+excel_path = handle.config.excel_file_path
+thumb_path = handle.config.thumb_dir_path / (item.id + ".png")
+
+# 非推奨: ハードコーディング
+excel_path = pathlib.Path("/tmp/output.xlsx")
+```
+
+### リトライ戦略
+
+本プロジェクトでは、リトライ処理において以下の戦略を使い分ける：
+
+1. **指数バックオフ** (`_RETRY_WAIT_BASE * i`)
+    - 用途: 個別リソースへのアクセス（商品詳細ページなど）
+    - 理由: サーバー負荷軽減、一時的な障害からの回復を待つ
+
+2. **固定間隔** (`_RETRY_WAIT_BASE`)
+    - 用途: ページ全体の再読み込み
+    - 理由: 一時的なネットワーク障害への対応が主目的
+
+新しいリトライ処理を追加する際は、対象の特性に応じて適切な戦略を選択する。
+
+### ログ出力の使い分け
+
+- **ユーザー向けステータス** (`handle.set_status`): 日本語
+    - CLI 上でユーザーに表示される進捗状況
+
+- **開発者向けログ** (`logging.*`): 英語
+    - デバッグ・運用監視用のログ
+
+### エラー時のデバッグダンプ
+
+`my_lib.selenium_util.dump_page` によるデバッグダンプは、以下の箇所で用途に応じて使用する：
+
+1. **リトライループ内** (`crawler.py:_fetch_item_detail`)
+    - 個別商品取得の失敗時、リトライ前にページ状態を保存
+
+2. **CLI メイン処理** (`cli.py:_execute_fetch`)
+    - データ収集全体の例外発生時
+
+これらは用途が異なるため、統一せず個別に維持する。
+
+### リファクタリングの判断基準
+
+リファクタリングを検討する際は、以下の基準で判断する：
+
+1. **Protocol 導入**
+    - 明確な抽象化の必要性がある場合にのみ検討
+    - 外部ライブラリの型には適用しない
+    - 対象箇所が限定的な場合は見送る
+
+2. **dict → dataclass 変換**
+    - 新規コードでは dataclass を優先
+    - 既存の大規模辞書は工数とメリットを比較して判断
+    - 外部ライブラリとの連携が複雑な場合は見送り
+
+3. **コードパターンの統一**
+    - 用途が異なる場合は無理に統一しない
+    - 統一することで可読性が向上する場合のみ実施
+
+4. **マジックナンバー**
+    - 複数箇所で使用される値は定数化
+    - 意味が明確な1回限りの値は許容
+
+### 調査済み・維持すべきパターン
+
+以下の項目は調査済みで、現状のパターンを維持する：
+
+1. **`| None` の使用**: 遅延初期化・オプショナルフィールドに限定して使用（適切）
+2. **`isinstance` の使用**: 外部ライブラリ型チェック・Union型ガードに限定（適切）
+3. **`_SHEET_DEF` の辞書形式**: `my_lib.openpyxl_util` との互換性維持のため維持
+4. **リトライパターンの使い分け**: 指数バックオフ（個別リソース）/ 固定間隔（ページ全体）
+5. **Protocol 実装メソッド**: `ItemBase.__getitem__`, `__contains__` は削除不可
+
+### 空リストチェック
+
+空リストのチェックは `isinstance` と `not value` を組み合わせる：
+
+```python
+# 推奨: isinstance + not value
+if isinstance(value, list) and not value:
+    # 空リスト処理
+
+# 非推奨: len() を使用
+if isinstance(value, list) and len(value) == 0:
+    # 空リスト処理
+```
+
+**注意:** 単純な `if not value:` は空文字列 `""` や `0` も真になるため、リストのみを対象とする場合は `isinstance` チェックが必要。
+
+### デバッグダンプ ID
+
+デバッグダンプ用のランダム ID 生成は統一された方法を使用する：
+
+- 定数 `merhist.const.DEBUG_DUMP_ID_MAX` で範囲を定義
+- `random.randint(0, DEBUG_DUMP_ID_MAX - 1)` で統一的に生成
+- `int(random.random() * N)` は使用しない
 
 ## ライセンス
 
