@@ -255,6 +255,117 @@ items.append("value")  # type: ignore[union-attr]
 
 **例外：** テストコードでは、モックやフィクスチャの都合上 `# type: ignore` の使用を許容する。
 
+### dict から dataclass への変換方針
+
+構造化されたデータを扱う場合、`dict[str, Any]` や `TypedDict` よりも dataclass を優先する：
+
+```python
+# 推奨: dataclass を使用
+@dataclass(frozen=True)
+class RowDef:
+    title: str
+    type: str
+    name: str
+
+ROW_DEF_LIST: list[RowDef] = [
+    RowDef(title="カテゴリー", type="category", name="category"),
+]
+
+# 非推奨: 辞書リテラルを使用
+ROW_DEF_LIST: list[dict[str, str]] = [
+    {"title": "カテゴリー", "type": "category", "name": "category"},
+]
+```
+
+**例外：**
+
+- 外部ライブラリのインターフェースが辞書を要求する場合
+- 一時的なデータ構造で、関数スコープ内でのみ使用される場合
+- 変更の工数がメリットを上回る場合（例：大規模な設定辞書）
+
+### 型安全性の維持方針
+
+このプロジェクトでは以下の方針で型安全性を維持する。
+
+#### Optional 型（`| None`）の適切な使用
+
+- `| None` は遅延初期化やオプショナルフィールドに適切に使用
+- 不要な `| None` は追加しない
+- None チェックは property やガード句で明確に行う
+
+```python
+# 適切: 遅延初期化パターン
+class Handle:
+    def __init__(self) -> None:
+        self._db: Database | None = None
+
+    @property
+    def db(self) -> Database:
+        if self._db is None:
+            raise RuntimeError("Database not initialized")
+        return self._db
+```
+
+#### isinstance の使用基準
+
+`isinstance` チェックは以下の場合に使用を許容する：
+
+1. **外部ライブラリの型との互換性チェック** - 外部からの入力を検証する場合
+2. **Union 型の絞り込み** - 型ガードとして必要な場合
+3. **dataclass の型判定** - 継承階層での型判定が必要な場合
+
+```python
+# 許容: 外部ライブラリの型チェック
+if not isinstance(slack, SlackConfig | SlackEmptyConfig):
+    raise ValueError("不正な設定")
+
+# 許容: 型ガード
+if isinstance(date_val, datetime.datetime):
+    formatted = date_val.strftime("%Y-%m-%d")
+```
+
+可能な限り型アノテーションで解決し、isinstance は必要最小限に留める。
+
+#### Protocol の導入基準
+
+Protocol の導入は以下の場合にのみ検討する：
+
+- 明確な抽象化の必要性がある場合
+- 複数のクラスに共通のインターフェースを定義する必要がある場合
+
+以下の場合は見送る：
+
+- 外部ライブラリの型には適用しない（変更不可のため）
+- 対象箇所が限定的で効果が小さい場合
+- 工数がメリットを上回る場合
+
+### 後方互換性コードの扱い
+
+後方互換性のためのコードは原則として削除し、コードをシンプルに保つ。
+ただし、以下の場合は例外とする：
+
+- 外部ライブラリのインターフェースとの互換性維持に必要な場合
+- 削除による影響範囲が大きく、工数がメリットを上回る場合
+
+### コードの一貫性
+
+同じ処理は同じパターンで実装する：
+
+1. **インポートスタイル**: `import xxx` 形式で統一（テストコードも含む）
+2. **データ構造**: 構造化データには dataclass を使用（例外は前述の通り）
+3. **エラーハンドリング**: プロジェクト全体で一貫したパターンを使用
+
+### my_lib の活用
+
+プロジェクト共通ライブラリ `my_lib` の機能を積極的に活用する：
+
+- **タイムゾーン管理**: `my_lib.time.now()` を使用（`datetime.datetime.now()` をハードコードしない）
+- **Selenium 管理**: `my_lib.browser_manager.BrowserManager` を使用
+- **プログレスバー**: `my_lib.cui_progress` を使用
+- **Excel 操作**: `my_lib.openpyxl_util` を使用
+
+自前実装を追加する前に、my_lib に同等の機能がないか確認すること。
+
 ## ライセンス
 
 Apache License Version 2.0
