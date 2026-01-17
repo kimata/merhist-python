@@ -7,6 +7,7 @@ Handle クラスのテスト
 import datetime
 import unittest.mock
 
+import my_lib.browser_manager
 import pytest
 
 import merhist.config
@@ -303,10 +304,13 @@ class TestHandleSelenium:
     def test_quit_selenium(self, handle):
         """Selenium を終了"""
         mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
 
-        # BrowserManager の内部状態を設定してドライバーを起動済みにする
-        handle._browser_manager._driver = mock_driver  # type: ignore[union-attr]
-        handle._browser_manager._wait = unittest.mock.MagicMock()  # type: ignore[union-attr]
+        # BrowserManager の内部状態を DriverInitialized に設定
+        handle._browser_manager._driver_state = my_lib.browser_manager.DriverInitialized(
+            driver=mock_driver,
+            wait=mock_wait,
+        )
 
         with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully") as mock_quit:
             handle.quit_selenium()
@@ -326,10 +330,13 @@ class TestHandleSelenium:
     def test_finish(self, handle):
         """finish で Selenium とプログレスマネージャーを終了"""
         mock_driver = unittest.mock.MagicMock()
+        mock_wait = unittest.mock.MagicMock()
 
-        # BrowserManager の内部状態を設定してドライバーを起動済みにする
-        handle._browser_manager._driver = mock_driver  # type: ignore[union-attr]
-        handle._browser_manager._wait = unittest.mock.MagicMock()  # type: ignore[union-attr]
+        # BrowserManager の内部状態を DriverInitialized に設定
+        handle._browser_manager._driver_state = my_lib.browser_manager.DriverInitialized(
+            driver=mock_driver,
+            wait=mock_wait,
+        )
 
         with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"):
             handle.finish()

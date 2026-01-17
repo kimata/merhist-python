@@ -180,10 +180,10 @@ class TestLoginConfig:
 
         with (
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_line_login", return_value=line_config
+                "my_lib.store.mercari.config.LineLoginConfig.parse", return_value=line_config
             ) as mock_line,
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_mercari_login", return_value=mercari_config
+                "my_lib.store.mercari.config.MercariLoginConfig.parse", return_value=mercari_config
             ) as mock_mercari,
         ):
             data = {"line": {"user": "test"}, "mercari": {"email": "test@example.com"}}
@@ -224,11 +224,11 @@ class TestConfig:
         """Slack設定なしでロード"""
         with (
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_line_login",
+                "my_lib.store.mercari.config.LineLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_mercari_login",
+                "my_lib.store.mercari.config.MercariLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
         ):
@@ -246,11 +246,11 @@ class TestConfig:
 
         with (
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_line_login",
+                "my_lib.store.mercari.config.LineLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_mercari_login",
+                "my_lib.store.mercari.config.MercariLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
         ):
@@ -261,11 +261,11 @@ class TestConfig:
         """パスプロパティのテスト"""
         with (
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_line_login",
+                "my_lib.store.mercari.config.LineLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_mercari_login",
+                "my_lib.store.mercari.config.MercariLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
         ):
@@ -282,11 +282,11 @@ class TestConfig:
         """excel_font プロパティのテスト"""
         with (
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_line_login",
+                "my_lib.store.mercari.config.LineLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_mercari_login",
+                "my_lib.store.mercari.config.MercariLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
         ):
@@ -304,15 +304,15 @@ class TestConfig:
 
         with (
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_line_login",
+                "my_lib.store.mercari.config.LineLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
             unittest.mock.patch(
-                "my_lib.store.mercari.config.parse_mercari_login",
+                "my_lib.store.mercari.config.MercariLoginConfig.parse",
                 return_value=unittest.mock.MagicMock(),
             ),
             unittest.mock.patch(
-                "my_lib.notify.slack.parse_config",
+                "my_lib.notify.slack.SlackConfig.parse",
                 return_value=invalid_slack,
             ),
             pytest.raises(ValueError, match="Slack 設定には captcha が必要です"),

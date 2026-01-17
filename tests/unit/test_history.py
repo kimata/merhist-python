@@ -6,6 +6,7 @@ history.py のテスト
 
 import datetime
 import unittest.mock
+from typing import Any
 
 import openpyxl
 import openpyxl.styles
@@ -20,35 +21,41 @@ import merhist.item
 class TestSheetDef:
     """SHEET_DEF のテスト"""
 
+    def _get_sheet_def(self) -> Any:
+        """_SHEET_DEF を Any 型で取得（型チェッカーの推論を回避）"""
+        return merhist.history._SHEET_DEF
+
     def test_bought_sheet_def_exists(self):
         """購入シート定義が存在"""
-        assert "BOUGHT" in merhist.history._SHEET_DEF
-        assert "SHEET_TITLE" in merhist.history._SHEET_DEF["BOUGHT"]
-        assert "TABLE_HEADER" in merhist.history._SHEET_DEF["BOUGHT"]
+        sheet_def = self._get_sheet_def()
+        assert "BOUGHT" in sheet_def
+        assert "SHEET_TITLE" in sheet_def["BOUGHT"]
+        assert "TABLE_HEADER" in sheet_def["BOUGHT"]
 
     def test_sold_sheet_def_exists(self):
         """販売シート定義が存在"""
-        assert "SOLD" in merhist.history._SHEET_DEF
-        assert "SHEET_TITLE" in merhist.history._SHEET_DEF["SOLD"]
-        assert "TABLE_HEADER" in merhist.history._SHEET_DEF["SOLD"]
+        sheet_def = self._get_sheet_def()
+        assert "SOLD" in sheet_def
+        assert "SHEET_TITLE" in sheet_def["SOLD"]
+        assert "TABLE_HEADER" in sheet_def["SOLD"]
 
     def test_bought_columns(self):
         """購入シートのカラム定義"""
-        cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["BOUGHT"]["TABLE_HEADER"]["col"]
         expected_cols = ["shop_name", "date", "name", "image", "count", "price", "condition"]
         for col in expected_cols:
             assert col in cols
 
     def test_sold_columns(self):
         """販売シートのカラム定義"""
-        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["col"]
         expected_cols = ["shop_name", "date", "name", "price", "commission", "postage", "profit"]
         for col in expected_cols:
             assert col in cols
 
     def test_link_func_bought(self):
         """購入シートのリンク関数"""
-        cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["BOUGHT"]["TABLE_HEADER"]["col"]
         item = {"url": "https://example.com/item", "order_url": "https://example.com/order"}
 
         assert cols["id"]["link_func"](item) == "https://example.com/item"
@@ -56,14 +63,14 @@ class TestSheetDef:
 
     def test_link_func_sold(self):
         """販売シートのリンク関数"""
-        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["col"]
         item = {"url": "https://example.com/item", "id": "m123", "shop": "mercari.com"}
 
         assert cols["id"]["link_func"](item) == "https://example.com/item"
 
     def test_conv_func_commission_rate(self):
         """手数料率の変換関数"""
-        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["col"]
         assert cols["commission_rate"]["conv_func"](10) == 0.1
         assert cols["commission_rate"]["conv_func"](5) == 0.05
 
@@ -442,31 +449,35 @@ class TestExcelOutput:
 class TestSheetDefFormats:
     """SHEET_DEF のフォーマット定義検証"""
 
+    def _get_sheet_def(self) -> Any:
+        """_SHEET_DEF を Any 型で取得（型チェッカーの推論を回避）"""
+        return merhist.history._SHEET_DEF
+
     def test_bought_date_format(self):
         """購入シートの日付フォーマット"""
-        cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["BOUGHT"]["TABLE_HEADER"]["col"]
         assert cols["date"]["format"] == 'yyyy"年"mm"月"dd"日 ("aaa")"'
 
     def test_sold_date_format(self):
         """販売シートの日付フォーマット"""
-        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["col"]
         assert cols["date"]["format"] == 'yyyy"年"mm"月"dd"日 ("aaa")"'
 
     def test_price_format(self):
         """価格フォーマット（通貨）"""
-        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["col"]
         assert "¥" in cols["price"]["format"]
         assert "#,##0" in cols["price"]["format"]
 
     def test_commission_rate_format(self):
         """手数料率フォーマット（パーセント）"""
-        cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        cols = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["col"]
         assert cols["commission_rate"]["format"] == "0%"
 
     def test_row_height_settings(self):
         """行高さの設定"""
-        bought_row = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["row"]
-        sold_row = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["row"]
+        bought_row = self._get_sheet_def()["BOUGHT"]["TABLE_HEADER"]["row"]
+        sold_row = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["row"]
 
         # サムネイルありの場合の高さ
         assert bought_row["height"]["default"] == 80
@@ -478,8 +489,8 @@ class TestSheetDefFormats:
 
     def test_formal_key_mapping(self):
         """formal_key によるフィールドマッピング"""
-        bought_cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
-        sold_cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        bought_cols = self._get_sheet_def()["BOUGHT"]["TABLE_HEADER"]["col"]
+        sold_cols = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["col"]
 
         # date は purchase_date にマッピング
         assert bought_cols["date"]["formal_key"] == "purchase_date"
@@ -491,8 +502,8 @@ class TestSheetDefFormats:
 
     def test_optional_fields(self):
         """オプショナルフィールドの定義"""
-        bought_cols = merhist.history._SHEET_DEF["BOUGHT"]["TABLE_HEADER"]["col"]
-        sold_cols = merhist.history._SHEET_DEF["SOLD"]["TABLE_HEADER"]["col"]
+        bought_cols = self._get_sheet_def()["BOUGHT"]["TABLE_HEADER"]["col"]
+        sold_cols = self._get_sheet_def()["SOLD"]["TABLE_HEADER"]["col"]
 
         # price は購入シートではオプショナル
         assert bought_cols["price"].get("optional") is True

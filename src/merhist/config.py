@@ -123,8 +123,8 @@ class LoginConfig:
     def parse(cls, data: dict[str, Any]) -> Self:
         """辞書からパース"""
         return cls(
-            line=my_lib.store.mercari.config.parse_line_login(data["line"]),
-            mercari=my_lib.store.mercari.config.parse_mercari_login(data["mercari"]),
+            line=my_lib.store.mercari.config.LineLoginConfig.parse(data["line"]),
+            mercari=my_lib.store.mercari.config.MercariLoginConfig.parse(data["mercari"]),
         )
 
 
@@ -170,7 +170,7 @@ class Config:
     @classmethod
     def load(cls, data: dict[str, Any]) -> Self:
         """辞書から Config を生成する"""
-        slack = my_lib.notify.slack.parse_config(data.get("slack", {}))
+        slack = my_lib.notify.slack.SlackConfig.parse(data.get("slack", {}))
 
         # このプロジェクトでは captcha 有りの設定、または設定なしのパターンのみ対応
         if not isinstance(

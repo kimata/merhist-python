@@ -147,10 +147,10 @@ def main() -> None:
     args = docopt.docopt(__doc__)
 
     config_file: str = args["-c"]
-    is_continue_mode: merhist.crawler.ContinueMode = {
-        "bought": not (args["--fA"] or args["--fB"]),
-        "sold": not (args["--fA"] or args["--fS"]),
-    }
+    is_continue_mode = merhist.crawler.ContinueMode(
+        bought=not (args["--fA"] or args["--fB"]),
+        sold=not (args["--fA"] or args["--fS"]),
+    )
 
     export_mode: bool = args["-e"]
     need_thumb: bool = not args["-N"]

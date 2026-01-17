@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import datetime
 import logging
 import pathlib
-import zoneinfo
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import my_lib.browser_manager
 import my_lib.cui_progress
+import my_lib.time
 
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webdriver import WebDriver
@@ -180,7 +179,7 @@ class Handle:
         self.db.set_metadata_int("bought_total_count", self.trading.bought_total_count)
         self.db.set_metadata(
             "last_modified",
-            datetime.datetime.now(tz=zoneinfo.ZoneInfo("Asia/Tokyo")).isoformat(),
+            my_lib.time.now().isoformat(),
         )
 
     def _prepare_directory(self) -> None:

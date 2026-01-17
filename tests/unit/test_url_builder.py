@@ -8,7 +8,7 @@ import pytest
 
 import merhist.crawler
 import merhist.exceptions
-from merhist.item import BoughtItem, SoldItem
+import merhist.item
 
 
 class TestGenSellHistUrl:
@@ -35,19 +35,19 @@ class TestGenItemTransactionUrl:
 
     def test_normal_mercari(self):
         """通常のメルカリアイテム"""
-        item = SoldItem(id="m12345678901", shop="mercari.com")
+        item = merhist.item.SoldItem(id="m12345678901", shop="mercari.com")
         url = merhist.crawler.gen_item_transaction_url(item)
         assert url == "https://jp.mercari.com/transaction/m12345678901"
 
     def test_mercari_shops(self):
         """メルカリShopsアイテム"""
-        item = BoughtItem(id="abc123xyz", shop="mercari-shops.com")
+        item = merhist.item.BoughtItem(id="abc123xyz", shop="mercari-shops.com")
         url = merhist.crawler.gen_item_transaction_url(item)
         assert url == "https://mercari-shops.com/orders/abc123xyz"
 
     def test_empty_shop_treated_as_normal(self):
         """shop が空の場合は通常メルカリ扱い"""
-        item = SoldItem(id="m99999999999", shop="")
+        item = merhist.item.SoldItem(id="m99999999999", shop="")
         url = merhist.crawler.gen_item_transaction_url(item)
         assert url == "https://jp.mercari.com/transaction/m99999999999"
 
@@ -57,19 +57,19 @@ class TestGenItemDescriptionUrl:
 
     def test_normal_mercari(self):
         """通常のメルカリアイテム"""
-        item = SoldItem(id="m12345678901", shop="mercari.com")
+        item = merhist.item.SoldItem(id="m12345678901", shop="mercari.com")
         url = merhist.crawler._gen_item_description_url(item)
         assert url == "https://jp.mercari.com/item/m12345678901"
 
     def test_mercari_shops(self):
         """メルカリShopsアイテム"""
-        item = BoughtItem(id="abc123xyz", shop="mercari-shops.com")
+        item = merhist.item.BoughtItem(id="abc123xyz", shop="mercari-shops.com")
         url = merhist.crawler._gen_item_description_url(item)
         assert url == "https://jp.mercari.com/shops/product/abc123xyz"
 
     def test_empty_shop_treated_as_normal(self):
         """shop が空の場合は通常メルカリ扱い"""
-        item = SoldItem(id="m99999999999", shop="")
+        item = merhist.item.SoldItem(id="m99999999999", shop="")
         url = merhist.crawler._gen_item_description_url(item)
         assert url == "https://jp.mercari.com/item/m99999999999"
 
@@ -79,40 +79,40 @@ class TestSetItemIdFromOrderUrl:
 
     def test_normal_mercari_transaction_url(self):
         """通常のメルカリ取引URL"""
-        item = BoughtItem(order_url="https://jp.mercari.com/transaction/m12345678901")
+        item = merhist.item.BoughtItem(order_url="https://jp.mercari.com/transaction/m12345678901")
         merhist.crawler._set_item_id_from_order_url(item)
         assert item.id == "m12345678901"
         assert item.shop == "mercari.com"
 
     def test_normal_mercari_with_trailing_slash(self):
         """末尾スラッシュ付きURL"""
-        item = BoughtItem(order_url="https://jp.mercari.com/transaction/m12345678901/")
+        item = merhist.item.BoughtItem(order_url="https://jp.mercari.com/transaction/m12345678901/")
         merhist.crawler._set_item_id_from_order_url(item)
         assert item.id == "m12345678901"
         assert item.shop == "mercari.com"
 
     def test_mercari_shops_order_url(self):
         """メルカリShopsの注文URL"""
-        item = BoughtItem(order_url="https://mercari-shops.com/orders/abc123xyz")
+        item = merhist.item.BoughtItem(order_url="https://mercari-shops.com/orders/abc123xyz")
         merhist.crawler._set_item_id_from_order_url(item)
         assert item.id == "abc123xyz"
         assert item.shop == "mercari-shops.com"
 
     def test_mercari_shops_with_trailing_slash(self):
         """メルカリShops末尾スラッシュ付きURL"""
-        item = BoughtItem(order_url="https://mercari-shops.com/orders/abc123xyz/")
+        item = merhist.item.BoughtItem(order_url="https://mercari-shops.com/orders/abc123xyz/")
         merhist.crawler._set_item_id_from_order_url(item)
         assert item.id == "abc123xyz"
         assert item.shop == "mercari-shops.com"
 
     def test_invalid_url_raises_error(self):
         """無効なURLでエラー"""
-        item = BoughtItem(order_url="https://example.com/invalid")
+        item = merhist.item.BoughtItem(order_url="https://example.com/invalid")
         with pytest.raises(merhist.exceptions.InvalidURLFormatError):
             merhist.crawler._set_item_id_from_order_url(item)
 
     def test_empty_url_raises_error(self):
         """空のURLでエラー"""
-        item = BoughtItem(order_url="")
+        item = merhist.item.BoughtItem(order_url="")
         with pytest.raises(merhist.exceptions.InvalidURLFormatError):
             merhist.crawler._set_item_id_from_order_url(item)

@@ -16,7 +16,12 @@ from __future__ import annotations
 import datetime
 import logging
 import pathlib
-from typing import Any
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    import merhist.item
 
 import my_lib.openpyxl_util
 import openpyxl
@@ -35,6 +40,16 @@ _STATUS_ALL: str = "[生成] Excel"
 
 
 _SHOP_NAME: str = "メルカリ"
+
+
+@dataclass
+class _TransactionConfig:
+    """Excel出力用のトランザクション設定"""
+
+    mode: Literal["BOUGHT", "SOLD"]
+    item_list: Sequence[merhist.item.ItemBase]
+    status: str
+
 
 _SHEET_DEF = {
     "BOUGHT": {
@@ -225,24 +240,27 @@ def _generate_sheet(
     book: openpyxl.Workbook,
     is_need_thumb: bool = True,
 ) -> None:
-    transaction_list: list[dict[str, Any]] = [
-        {"mode": "BOUGHT", "item_list": handle.get_bought_item_list(), "status": _STATUS_INSERT_BOUGHT_ITEM},
-        {"mode": "SOLD", "item_list": handle.get_sold_item_list(), "status": _STATUS_INSERT_SOLD_ITEM},
+    transaction_list = [
+        _TransactionConfig(
+            mode="BOUGHT", item_list=handle.get_bought_item_list(), status=_STATUS_INSERT_BOUGHT_ITEM
+        ),
+        _TransactionConfig(
+            mode="SOLD", item_list=handle.get_sold_item_list(), status=_STATUS_INSERT_SOLD_ITEM
+        ),
     ]
 
     for transaction_info in transaction_list:
-        status_key: str = transaction_info["status"]
-        handle.set_progress_bar(status_key, len(transaction_info["item_list"]))
+        handle.set_progress_bar(transaction_info.status, len(transaction_info.item_list))
 
         my_lib.openpyxl_util.generate_list_sheet(
             book,
-            transaction_info["item_list"],
-            _SHEET_DEF[transaction_info["mode"]],
+            transaction_info.item_list,  # type: ignore[arg-type]
+            _SHEET_DEF[transaction_info.mode],
             is_need_thumb,
             lambda item: handle.get_thumb_path(item),  # pyright: ignore[reportArgumentType]
             lambda status: handle.set_status(status),
             lambda: handle.update_progress_bar(_STATUS_ALL),
-            lambda status_key=status_key: handle.update_progress_bar(status_key),
+            lambda status=transaction_info.status: handle.update_progress_bar(status),
             warning_handler=_warning_handler,
         )
 

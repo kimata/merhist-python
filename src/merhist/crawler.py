@@ -25,7 +25,8 @@ import re
 import time
 import traceback
 import warnings
-from typing import Any, TypedDict, TypeVar
+from dataclasses import dataclass
+from typing import TypeVar
 
 import my_lib.graceful_shutdown
 import my_lib.pretty
@@ -67,9 +68,38 @@ _MERCARI_NORMAL: str = "mercari.com"
 _MERCARI_SHOP: str = "mercari-shops.com"
 
 
-class ContinueMode(TypedDict):
+@dataclass(frozen=True)
+class ContinueMode:
     bought: bool
     sold: bool
+
+
+@dataclass(frozen=True)
+class _DescriptionRowDef:
+    """行定義（商品説明ページ用）"""
+
+    title: str
+    type: str  # "text", "category"
+    name: str
+
+
+@dataclass(frozen=True)
+class _TransactionRowDef:
+    """行定義（取引ページ用）"""
+
+    title: str
+    type: str  # "datetime", "price"
+    name: str
+
+
+@dataclass(frozen=True)
+class _SoldColDef:
+    """列定義（販売一覧ページ用）"""
+
+    index: int
+    type: str  # "text", "price", "rate", "date"
+    name: str
+    link_name: str | None = None
 
 
 def execute_login(handle: merhist.handle.Handle) -> None:
@@ -180,12 +210,12 @@ def _save_thumbnail(handle: merhist.handle.Handle, item: merhist.item.ItemBase, 
 
 
 def _fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
-    ROW_DEF_LIST: list[dict[str, str]] = [
-        {"title": "カテゴリー", "type": "category", "name": "category"},
-        {"title": "商品の状態", "type": "text", "name": "condition"},
-        {"title": "配送料の負担", "type": "text", "name": "postage_charge"},
-        {"title": "発送元の地域", "type": "text", "name": "seller_region"},
-        {"title": "配送の方法", "type": "text", "name": "shipping_method"},
+    row_def_list = [
+        _DescriptionRowDef(title="カテゴリー", type="category", name="category"),
+        _DescriptionRowDef(title="商品の状態", type="text", name="condition"),
+        _DescriptionRowDef(title="配送料の負担", type="text", name="postage_charge"),
+        _DescriptionRowDef(title="発送元の地域", type="text", name="seller_region"),
+        _DescriptionRowDef(title="配送の方法", type="text", name="shipping_method"),
     ]
 
     driver, _ = handle.get_selenium_driver()
@@ -209,31 +239,31 @@ def _fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.It
             row_title = driver.find_element(
                 selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.xpath.ITEM_DESC_ROW_TITLE
             ).text
-            for row_def in ROW_DEF_LIST:
-                if row_def["title"] != row_title:
+            for row_def in row_def_list:
+                if row_def.title != row_title:
                     continue
 
-                if row_def["type"] == "text":
+                if row_def.type == "text":
                     item.set_field(
-                        row_def["name"],
+                        row_def.name,
                         driver.find_element(
                             selenium.webdriver.common.by.By.XPATH,
                             row_xpath + merhist.xpath.ITEM_DESC_ROW_BODY,
                         ).text,
                     )
-                elif row_def["type"] == "category":
+                elif row_def.type == "category":
                     breadcrumb_list = driver.find_elements(
                         selenium.webdriver.common.by.By.XPATH,
                         row_xpath + merhist.xpath.ITEM_DESC_ROW_BODY_LINKS,
                     )
-                    item.set_field(row_def["name"], [x.text for x in breadcrumb_list])
+                    item.set_field(row_def.name, [x.text for x in breadcrumb_list])
 
 
 def _fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
-    ROW_DEF_LIST: list[dict[str, str]] = [
-        {"title": "購入日時", "type": "datetime", "name": "purchase_date"},
-        {"title": "商品代金", "type": "price", "name": "price"},
-        {"title": "配送料", "type": "price", "name": "postage"},
+    row_def_list = [
+        _TransactionRowDef(title="購入日時", type="datetime", name="purchase_date"),
+        _TransactionRowDef(title="商品代金", type="price", name="price"),
+        _TransactionRowDef(title="配送料", type="price", name="postage"),
     ]
 
     driver, _ = handle.get_selenium_driver()
@@ -252,13 +282,13 @@ def _fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.
         row_title = driver.find_element(
             selenium.webdriver.common.by.By.XPATH, row_xpath + merhist.xpath.TRANSACTION_ROW_TITLE
         ).text
-        for row_def in ROW_DEF_LIST:
-            if row_def["title"] != row_title:
+        for row_def in row_def_list:
+            if row_def.title != row_title:
                 continue
 
-            if row_def["type"] == "datetime":
+            if row_def.type == "datetime":
                 item.set_field(
-                    row_def["name"],
+                    row_def.name,
                     merhist.parser.parse_datetime(
                         driver.find_element(
                             selenium.webdriver.common.by.By.XPATH,
@@ -267,8 +297,8 @@ def _fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.
                     ),
                 )
                 has_purchase_date = True
-            elif row_def["type"] == "price":
-                if not hasattr(item, row_def["name"]):
+            elif row_def.type == "price":
+                if not hasattr(item, row_def.name):
                     continue  # pragma: no cover  # 現状全アイテムに price フィールドがあるため
                 body_elem = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
@@ -282,7 +312,7 @@ def _fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.
                         merhist.xpath.TRANSACTION_ROW_NUMBER,
                     ).text
                 item.set_field(
-                    row_def["name"],
+                    row_def.name,
                     merhist.parser.parse_price_with_shipping(body_text, number_text),
                 )
 
@@ -380,14 +410,14 @@ def _fetch_item_detail(handle: merhist.handle.Handle, item: _T) -> _T:
 
 
 def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, continue_mode: bool) -> bool:
-    COL_DEF_LIST: list[dict[str, Any]] = [
-        {"index": 1, "type": "text", "name": "name", "link": {"name": "order_url"}},
-        {"index": 2, "type": "price", "name": "price"},
-        {"index": 3, "type": "price", "name": "commission"},
-        {"index": 4, "type": "price", "name": "postage"},
-        {"index": 6, "type": "rate", "name": "commission_rate"},
-        {"index": 7, "type": "price", "name": "profit"},
-        {"index": 9, "type": "date", "name": "completion_date"},
+    col_def_list = [
+        _SoldColDef(index=1, type="text", name="name", link_name="order_url"),
+        _SoldColDef(index=2, type="price", name="price"),
+        _SoldColDef(index=3, type="price", name="commission"),
+        _SoldColDef(index=4, type="price", name="postage"),
+        _SoldColDef(index=6, type="rate", name="commission_rate"),
+        _SoldColDef(index=7, type="price", name="profit"),
+        _SoldColDef(index=9, type="date", name="completion_date"),
     ]
     driver, _ = handle.get_selenium_driver()
 
@@ -405,31 +435,31 @@ def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, cont
         item_xpath = f"{item_list_xpath}[{i + 1}]"
 
         item = merhist.item.SoldItem()
-        for col_def in COL_DEF_LIST:
-            col_xpath = merhist.xpath.sold_item_column(item_xpath, col_def["index"])
-            if col_def["type"] == "text":
+        for col_def in col_def_list:
+            col_xpath = merhist.xpath.sold_item_column(item_xpath, col_def.index)
+            if col_def.type == "text":
                 link_elem = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
                     col_xpath + merhist.xpath.SOLD_ITEM_LINK,
                 )
-                item.set_field(col_def["name"], link_elem.text)
-                if "link" in col_def:
-                    item.set_field(col_def["link"]["name"], link_elem.get_attribute("href"))
-            elif col_def["type"] == "price":
+                item.set_field(col_def.name, link_elem.text)
+                if col_def.link_name is not None:
+                    item.set_field(col_def.link_name, link_elem.get_attribute("href"))
+            elif col_def.type == "price":
                 price_text = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
                     col_xpath + merhist.xpath.SOLD_ITEM_PRICE_NUMBER,
                 ).text
-                item.set_field(col_def["name"], merhist.parser.parse_price(price_text))
-            elif col_def["type"] == "rate":
+                item.set_field(col_def.name, merhist.parser.parse_price(price_text))
+            elif col_def.type == "rate":
                 rate_text = driver.find_element(
                     selenium.webdriver.common.by.By.XPATH,
                     col_xpath,
                 ).text
-                item.set_field(col_def["name"], merhist.parser.parse_rate(rate_text))
-            elif col_def["type"] == "date":
+                item.set_field(col_def.name, merhist.parser.parse_rate(rate_text))
+            elif col_def.type == "date":
                 item.set_field(
-                    col_def["name"],
+                    col_def.name,
                     merhist.parser.parse_date(
                         driver.find_element(
                             selenium.webdriver.common.by.By.XPATH,
@@ -718,9 +748,9 @@ def fetch_order_item_list(handle: merhist.handle.Handle, continue_mode: Continue
 
     handle.set_status("📥 注文履歴の収集を開始します...")
 
-    _fetch_sold_item_list(handle, continue_mode["sold"])
+    _fetch_sold_item_list(handle, continue_mode.sold)
     if not is_shutdown_requested():
-        _fetch_bought_item_list(handle, continue_mode["bought"])
+        _fetch_bought_item_list(handle, continue_mode.bought)
 
     if is_shutdown_requested():
         handle.set_status("🛑 注文履歴の収集を中断しました")

@@ -40,7 +40,7 @@ class TestExecuteFetch:
 
     def test_execute_fetch_success(self, handle):
         """正常にフェッチ実行"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.crawler.execute_login") as mock_login,
@@ -53,7 +53,7 @@ class TestExecuteFetch:
 
     def test_execute_fetch_error_dumps_page(self, handle):
         """エラー時にページダンプ"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.crawler.execute_login", side_effect=Exception("ログインエラー")),
@@ -68,7 +68,7 @@ class TestExecuteFetch:
         """InvalidSessionIdException は特別扱い（ダンプなし）"""
         import selenium.common.exceptions
 
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch(
@@ -85,7 +85,7 @@ class TestExecuteFetch:
 
     def test_execute_fetch_error_skips_dump_on_shutdown(self, handle):
         """シャットダウン要求時はダンプをスキップ"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.crawler.execute_login", side_effect=Exception("エラー")),
@@ -116,7 +116,7 @@ class TestExecute:
 
     def test_execute_export_mode_only(self, mock_config):
         """エクスポートモードのみ"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
@@ -129,7 +129,7 @@ class TestExecute:
 
     def test_execute_full_mode(self, mock_config):
         """フルモード（フェッチ＋エクスポート）"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
@@ -143,7 +143,7 @@ class TestExecute:
 
     def test_execute_fetch_error_continues_to_excel(self, mock_config):
         """フェッチエラー時もExcel生成を試行"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
@@ -157,7 +157,7 @@ class TestExecute:
 
     def test_execute_excel_error(self, mock_config):
         """Excel生成エラー"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch(
@@ -171,7 +171,7 @@ class TestExecute:
 
     def test_execute_with_thumb(self, mock_config):
         """サムネイル付きで実行"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel:
             app.execute(mock_config, continue_mode, export_mode=True, need_thumb=True, debug_mode=True)
@@ -182,7 +182,7 @@ class TestExecute:
 
     def test_execute_without_thumb(self, mock_config):
         """サムネイルなしで実行"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel:
             app.execute(mock_config, continue_mode, export_mode=True, need_thumb=False, debug_mode=True)
@@ -193,7 +193,7 @@ class TestExecute:
 
     def test_execute_non_debug_mode_waits_for_input(self, mock_config):
         """非デバッグモードでは入力待ちになる"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
@@ -207,7 +207,7 @@ class TestExecute:
         """InvalidSessionIdException でリトライ"""
         import selenium.common.exceptions
 
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         call_count = 0
 
@@ -239,7 +239,7 @@ class TestExecute:
         """InvalidSessionIdException でリトライ上限超過"""
         import selenium.common.exceptions
 
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
@@ -266,7 +266,7 @@ class TestExecute:
         """clear_profile_on_browser_error=False ではリトライしない"""
         import selenium.common.exceptions
 
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
@@ -293,7 +293,7 @@ class TestExecute:
         """SeleniumError が発生した場合"""
         import my_lib.selenium_util
 
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
@@ -311,7 +311,7 @@ class TestExecute:
         """LoginError が発生した場合"""
         import my_lib.store.mercari.exceptions
 
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),
@@ -327,7 +327,7 @@ class TestExecute:
 
     def test_execute_general_error_skips_on_shutdown(self, mock_config):
         """シャットダウン要求時は一般エラーをスキップ"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.history.generate_table_excel"),

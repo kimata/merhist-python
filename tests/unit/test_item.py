@@ -8,7 +8,7 @@ import datetime
 
 import pytest
 
-from merhist.item import BoughtItem, ItemBase, SoldItem
+import merhist.item
 
 
 class TestItemBaseToDict:
@@ -16,39 +16,39 @@ class TestItemBaseToDict:
 
     def test_basic_fields(self):
         """基本フィールドの辞書変換"""
-        item = ItemBase(id="m123", name="テスト商品")
+        item = merhist.item.ItemBase(id="m123", name="テスト商品")
         result = item.to_dict()
         assert result["id"] == "m123"
         assert result["name"] == "テスト商品"
 
     def test_none_excluded(self):
         """None 値は除外される"""
-        item = ItemBase(id="m123", name="テスト", error=None)
+        item = merhist.item.ItemBase(id="m123", name="テスト", error=None)
         result = item.to_dict()
         assert "error" not in result
 
     def test_empty_list_excluded(self):
         """空リストは除外される"""
-        item = ItemBase(id="m123", name="テスト", category=[])
+        item = merhist.item.ItemBase(id="m123", name="テスト", category=[])
         result = item.to_dict()
         assert "category" not in result
 
     def test_non_empty_list_included(self):
         """非空リストは含まれる"""
-        item = ItemBase(id="m123", category=["本", "漫画"])
+        item = merhist.item.ItemBase(id="m123", category=["本", "漫画"])
         result = item.to_dict()
         assert result["category"] == ["本", "漫画"]
 
     def test_datetime_included(self):
         """datetime 値は含まれる"""
         dt = datetime.datetime(2025, 1, 15, 10, 30)
-        item = ItemBase(id="m123", purchase_date=dt)
+        item = merhist.item.ItemBase(id="m123", purchase_date=dt)
         result = item.to_dict()
         assert result["purchase_date"] == dt
 
     def test_default_values_included(self):
         """デフォルト値（空文字列、0など）は含まれる"""
-        item = ItemBase(id="", name="", count=1)
+        item = merhist.item.ItemBase(id="", name="", count=1)
         result = item.to_dict()
         assert result["id"] == ""
         assert result["name"] == ""
@@ -60,18 +60,18 @@ class TestItemBaseGetItem:
 
     def test_existing_field(self):
         """存在するフィールドへのアクセス"""
-        item = ItemBase(id="m123", name="テスト商品")
+        item = merhist.item.ItemBase(id="m123", name="テスト商品")
         assert item["id"] == "m123"
         assert item["name"] == "テスト商品"
 
     def test_none_field(self):
         """None フィールドへのアクセス"""
-        item = ItemBase(id="m123", error=None)
+        item = merhist.item.ItemBase(id="m123", error=None)
         assert item["error"] is None
 
     def test_nonexistent_field_raises_error(self):
         """存在しないフィールドでエラー"""
-        item = ItemBase(id="m123")
+        item = merhist.item.ItemBase(id="m123")
         with pytest.raises(AttributeError):
             _ = item["nonexistent"]
 
@@ -81,33 +81,33 @@ class TestItemBaseContains:
 
     def test_existing_value(self):
         """値が存在するフィールド"""
-        item = ItemBase(id="m123", name="テスト")
+        item = merhist.item.ItemBase(id="m123", name="テスト")
         assert "id" in item
         assert "name" in item
 
     def test_none_value_not_in(self):
         """None 値のフィールドは False"""
-        item = ItemBase(id="m123", error=None)
+        item = merhist.item.ItemBase(id="m123", error=None)
         assert "error" not in item
 
     def test_empty_list_not_in(self):
         """空リストのフィールドは False"""
-        item = ItemBase(id="m123", category=[])
+        item = merhist.item.ItemBase(id="m123", category=[])
         assert "category" not in item
 
     def test_non_empty_list_in(self):
         """非空リストのフィールドは True"""
-        item = ItemBase(id="m123", category=["本"])
+        item = merhist.item.ItemBase(id="m123", category=["本"])
         assert "category" in item
 
     def test_nonexistent_field_not_in(self):
         """存在しないフィールドは False"""
-        item = ItemBase(id="m123")
+        item = merhist.item.ItemBase(id="m123")
         assert "nonexistent" not in item
 
     def test_empty_string_in(self):
         """空文字列は True（to_dict と異なる動作）"""
-        item = ItemBase(id="", name="")
+        item = merhist.item.ItemBase(id="", name="")
         assert "id" in item
         assert "name" in item
 
@@ -117,7 +117,7 @@ class TestItemBaseSetField:
 
     def test_valid_field(self):
         """有効なフィールド名"""
-        item = ItemBase()
+        item = merhist.item.ItemBase()
         item.set_field("id", "m123")
         item.set_field("name", "テスト商品")
         assert item.id == "m123"
@@ -125,7 +125,7 @@ class TestItemBaseSetField:
 
     def test_invalid_field_raises_error(self):
         """無効なフィールド名でエラー"""
-        item = ItemBase()
+        item = merhist.item.ItemBase()
         with pytest.raises(ValueError) as exc_info:
             item.set_field("invalid_field", "value")
         assert "Unknown field" in str(exc_info.value)
@@ -133,7 +133,7 @@ class TestItemBaseSetField:
 
     def test_typo_field_raises_error(self):
         """タイポしたフィールド名でエラー"""
-        item = ItemBase()
+        item = merhist.item.ItemBase()
         with pytest.raises(ValueError):
             item.set_field("nmae", "テスト")  # name のタイポ
 
@@ -143,12 +143,12 @@ class TestSoldItem:
 
     def test_inheritance(self):
         """ItemBase を継承している"""
-        item = SoldItem(id="m123", name="テスト", price=1000)
-        assert isinstance(item, ItemBase)
+        item = merhist.item.SoldItem(id="m123", name="テスト", price=1000)
+        assert isinstance(item, merhist.item.ItemBase)
 
     def test_sold_specific_fields(self):
         """SoldItem 固有フィールド"""
-        item = SoldItem(
+        item = merhist.item.SoldItem(
             id="m123",
             price=1500,
             commission=150,
@@ -166,14 +166,14 @@ class TestSoldItem:
 
     def test_to_dict_includes_sold_fields(self):
         """to_dict に SoldItem 固有フィールドが含まれる"""
-        item = SoldItem(id="m123", price=1500, profit=1350)
+        item = merhist.item.SoldItem(id="m123", price=1500, profit=1350)
         result = item.to_dict()
         assert result["price"] == 1500
         assert result["profit"] == 1350
 
     def test_set_field_with_sold_fields(self):
         """set_field で SoldItem 固有フィールドを設定"""
-        item = SoldItem()
+        item = merhist.item.SoldItem()
         item.set_field("price", 2000)
         item.set_field("commission", 200)
         assert item.price == 2000
@@ -185,28 +185,28 @@ class TestBoughtItem:
 
     def test_inheritance(self):
         """ItemBase を継承している"""
-        item = BoughtItem(id="m123", name="テスト", price=5000)
-        assert isinstance(item, ItemBase)
+        item = merhist.item.BoughtItem(id="m123", name="テスト", price=5000)
+        assert isinstance(item, merhist.item.ItemBase)
 
     def test_bought_specific_fields(self):
         """BoughtItem 固有フィールド"""
-        item = BoughtItem(id="m123", price=25000)
+        item = merhist.item.BoughtItem(id="m123", price=25000)
         assert item.price == 25000
 
     def test_price_can_be_none(self):
         """price は None を許容"""
-        item = BoughtItem(id="m123", price=None)
+        item = merhist.item.BoughtItem(id="m123", price=None)
         assert item.price is None
 
     def test_to_dict_with_none_price(self):
         """to_dict で None の price は除外"""
-        item = BoughtItem(id="m123", price=None)
+        item = merhist.item.BoughtItem(id="m123", price=None)
         result = item.to_dict()
         assert "price" not in result
 
     def test_to_dict_with_price(self):
         """to_dict で price が含まれる"""
-        item = BoughtItem(id="m123", price=5000)
+        item = merhist.item.BoughtItem(id="m123", price=5000)
         result = item.to_dict()
         assert result["price"] == 5000
 

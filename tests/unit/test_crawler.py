@@ -42,8 +42,7 @@ class TestFetchItemDetail:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -154,8 +153,7 @@ class TestWaitForLoading:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -213,8 +211,7 @@ class TestVisitUrl:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -251,8 +248,7 @@ class TestExecuteLogin:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -287,7 +283,7 @@ class TestSaveThumbnail:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         # サムネイルディレクトリを作成
@@ -419,8 +415,7 @@ class TestFetchItemTransaction:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -466,7 +461,7 @@ class TestFetchSoldItemList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
@@ -480,7 +475,7 @@ class TestFetchSoldItemList:
         mock_counter = unittest.mock.MagicMock()
         mock_counter.total = 0
         mock_counter.count = 0
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
 
         with unittest.mock.patch("merhist.crawler._fetch_sold_count") as mock_count:
             mock_count.side_effect = lambda h: setattr(h.trading, "sold_total_count", 0)
@@ -500,7 +495,7 @@ class TestFetchSoldItemList:
         mock_counter = unittest.mock.MagicMock()
         mock_counter.total = 10
         mock_counter.count = 10
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
 
         with (
             unittest.mock.patch("merhist.crawler._fetch_sold_count"),
@@ -533,8 +528,7 @@ class TestFetchBoughtItemInfoList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -605,7 +599,7 @@ class TestFetchBoughtItemList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
@@ -615,7 +609,7 @@ class TestFetchBoughtItemList:
     def test_fetch_bought_item_list_empty(self, handle):
         """購入履歴なし"""
         mock_counter = unittest.mock.MagicMock()
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
 
         with unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list", return_value=[]):
             merhist.crawler._fetch_bought_item_list(handle, continue_mode=True)
@@ -625,7 +619,7 @@ class TestFetchBoughtItemList:
         item = merhist.item.BoughtItem(id="m123", name="テスト商品", shop="mercari.com")
 
         mock_counter = unittest.mock.MagicMock()
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
 
         with (
             unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list", return_value=[item]),
@@ -643,7 +637,7 @@ class TestFetchBoughtItemList:
         handle.db.upsert_bought_item(item)
 
         mock_counter = unittest.mock.MagicMock()
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
 
         with (
             unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list", return_value=[item]),
@@ -676,7 +670,7 @@ class TestFetchOrderItemList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
@@ -685,7 +679,7 @@ class TestFetchOrderItemList:
 
     def test_fetch_order_item_list(self, handle):
         """注文履歴取得"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("merhist.crawler._fetch_sold_item_list") as mock_sold,
@@ -698,7 +692,7 @@ class TestFetchOrderItemList:
 
     def test_fetch_order_item_list_force_mode(self, handle):
         """強制取得モード"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": False, "sold": False}
+        continue_mode = merhist.crawler.ContinueMode(bought=False, sold=False)
 
         with (
             unittest.mock.patch("merhist.crawler._fetch_sold_item_list") as mock_sold,
@@ -754,8 +748,7 @@ class TestFetchItemDescription:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -870,8 +863,7 @@ class TestFetchItemTransactionNormal:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -1008,8 +1000,7 @@ class TestGetBoughtItemInfoList:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -1063,8 +1054,8 @@ class TestGetBoughtItemInfoList:
 
         handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
-        item_list: list[merhist.item.BoughtItem] = []  # type: ignore[name-defined]
-        list_length, is_found_new = merhist.crawler._get_bought_item_info_list(  # type: ignore[attr-defined]
+        item_list: list[merhist.item.BoughtItem] = []
+        list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
             handle, page=1, offset=0, item_list=item_list, continue_mode=True
         )
 
@@ -1078,7 +1069,7 @@ class TestGetBoughtItemInfoList:
         """continue_mode でキャッシュ済みの場合はスキップ"""
 
         # DBにキャッシュを追加
-        cached_item = merhist.item.BoughtItem(id="m12345", name="キャッシュ済み")  # type: ignore[attr-defined]
+        cached_item = merhist.item.BoughtItem(id="m12345", name="キャッシュ済み")
         handle.db.upsert_bought_item(cached_item)
 
         # モック要素
@@ -1103,8 +1094,8 @@ class TestGetBoughtItemInfoList:
 
         handle._test_mock_driver.find_element.side_effect = find_element_side_effect
 
-        item_list: list[merhist.item.BoughtItem] = []  # type: ignore[name-defined]
-        list_length, is_found_new = merhist.crawler._get_bought_item_info_list(  # type: ignore[attr-defined]
+        item_list: list[merhist.item.BoughtItem] = []
+        list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
             handle, page=1, offset=0, item_list=item_list, continue_mode=True
         )
 
@@ -1135,8 +1126,7 @@ class TestFetchSoldCount:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -1154,15 +1144,15 @@ class TestFetchSoldCount:
             assert handle.trading.sold_total_count == 42
 
 
-class TestContinueModeTypedDict:
-    """ContinueMode TypedDict のテスト"""
+class TestContinueModeDataclass:
+    """ContinueMode dataclass のテスト"""
 
     def test_continue_mode_creation(self):
         """ContinueMode の作成"""
-        mode: merhist.crawler.ContinueMode = {"bought": True, "sold": False}
+        mode = merhist.crawler.ContinueMode(bought=True, sold=False)
 
-        assert mode["bought"] is True
-        assert mode["sold"] is False
+        assert mode.bought is True
+        assert mode.sold is False
 
 
 class TestConstantsAndUrls:
@@ -1208,7 +1198,7 @@ class TestFetchItemTransactionShop:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
@@ -1295,7 +1285,7 @@ class TestFetchItemTransactionNormalPriceParsing:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         (tmp_path / "thumb").mkdir(parents=True, exist_ok=True)
@@ -1439,12 +1429,12 @@ class TestFetchSoldItemListByPage:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         # モックカウンターを作成し get_progress_bar がこれを返すようにする
         mock_counter = unittest.mock.MagicMock()
-        h.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
+        h.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
         h.trading.sold_total_count = 10
         yield h
         h.finish()
@@ -1646,7 +1636,7 @@ class TestFetchSoldItemListShutdown:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
@@ -1660,8 +1650,7 @@ class TestFetchSoldItemListShutdown:
         mock_counter = unittest.mock.MagicMock()
         mock_counter.total = 10
         mock_counter.count = 0
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
-
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
         with (
             unittest.mock.patch("merhist.crawler._fetch_sold_count"),
             unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=True),
@@ -1678,8 +1667,7 @@ class TestFetchSoldItemListShutdown:
         mock_counter = unittest.mock.MagicMock()
         mock_counter.total = 2
         mock_counter.count = 0
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
-
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
         with (
             unittest.mock.patch("merhist.crawler._fetch_sold_count"),
             unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=False),
@@ -1699,8 +1687,7 @@ class TestFetchSoldItemListShutdown:
         mock_counter = unittest.mock.MagicMock()
         mock_counter.total = 2
         mock_counter.count = 0
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
-
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
         with (
             unittest.mock.patch("merhist.crawler._fetch_sold_count"),
             unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=False),
@@ -1721,8 +1708,7 @@ class TestFetchSoldItemListShutdown:
         mock_counter = unittest.mock.MagicMock()
         mock_counter.total = 3
         mock_counter.count = 0
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
-
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
         with (
             unittest.mock.patch("merhist.crawler._fetch_sold_count"),
             unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=False),
@@ -1757,8 +1743,7 @@ class TestFetchBoughtItemInfoListImpl:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -1917,7 +1902,7 @@ class TestFetchBoughtItemListBranches:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
@@ -1929,8 +1914,7 @@ class TestFetchBoughtItemListBranches:
         item = merhist.item.BoughtItem(id="m123", name="テスト商品", shop="mercari.com")
 
         mock_counter = unittest.mock.MagicMock()
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
-
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
         with (
             unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list", return_value=[item]),
             unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=True),
@@ -1946,7 +1930,7 @@ class TestFetchBoughtItemListBranches:
         item = merhist.item.BoughtItem(id="m123", name="テスト商品", shop="mercari.com")
 
         mock_counter = unittest.mock.MagicMock()
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
 
         def mock_fetch_detail(h, i):
             i.error = "取得失敗"
@@ -1967,8 +1951,7 @@ class TestFetchBoughtItemListBranches:
         item2 = merhist.item.BoughtItem(id="m456", name="テスト商品2", shop="mercari.com")
 
         mock_counter = unittest.mock.MagicMock()
-        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)  # type: ignore[method-assign]
-
+        handle.get_progress_bar = unittest.mock.MagicMock(return_value=mock_counter)
         with (
             unittest.mock.patch("merhist.crawler._fetch_bought_item_info_list", return_value=[item1, item2]),
             unittest.mock.patch("merhist.crawler.is_shutdown_requested", return_value=False),
@@ -2001,7 +1984,7 @@ class TestFetchOrderItemListShutdown:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         h.progress_manager = unittest.mock.MagicMock()  # type: ignore[attr-defined]
@@ -2010,7 +1993,7 @@ class TestFetchOrderItemListShutdown:
 
     def test_fetch_order_item_list_shutdown_after_sold(self, handle):
         """販売履歴取得後のシャットダウン"""
-        continue_mode: merhist.crawler.ContinueMode = {"bought": True, "sold": True}
+        continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
             unittest.mock.patch("my_lib.graceful_shutdown.set_live_display"),
@@ -2047,8 +2030,7 @@ class TestGetBoughtItemInfoListForceMod:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
@@ -2119,8 +2101,7 @@ class TestLoginError:
         h = merhist.handle.Handle(config=mock_config)
         mock_driver = unittest.mock.MagicMock()
         mock_wait = unittest.mock.MagicMock()
-        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
-
+        h.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))
         h._test_mock_driver = mock_driver  # type: ignore[attr-defined]
         h._test_mock_wait = mock_wait  # type: ignore[attr-defined]
         yield h
