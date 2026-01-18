@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.scripts]
-merhist = "merhist.__main__:main"
+merhist = "merhist.cli:main"
 
 [dependency-groups]
 dev = [
