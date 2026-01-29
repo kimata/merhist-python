@@ -8,6 +8,8 @@ import json
 import pathlib
 import sqlite3
 
+import my_lib.sqlite_util
+
 import merhist.item
 
 
@@ -25,9 +27,7 @@ class Database:
         self._conn = sqlite3.connect(self._db_path)
         self._conn.row_factory = sqlite3.Row
 
-        with self._schema_path.open("r", encoding="utf-8") as f:
-            schema = f.read()
-        self._conn.executescript(schema)
+        my_lib.sqlite_util.exec_schema_from_file(self._conn, self._schema_path)
         self._conn.commit()
 
     def close(self) -> None:
