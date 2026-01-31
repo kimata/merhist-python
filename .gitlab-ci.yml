@@ -33,6 +33,7 @@ test-typecheck:
               - uv-cache-${CI_PROJECT_ID}
           paths:
               - ${UV_CACHE_DIR}
+              - .mypy_cache/
 
 test-pytest:
     stage: test
