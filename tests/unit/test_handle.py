@@ -281,7 +281,7 @@ class TestHandleSelenium:
             driver, wait = handle.get_selenium_driver()
 
             mock_create.assert_called_once_with(
-                "Merhist", mock_config.selenium_data_dir_path, use_undetected=True
+                "Merhist", mock_config.selenium_data_dir_path, use_undetected=True, stealth_mode=True
             )
             mock_clear.assert_called_once_with(mock_driver)
             assert driver == mock_driver
