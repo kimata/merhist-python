@@ -58,6 +58,16 @@ class TestHandleItemOperations:
 
         assert handle.get_sold_checked_count() == 1
 
+    def test_record_sold_item_updates_existing(self, handle):
+        """既存アイテムを記録すると最新データで上書きされる（強制再収集用）"""
+        handle.record_sold_item(merhist.item.SoldItem(id="m123", name="旧データ", price=1000))
+        handle.record_sold_item(merhist.item.SoldItem(id="m123", name="新データ", price=2000))
+
+        sold_list = handle.get_sold_item_list()
+        assert len(sold_list) == 1
+        assert sold_list[0].name == "新データ"
+        assert sold_list[0].price == 2000
+
     def test_get_sold_item_stat_exists(self, handle):
         """存在するアイテムの状態確認"""
         item = merhist.item.SoldItem(id="m123")
@@ -107,6 +117,16 @@ class TestHandleItemOperations:
         handle.record_bought_item(item)
 
         assert handle.get_bought_checked_count() == 1
+
+    def test_record_bought_item_updates_existing(self, handle):
+        """既存アイテムを記録すると最新データで上書きされる（強制再収集用）"""
+        handle.record_bought_item(merhist.item.BoughtItem(id="m456", name="旧データ", price=1000))
+        handle.record_bought_item(merhist.item.BoughtItem(id="m456", name="新データ", price=2000))
+
+        bought_list = handle.get_bought_item_list()
+        assert len(bought_list) == 1
+        assert bought_list[0].name == "新データ"
+        assert bought_list[0].price == 2000
 
     def test_get_bought_item_stat_exists(self, handle):
         """存在するアイテムの状態確認"""
@@ -653,16 +673,16 @@ class TestHandleEdgeCases:
         return config
 
     def test_ignore_cache_mode(self, mock_config, tmp_path):
-        """ignore_cache=True の場合、cache_dir_path をテンポラリに設定"""
+        """ignore_cache=True の場合、デバッグ用の別 DB が使われる"""
         handle = merhist.handle.Handle(config=mock_config, ignore_cache=True)
 
-        # ignore_cache が True で Handle が作成されたことを確認
-        assert handle is not None
+        # デバッグ用 DB が作成されていることを確認
+        assert (tmp_path / "cache" / "cache_debug.dat").exists()
 
         handle.finish()
 
-    def test_ignore_cache_mode_with_existing_file(self, mock_config, tmp_path):
-        """ignore_cache=True で既存ファイルが削除される"""
+    def test_ignore_cache_mode_preserves_cache_file(self, mock_config, tmp_path):
+        """ignore_cache=True でも既存のキャッシュ DB は削除されない"""
         # キャッシュファイルを作成
         cache_file = tmp_path / "cache" / "cache.dat"
         cache_file.parent.mkdir(parents=True, exist_ok=True)
@@ -672,7 +692,23 @@ class TestHandleEdgeCases:
 
         handle = merhist.handle.Handle(config=mock_config, ignore_cache=True)
 
-        # ファイルが削除されていることを確認（データベースとして再作成されている可能性あり）
+        # 本番キャッシュは温存され、デバッグ用 DB が別途作成される
+        assert cache_file.read_text() == "dummy cache"
+        assert (tmp_path / "cache" / "cache_debug.dat").exists()
+
+        handle.finish()
+
+    def test_ignore_cache_mode_resets_debug_db(self, mock_config, tmp_path):
+        """ignore_cache=True で既存のデバッグ用 DB は削除して作り直す"""
+        debug_file = tmp_path / "cache" / "cache_debug.dat"
+        debug_file.parent.mkdir(parents=True, exist_ok=True)
+        debug_file.write_text("dummy debug cache")
+
+        handle = merhist.handle.Handle(config=mock_config, ignore_cache=True)
+
+        # 旧デバッグ DB は削除され、SQLite DB として再作成される
+        assert debug_file.read_bytes().startswith(b"SQLite format 3")
+
         handle.finish()
 
     def test_db_property_not_initialized(self, mock_config):

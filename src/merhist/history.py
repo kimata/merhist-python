@@ -205,14 +205,14 @@ _SHEET_DEF = {
                     # 読み替える
                     "formal_key": "id",
                     "label": "注文番号",
-                    "pos": 17,
+                    "pos": 21,
                     "width": 19,
                     "format": "@",
                     "link_func": lambda item: merhist.crawler.gen_item_transaction_url(item),
                 },
                 "error": {
                     "label": "エラー",
-                    "pos": 21,
+                    "pos": 22,
                     "width": 15,
                     "format": "@",
                     "wrap": True,

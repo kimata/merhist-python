@@ -63,13 +63,17 @@ class Handle:
 
     def _init_database(self) -> None:
         """データベースを初期化"""
-        # キャッシュ無視モードの場合、既存のデータベースを削除
-        if self.ignore_cache and self.config.cache_file_path.exists():
-            logging.info("キャッシュを無視します")
-            self.config.cache_file_path.unlink()
+        db_path = self.config.cache_file_path
+
+        # キャッシュ無視モードでは、収集済みキャッシュを保護するため専用の DB を使う
+        if self.ignore_cache:
+            db_path = db_path.with_name(db_path.stem + "_debug" + db_path.suffix)
+            logging.info("キャッシュを無視します（デバッグ用 DB を使用: %s）", db_path)
+            if db_path.exists():
+                db_path.unlink()
 
         self._db = merhist.database.open_database(
-            self.config.cache_file_path,
+            db_path,
             _SQLITE_SCHEMA_PATH,
         )
         # メタデータからカウンタを復元
@@ -100,8 +104,7 @@ class Handle:
 
     # --- 販売アイテム関連 ---
     def record_sold_item(self, item: merhist.item.SoldItem) -> None:
-        if self.get_sold_item_stat(item):
-            return
+        # NOTE: 強制再収集時に最新データで上書きできるよう、存在チェックせず upsert する
         self.db.upsert_sold_item(item)
 
     def get_sold_item_stat(self, item: merhist.item.SoldItem) -> bool:
@@ -115,8 +118,7 @@ class Handle:
 
     # --- 購入アイテム関連 ---
     def record_bought_item(self, item: merhist.item.BoughtItem) -> None:
-        if self.get_bought_item_stat(item):
-            return
+        # NOTE: 強制再収集時に最新データで上書きできるよう、存在チェックせず upsert する
         self.db.upsert_bought_item(item)
 
     def get_bought_item_stat(self, item: merhist.item.BoughtItem) -> bool:

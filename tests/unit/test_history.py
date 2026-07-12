@@ -511,3 +511,16 @@ class TestSheetDefFormats:
         # error はオプショナル
         assert bought_cols["error"].get("optional") is True
         assert sold_cols["error"].get("optional") is True
+
+    @pytest.mark.parametrize("mode", ["BOUGHT", "SOLD"])
+    def test_column_positions_do_not_overlap(self, mode):
+        """列位置が重複しない（length 指定の列は pos〜pos+length-1 を占有する）"""
+        cols = self._get_sheet_def()[mode]["TABLE_HEADER"]["col"]
+
+        used_positions: dict[int, str] = {}
+        for key, col_def in cols.items():
+            for pos in range(col_def["pos"], col_def["pos"] + col_def.get("length", 1)):
+                assert pos not in used_positions, (
+                    f"{mode} シートで列 {pos} が重複しています: {used_positions[pos]} と {key}"
+                )
+                used_positions[pos] = key
