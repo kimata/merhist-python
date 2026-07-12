@@ -137,6 +137,10 @@ uv run python src/app.py -D
 rm -rf data/chrome
 ```
 
+## 📚 ドキュメント
+
+- [アーキテクチャ解説](doc/architecture.md) - モジュール構成・実行フロー・データモデルなど、内部構造の詳細（SVG 図解付き）
+
 ## 📝 ライセンス
 
 Apache License Version 2.0

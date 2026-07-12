@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 520" font-family="Hiragino Sans, Noto Sans JP, Yu Gothic UI, Meiryo, sans-serif">
+  <defs>
+    <marker id="ma" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="940" height="520" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="24" y="34" font-size="14" font-weight="bold" fill="#1e293b">データモデルと永続化</text>
+
+  <!-- ItemBase -->
+  <rect x="330" y="55" width="280" height="150" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.4"/>
+  <text x="470" y="78" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">ItemBase（dataclass）</text>
+  <line x1="345" y1="88" x2="595" y2="88" stroke="#93c5fd"/>
+  <text x="345" y="106" font-size="10.5" fill="#334155">id / name / order_url / url / shop / count</text>
+  <text x="345" y="121" font-size="10.5" fill="#334155">category: list[str]（カテゴリ階層）</text>
+  <text x="345" y="136" font-size="10.5" fill="#334155">condition / postage_charge / seller_region /</text>
+  <text x="345" y="151" font-size="10.5" fill="#334155">shipping_method / purchase_date / error</text>
+  <line x1="345" y1="161" x2="595" y2="161" stroke="#93c5fd"/>
+  <text x="345" y="178" font-size="10.5" fill="#475569">__getitem__ / __contains__（RowData Protocol 実装）</text>
+  <text x="345" y="193" font-size="10.5" fill="#475569">set_field（フィールド名検証付き代入）/ to_dict</text>
+
+  <!-- SoldItem -->
+  <rect x="60" y="250" width="330" height="105" rx="10" fill="#ffffff" stroke="#64748b"/>
+  <text x="225" y="273" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">SoldItem（販売）</text>
+  <line x1="75" y1="283" x2="375" y2="283" stroke="#cbd5e1"/>
+  <text x="75" y="301" font-size="10.5" fill="#334155">price / commission（手数料）/ postage（送料）</text>
+  <text x="75" y="316" font-size="10.5" fill="#334155">commission_rate（手数料率 %）/ profit（回収金額）</text>
+  <text x="75" y="331" font-size="10.5" fill="#334155">completion_date（取引完了日）</text>
+  <text x="75" y="346" font-size="10.5" fill="#64748b">※ 一覧ページのテーブルから取得できる項目が多い</text>
+
+  <!-- BoughtItem -->
+  <rect x="550" y="250" width="330" height="105" rx="10" fill="#ffffff" stroke="#64748b"/>
+  <text x="715" y="273" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">BoughtItem（購入）</text>
+  <line x1="565" y1="283" x2="865" y2="283" stroke="#cbd5e1"/>
+  <text x="565" y="301" font-size="10.5" fill="#334155">price: int | None</text>
+  <text x="565" y="316" font-size="10.5" fill="#64748b">※ 価格は取引ページから取得するため、</text>
+  <text x="565" y="331" font-size="10.5" fill="#64748b">　 取得できない場合に備えて Optional</text>
+  <text x="565" y="346" font-size="10.5" fill="#64748b">　 （Excel では「価格」列が optional 指定）</text>
+
+  <path d="M400 205 L250 250" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ma)"/>
+  <path d="M540 205 L690 250" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ma)"/>
+  <text x="300" y="228" font-size="10.5" fill="#64748b">継承</text>
+  <text x="630" y="228" font-size="10.5" fill="#64748b">継承</text>
+
+  <!-- DB -->
+  <rect x="60" y="400" width="820" height="95" rx="10" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.4"/>
+  <text x="470" y="424" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">SQLite（database.py ＋ schema/sqlite.schema）</text>
+  <text x="80" y="447" font-size="10.5" fill="#334155">・sold_items / bought_items テーブル（id が PRIMARY KEY、INSERT OR REPLACE で upsert）＋ metadata テーブル（総件数・最終更新時刻）</text>
+  <text x="80" y="464" font-size="10.5" fill="#334155">・category は JSON 文字列、日時は ISO 8601 文字列で格納（読み出し時に Excel 用へ timezone を除去して復元）</text>
+  <text x="80" y="481" font-size="10.5" fill="#334155">・completion_date / purchase_date にインデックス。読み出しは日付順ソートで Excel の行順になる</text>
+
+  <path d="M225 355 L300 400" stroke="#ca8a04" stroke-width="1.6" fill="none" marker-end="url(#ma)"/>
+  <path d="M715 355 L640 400" stroke="#ca8a04" stroke-width="1.6" fill="none" marker-end="url(#ma)"/>
+  <text x="240" y="382" font-size="10.5" fill="#92400e">upsert_sold_item / _row_to_sold_item</text>
+  <text x="600" y="382" font-size="10.5" fill="#92400e">upsert_bought_item / _row_to_bought_item</text>
+
+  <!-- excel side note -->
+  <rect x="640" y="55" width="270" height="150" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.4"/>
+  <text x="775" y="78" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#1e293b">Excel 出力との接続</text>
+  <text x="655" y="100" font-size="10.5" fill="#334155">my_lib.openpyxl_util.generate_list_sheet は</text>
+  <text x="655" y="115" font-size="10.5" fill="#334155">RowData Protocol（__getitem__ /</text>
+  <text x="655" y="130" font-size="10.5" fill="#334155">__contains__）でアイテムにアクセスするため、</text>
+  <text x="655" y="145" font-size="10.5" fill="#334155">dataclass のまま辞書に変換せず渡せる</text>
+  <text x="655" y="166" font-size="10.5" fill="#475569">None・空リストのフィールドは「存在しない」</text>
+  <text x="655" y="181" font-size="10.5" fill="#475569">扱いになり、optional 列の空欄表示に使われる</text>
+  <path d="M640 130 L610 130" stroke="#16a34a" stroke-width="1.6" fill="none" marker-end="url(#ma)"/>
+</svg>

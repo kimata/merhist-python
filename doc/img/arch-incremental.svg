@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 360" font-family="Hiragino Sans, Noto Sans JP, Yu Gothic UI, Meiryo, sans-serif">
+  <defs>
+    <marker id="ia" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#64748b"/>
+    </marker>
+    <marker id="ia-g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="940" height="360" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="24" y="34" font-size="14" font-weight="bold" fill="#1e293b">増分更新と中断再開の仕組み</text>
+
+  <!-- timeline of items -->
+  <text x="30" y="72" font-size="11" fill="#64748b">履歴一覧（新しい順に表示される）</text>
+  <g>
+    <rect x="30"  y="85" width="100" height="44" rx="6" fill="#dbeafe" stroke="#2563eb"/>
+    <text x="80" y="103" font-size="10.5" text-anchor="middle" fill="#1e293b">新規</text>
+    <text x="80" y="119" font-size="10.5" text-anchor="middle" fill="#1e293b">取得する</text>
+    <rect x="140" y="85" width="100" height="44" rx="6" fill="#dbeafe" stroke="#2563eb"/>
+    <text x="190" y="103" font-size="10.5" text-anchor="middle" fill="#1e293b">新規</text>
+    <text x="190" y="119" font-size="10.5" text-anchor="middle" fill="#1e293b">取得する</text>
+    <rect x="250" y="85" width="100" height="44" rx="6" fill="#e2e8f0" stroke="#94a3b8"/>
+    <text x="300" y="103" font-size="10.5" text-anchor="middle" fill="#475569">取得済み</text>
+    <text x="300" y="119" font-size="10.5" text-anchor="middle" fill="#475569">スキップ</text>
+    <rect x="360" y="85" width="100" height="44" rx="6" fill="#e2e8f0" stroke="#94a3b8"/>
+    <text x="410" y="103" font-size="10.5" text-anchor="middle" fill="#475569">取得済み</text>
+    <text x="410" y="119" font-size="10.5" text-anchor="middle" fill="#475569">スキップ</text>
+    <rect x="470" y="85" width="180" height="44" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-dasharray="5,4"/>
+    <text x="560" y="110" font-size="10.5" text-anchor="middle" fill="#94a3b8">…（以降のページは見に行かない）</text>
+  </g>
+  <path d="M350 107 L360 107" stroke="none"/>
+  <text x="700" y="100" font-size="11" fill="#16a34a" font-weight="bold">継続モード（デフォルト）:</text>
+  <text x="700" y="117" font-size="10.5" fill="#166534">「新規が 1 件もないページ」に達したら</text>
+  <text x="700" y="132" font-size="10.5" fill="#166534">それ以降は取得済みとみなして打ち切り</text>
+
+  <!-- cache check -->
+  <rect x="30" y="170" width="430" height="80" rx="10" fill="#ffffff" stroke="#64748b"/>
+  <text x="245" y="193" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#1e293b">キャッシュ判定 = SQLite への存在確認</text>
+  <text x="50" y="214" font-size="10.5" fill="#475569">SELECT 1 FROM sold_items / bought_items WHERE id = ?</text>
+  <text x="50" y="231" font-size="10.5" fill="#475569">商品 ID 単位で判定するため、途中で中断しても取得済み分は再取得不要</text>
+
+  <rect x="490" y="170" width="420" height="80" rx="10" fill="#ffffff" stroke="#64748b"/>
+  <text x="700" y="193" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#1e293b">1 件ごとに即時保存（コミット）</text>
+  <text x="510" y="214" font-size="10.5" fill="#475569">詳細取得のたびに INSERT OR REPLACE + commit を実行。</text>
+  <text x="510" y="231" font-size="10.5" fill="#475569">Ctrl+C（graceful shutdown）やクラッシュ時も、直前までの成果が残る</text>
+
+  <path d="M245 129 L245 170" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ia)"/>
+  <path d="M700 140 L700 170" stroke="#16a34a" stroke-width="1.6" fill="none" marker-end="url(#ia-g)"/>
+
+  <!-- force mode -->
+  <rect x="30" y="285" width="880" height="52" rx="8" fill="#fff7ed" stroke="#ea580c"/>
+  <text x="50" y="307" font-size="12" font-weight="bold" fill="#9a3412">強制再収集モード（--fA / --fB / --fS）</text>
+  <text x="50" y="325" font-size="11" fill="#7c2d12">キャッシュ判定を行わず全アイテムの詳細を再取得し、upsert で既存レコードを最新データに上書きする（打ち切りも行わず全ページを巡回）</text>
+</svg>

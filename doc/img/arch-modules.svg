@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 560" font-family="Hiragino Sans, Noto Sans JP, Yu Gothic UI, Meiryo, sans-serif">
+  <defs>
+    <marker id="ah" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#64748b"/>
+    </marker>
+    <marker id="ah-r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="940" height="560" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+
+  <!-- layer labels -->
+  <text x="24" y="52" font-size="12" fill="#64748b">エントリ層</text>
+  <text x="24" y="152" font-size="12" fill="#64748b">処理層</text>
+  <text x="24" y="272" font-size="12" fill="#64748b">状態管理層</text>
+  <text x="24" y="392" font-size="12" fill="#64748b">基盤層</text>
+  <text x="24" y="497" font-size="12" fill="#64748b">外部</text>
+
+  <!-- entry layer -->
+  <rect x="330" y="25" width="280" height="58" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4"/>
+  <text x="470" y="49" font-size="14" font-weight="bold" text-anchor="middle" fill="#1e293b">cli.py</text>
+  <text x="470" y="68" font-size="11" text-anchor="middle" fill="#475569">merhist コマンド / __main__.py から呼び出し</text>
+
+  <!-- process layer -->
+  <rect x="150" y="125" width="260" height="66" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.4"/>
+  <text x="280" y="149" font-size="14" font-weight="bold" text-anchor="middle" fill="#1e293b">crawler.py</text>
+  <text x="280" y="167" font-size="11" text-anchor="middle" fill="#475569">Selenium による履歴収集</text>
+  <text x="280" y="182" font-size="11" text-anchor="middle" fill="#475569">ログイン・販売/購入履歴・商品詳細</text>
+
+  <rect x="540" y="125" width="260" height="66" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.4"/>
+  <text x="670" y="149" font-size="14" font-weight="bold" text-anchor="middle" fill="#1e293b">history.py</text>
+  <text x="670" y="167" font-size="11" text-anchor="middle" fill="#475569">Excel 生成（_SHEET_DEF 定義）</text>
+  <text x="670" y="182" font-size="11" text-anchor="middle" fill="#475569">my_lib.openpyxl_util を利用</text>
+
+  <!-- state layer -->
+  <rect x="330" y="245" width="280" height="66" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.4"/>
+  <text x="470" y="269" font-size="14" font-weight="bold" text-anchor="middle" fill="#1e293b">handle.py（Handle）</text>
+  <text x="470" y="287" font-size="11" text-anchor="middle" fill="#475569">DB・ブラウザ・プログレスバーの仲介</text>
+  <text x="470" y="302" font-size="11" text-anchor="middle" fill="#475569">record / get / thumb_path / set_status</text>
+
+  <!-- foundation layer -->
+  <rect x="90" y="365" width="150" height="58" rx="8" fill="#ffffff" stroke="#64748b"/>
+  <text x="165" y="389" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">database.py</text>
+  <text x="165" y="407" font-size="11" text-anchor="middle" fill="#475569">SQLite アクセス層</text>
+
+  <rect x="255" y="365" width="130" height="58" rx="8" fill="#ffffff" stroke="#64748b"/>
+  <text x="320" y="389" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">item.py</text>
+  <text x="320" y="407" font-size="11" text-anchor="middle" fill="#475569">データモデル</text>
+
+  <rect x="400" y="365" width="130" height="58" rx="8" fill="#ffffff" stroke="#64748b"/>
+  <text x="465" y="389" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">parser.py</text>
+  <text x="465" y="407" font-size="11" text-anchor="middle" fill="#475569">純粋パース関数</text>
+
+  <rect x="545" y="365" width="130" height="58" rx="8" fill="#ffffff" stroke="#64748b"/>
+  <text x="610" y="389" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">xpath.py</text>
+  <text x="610" y="407" font-size="11" text-anchor="middle" fill="#475569">セレクタ集約</text>
+
+  <rect x="690" y="365" width="220" height="58" rx="8" fill="#ffffff" stroke="#64748b"/>
+  <text x="800" y="389" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">config.py / const.py / exceptions.py</text>
+  <text x="800" y="407" font-size="11" text-anchor="middle" fill="#475569">設定・定数・カスタム例外</text>
+
+  <!-- external -->
+  <rect x="90" y="470" width="820" height="58" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="6,4"/>
+  <text x="500" y="494" font-size="12" font-weight="bold" text-anchor="middle" fill="#334155">my_lib（共通ライブラリ）＋ サードパーティ</text>
+  <text x="500" y="513" font-size="11" text-anchor="middle" fill="#475569">browser_manager / store.mercari.login / openpyxl_util / cui_progress / graceful_shutdown / sqlite_util ・ selenium / openpyxl / Pillow</text>
+
+  <!-- arrows -->
+  <path d="M400 83 L305 125" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+  <path d="M540 83 L645 125" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+  <path d="M470 83 L470 245" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+  <path d="M305 191 L400 245" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+  <path d="M645 191 L540 245" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+  <path d="M400 311 L180 365" stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+  <path d="M225 191 L165 365" stroke="#64748b" stroke-width="1.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M280 191 L315 365" stroke="#64748b" stroke-width="1.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M300 191 L450 365" stroke="#64748b" stroke-width="1.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M340 191 L595 366" stroke="#64748b" stroke-width="1.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M540 155 L410 155" stroke="#dc2626" stroke-width="1.6" fill="none" stroke-dasharray="6,4" marker-end="url(#ah-r)"/>
+  <text x="475" y="147" font-size="10.5" text-anchor="middle" fill="#dc2626">gen_item_transaction_url()（ハイパーリンク生成のみ）</text>
+  <path d="M500 528 L500 528" stroke="none"/>
+  <path d="M470 311 L470 340 L500 340 L500 470" stroke="#94a3b8" stroke-width="1.4" fill="none" marker-end="url(#ah)"/>
+  <text x="530" y="345" font-size="10.5" fill="#64748b">BrowserManager / ProgressManager</text>
+</svg>
