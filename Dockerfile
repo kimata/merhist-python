@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90
 
 # NOTE:
 # python:3.11.4-bookworm とかを使った場合，Selenium を同時に複数動かせないので，
@@ -24,6 +24,8 @@ ENV TZ=Asia/Tokyo \
 RUN locale-gen en_US.UTF-8
 RUN locale-gen ja_JP.UTF-8
 
+# NOTE: Chromeは頻繁に更新されるため、キャッシュバスターを使用して最新版を取得する
+ARG CHROME_CACHE_BUSTER
 RUN curl -O https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 
 RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -50,7 +52,7 @@ RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=README.md,target=README.md \
     --mount=type=cache,target=/home/ubuntu/.cache/uv,uid=1000,gid=1000 \
-    uv sync --no-install-project --no-editable --no-group dev
+    uv sync --locked --no-install-project --no-editable --no-group dev
 
 ARG IMAGE_BUILD_DATE
 ENV IMAGE_BUILD_DATE=${IMAGE_BUILD_DATE}
