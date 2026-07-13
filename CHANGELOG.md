@@ -1,15 +1,15 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+このプロジェクトの注目すべき変更点をすべてこのファイルに記載します。
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+このファイルのフォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に基づいており、
+このプロジェクトは [Semantic Versioning](https://semver.org/spec/v2.0.0.html) に準拠しています。
 
 ## [Unreleased]
 
 ## [0.2.3] - 2026-01-24
 
-### Changed
+### 🔄 Changed
 
 - 動的バージョニングに移行
 - TypedDict と辞書リテラルを dataclass に変換
@@ -18,30 +18,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 進捗表示を `my_lib.cui_progress` に移行
 - セッションリトライを `with_session_retry()` で共通化
 
-### Fixed
+### 🐛 Fixed
 
 - CLI エントリーポイントを修正
 - テストの mock.patch パスを修正
 
 ## [0.2.2] - 2025-12-31
 
-### Added
+### ✨ Added
 
 - ブラウザ起動失敗時にプロファイル削除する `-R` オプションを追加
 
-### Changed
+### 🔄 Changed
 
 - config.schema を `schema/` ディレクトリに移動
 - GitHub リリースアクションを `softprops/action-gh-release` へ移行
 
-### Fixed
+### 🐛 Fixed
 
 - テーブル幅のオーバーフロー対策を追加
 - CI の Chrome プロファイル破損対策を追加
 
 ## [0.2.1] - 2025-12-30
 
-### Added
+### ✨ Added
 
 - 非 TTY 環境でのログ出力を改善
 - Selenium/Login エラー時にエラー終了するように変更
@@ -49,13 +49,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - カスタム警告ハンドラーを実装
 - CLAUDE.md を追加
 
-### Changed
+### 🔄 Changed
 
 - プログレスバー表示を enlighten から rich へ移行
 - XPath セレクタを `xpath.py` に集約
 - パース関数を `parser.py` に分離
 
-### Fixed
+### 🐛 Fixed
 
 - 未完了取引ページの行タイトル取得 XPath を修正
 - 非 TTY 環境でのプログレスバー更新時の KeyError を修正
@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2025-12-23
 
-### Added
+### ✨ Added
 
 - メルカリの販売履歴・購入履歴を自動収集する機能
 - LINE 認証を経由したログイン処理
@@ -83,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - InvalidSessionIdException 発生時にプロファイル削除してリトライする機能
 - Slack 設定を柔軟化し captcha のみでも動作可能に
 
-### Changed
+### 🔄 Changed
 
 - 中間データの保存形式を pickle から SQLite に移行
 - パッケージマネージャを Rye から uv に変更
