@@ -4,6 +4,7 @@ variables:
     UV_LINK_MODE: copy
     UV_CACHE_DIR: .uv-cache
     PYRIGHT_PYTHON_FORCE_VERSION: latest
+    UV_HTTP_TIMEOUT: "120"
 
     UV_EXTRA_INDEX_URL: "http://proxy:3141/simple/"
     UV_INSECURE_HOST: "proxy"
@@ -46,6 +47,8 @@ test-pytest:
     script:
         - uv run pytest
 
+    coverage: '/TOTAL.*\s+(\d+%)/'
+
     cache:
         - key:
               files:
@@ -58,10 +61,14 @@ test-pytest:
     artifacts:
         when: always
         paths:
-            - data/debug/**
             - reports/**
+            - htmlcov/**
+            - data/debug/**
         reports:
             junit: reports/junit-report.xml
+            coverage_report:
+                coverage_format: cobertura
+                path: reports/coverage.xml
 
 test-smoke:
     stage: test
@@ -101,15 +108,29 @@ test-smoke:
 
 renovate:
     stage: renovate
+
+    dependencies: []
+
+    resource_group: renovate
+
     image:
         name: gitlab.green-rabbit.net:5050/kimata/local-renovate:260104_3da7b77b
+
+    variables:
+        RENOVATE_CACHE_DIR: .renovate-cache
+        LOG_LEVEL: info
 
     script:
         - renovate --platform gitlab --token ${RENOVATE_TOKEN} --endpoint ${CI_SERVER_URL}/api/v4 ${CI_PROJECT_PATH}
 
+    cache:
+        key: ${CI_JOB_NAME}-${CI_PROJECT_ID}
+        paths:
+            - ${RENOVATE_CACHE_DIR}
+
     rules:
-        - if: '$CI_COMMIT_BRANCH != "master"'
+        - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
           when: never
-        - if: '$CI_PIPELINE_SOURCE == "schedule"'
+        - if: $CI_PIPELINE_SOURCE == "schedule"
         - changes:
               - renovate.json
