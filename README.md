@@ -81,13 +81,21 @@ docker compose run --build --rm merhist
 
 #### uv を使用（推奨）
 
+ブラウザ自動化に Google Chrome を使用するため、事前にインストールしておく必要があります：
+
+```bash
+# Google Chrome のインストール（未インストールの場合）
+wget -P /tmp https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt install -y /tmp/google-chrome-stable_current_amd64.deb
+```
+
 ```bash
 # uv のインストール（未インストールの場合）
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 依存関係のインストールと実行
 uv sync
-uv run python src/app.py
+uv run merhist
 ```
 
 ### Windows で実行する場合
@@ -100,25 +108,28 @@ uv run python src/app.py
 
 ```bash
 # 設定ファイルを指定
-uv run python src/app.py -c custom-config.yaml
+uv run merhist -c custom-config.yaml
 
 # データ収集せず Excel 出力のみ
-uv run python src/app.py -e
+uv run merhist -e
 
 # 強制的に全データを再収集
-uv run python src/app.py --fA
+uv run merhist --fA
 
 # 購入履歴のみ強制再収集
-uv run python src/app.py --fB
+uv run merhist --fB
 
 # 販売履歴のみ強制再収集
-uv run python src/app.py --fS
+uv run merhist --fS
 
 # サムネイル画像なしで出力
-uv run python src/app.py -N
+uv run merhist -N
 
 # デバッグモード
-uv run python src/app.py -D
+uv run merhist -D
+
+# ブラウザ起動失敗時にプロファイルを削除
+uv run merhist -R
 ```
 
 ## ⏱️ 実行時間について
@@ -128,6 +139,10 @@ uv run python src/app.py -D
 中断した場合でも、再度実行することで途中から再開できます。また、新しい取引が増えた場合も、前回以降のデータのみを収集します。
 
 ## 🔧 トラブルシューティング
+
+### 「Selenium の起動に失敗しました: Binary Location Must be a String」と表示される
+
+Google Chrome がインストールされていません。「実行方法」セクションの手順に従って Google Chrome をインストールしてください。
 
 ### 「巡回ロボットの準備をします...」で止まる
 
