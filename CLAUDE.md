@@ -19,22 +19,29 @@
 
 ```
 src/
-├── app.py                  # エントリーポイント（CLI）
 └── merhist/
+    ├── __main__.py         # python -m merhist 用エントリーポイント
+    ├── cli.py              # CLI 処理（merhist コマンドの実体）
     ├── config.py           # 設定管理（dataclass ベース）
-    ├── const.py            # 定数定義（URL、XPath 等）
+    ├── const.py            # 定数定義（URL 等）
     ├── crawler.py          # Web スクレイピング（Selenium）
+    ├── database.py         # SQLite データベースアクセス層
     ├── exceptions.py       # カスタム例外
     ├── handle.py           # 状態管理（Handle クラス）
     ├── history.py          # Excel 生成ロジック
     ├── item.py             # データモデル（SoldItem, BoughtItem）
+    ├── parser.py           # HTML テキストのパース関数群
+    ├── xpath.py            # XPath セレクタ定義
     └── py.typed            # PEP 561 型チェック対応マーカー
 
 tests/
-└── test_typecheck.py       # mypy 型チェックテスト
+├── conftest.py             # pytest 共通フィクスチャ
+├── unit/                   # ユニットテスト
+└── evidence/               # テスト用エビデンスデータ
 
 schema/
-└── config.schema           # 設定値の JSON Schema
+├── config.schema           # 設定値の JSON Schema
+└── sqlite.schema           # SQLite データベーススキーマ
 
 config.yaml                 # 設定ファイル（要作成）
 config.example.yaml         # 設定ファイルのサンプル
@@ -51,20 +58,24 @@ uv sync
 ### アプリケーション実行
 
 ```bash
-uv run python src/app.py              # 通常実行
-uv run python src/app.py -e           # Excel 出力のみ
-uv run python src/app.py --fA         # 全データ強制再収集
-uv run python src/app.py --fB         # 購入履歴のみ強制再収集
-uv run python src/app.py --fS         # 販売履歴のみ強制再収集
-uv run python src/app.py -N           # サムネイルなし
-uv run python src/app.py -D           # デバッグモード
+uv run merhist                        # 通常実行
+uv run merhist -e                     # Excel 出力のみ
+uv run merhist --fA                   # 全データ強制再収集
+uv run merhist --fB                   # 購入履歴のみ強制再収集
+uv run merhist --fS                   # 販売履歴のみ強制再収集
+uv run merhist -N                     # サムネイルなし
+uv run merhist -D                     # デバッグモード
+uv run merhist -R                     # ブラウザ起動失敗時にプロファイル削除
+uv run merhist -c CONFIG              # 設定ファイル指定（デフォルト: config.yaml）
 ```
+
+`uv run python -m merhist` でも同様に実行できます。
 
 ### テスト実行
 
 ```bash
-uv run pytest                         # テスト実行（4並列、E2E除外）
-uv run pytest tests/e2e/              # E2E テスト（外部サーバー必要）
+uv run pytest                         # テスト実行（4並列）
+uv run pytest tests/unit/             # ユニットテストのみ実行
 ```
 
 ### 型チェック
@@ -111,7 +122,7 @@ uv run ruff format src/               # フォーマット
 ### 実行フロー
 
 ```
-app.py (エントリー)
+merhist コマンド → cli.py:main() (エントリー)
     ↓
 Config.load() で設定読み込み
     ↓
@@ -142,6 +153,7 @@ history.generate_table_excel() → Excel 生成
 - **my-lib**: 作者の共通ライブラリ（git 経由でインストール）
 
 ## 重要な注意事項
+
 ### 共通運用ルール
 
 - 変更前に意図と影響範囲を説明し、ユーザー確認を取る
@@ -152,7 +164,6 @@ history.generate_table_excel() → Excel 生成
 - Union 型が 3 箇所以上で出現する場合は `TypeAlias` を定義
 - `except Exception` は避け、具体的な例外型を指定する
 - ミラー運用がある場合は primary リポジトリにのみ push する
-
 
 ### プロジェクト設定ファイルの編集禁止
 
@@ -193,8 +204,9 @@ history.generate_table_excel() → Excel 生成
 
 ### テスト構成
 
-- `tests/test_typecheck.py`: mypy による静的型チェック
-- E2E テストは `tests/e2e/` に配置（デフォルトで除外）
+- `tests/unit/`: ユニットテスト（モジュールごとに `test_*.py` を配置）
+- `tests/conftest.py`: 共通フィクスチャ
+- `tests/evidence/`: テスト用エビデンスデータ
 
 ### テスト設定
 
