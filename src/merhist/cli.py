@@ -22,9 +22,9 @@ import logging
 import pathlib
 import sys
 
-import my_lib.selenium_util
+import my_lib.browser
+import my_lib.browser.helpers
 import my_lib.store.mercari.exceptions
-import selenium.common.exceptions
 
 import merhist.config
 import merhist.const
@@ -46,16 +46,15 @@ def _execute_fetch(
     try:
         merhist.crawler.execute_login(handle)
         merhist.crawler.fetch_order_item_list(handle, continue_mode)
-    except selenium.common.exceptions.InvalidSessionIdException:
-        # セッションエラーはドライバーが壊れているのでダンプを試みず re-raise
+    except my_lib.browser.SessionError:
+        # セッションエラーはブラウザが壊れているのでダンプを試みず re-raise
         logging.warning("セッションエラーが発生しました（ブラウザがクラッシュした可能性があります）")
         raise
     except Exception:
-        # シャットダウン要求時はダンプをスキップ（ドライバーが既に閉じている可能性が高い）
+        # シャットダウン要求時はダンプをスキップ（ブラウザが既に閉じている可能性が高い）
         if not merhist.crawler.is_shutdown_requested():
-            driver, _ = handle.get_selenium_driver()
-            my_lib.selenium_util.dump_page(
-                driver,
+            my_lib.browser.helpers.dump_page(
+                handle.get_page(),
                 merhist.const.gen_debug_dump_id(),
                 handle.config.debug_dir_path,
             )
@@ -89,32 +88,28 @@ def execute(
     try:
         if not export_mode:
             try:
-                my_lib.selenium_util.with_session_retry(
+                handle.browser_manager.run_with_session_retry(
                     lambda: _execute_fetch(handle, continue_mode),
-                    driver_name=merhist.const.SELENIUM_PROFILE_NAME,
-                    data_dir=config.selenium_data_dir_path,
                     max_retries=_MAX_SESSION_RETRY_COUNT,
                     clear_profile_on_error=clear_profile_on_browser_error,
                     on_retry=lambda a, m: handle.set_status(f"🔄 セッションエラー、リトライ中... ({a}/{m})"),
-                    before_retry=handle.quit_selenium,
                 )
-            except selenium.common.exceptions.InvalidSessionIdException:
+            except my_lib.browser.SessionError:
                 logging.exception("セッションエラーが発生しました（リトライ不可）")
                 handle.set_status("❌ セッションエラー", is_error=True)
-                return 1
-            except my_lib.selenium_util.SeleniumError as e:
-                logging.exception("Selenium の起動に失敗しました")
-                handle.set_status(f"❌ {e}", is_error=True)
                 return 1
             except my_lib.store.mercari.exceptions.LoginError as e:
                 logging.exception("メルカリへのログインに失敗しました")
                 handle.set_status(f"❌ {e}", is_error=True)
                 return 1
+            except my_lib.browser.BrowserError as e:
+                logging.exception("ブラウザの起動に失敗しました")
+                handle.set_status(f"❌ {e}", is_error=True)
+                return 1
             except Exception:
                 # シャットダウン要求時は正常終了扱い（tracebackを出さない）
                 if not merhist.crawler.is_shutdown_requested():
-                    driver, _ = handle.get_selenium_driver()
-                    logging.exception("Failed to fetch data: %s", driver.current_url)
+                    logging.exception("Failed to fetch data: %s", handle.get_page().url)
                     handle.set_status("❌ データの収集中にエラーが発生しました", is_error=True)
                     exit_code = 1
             finally:

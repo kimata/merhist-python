@@ -7,7 +7,7 @@ Handle クラスのテスト
 import datetime
 import unittest.mock
 
-import my_lib.browser_manager
+import my_lib.browser
 import pytest
 
 import merhist.config
@@ -286,82 +286,59 @@ class TestHandleSelenium:
         yield h
         h.finish()
 
-    def test_get_selenium_driver_creates_driver(self, handle, mock_config):
-        """Selenium ドライバーを作成"""
-        mock_driver = unittest.mock.MagicMock()
-        mock_wait = unittest.mock.MagicMock()
+    def test_get_page_creates_browser(self, handle):
+        """ブラウザ未起動なら factory.launch でブラウザを起動して Page を返す"""
+        mock_browser = unittest.mock.MagicMock()
+        mock_page = unittest.mock.MagicMock()
+        mock_browser.pages.return_value = []
+        mock_browser.new_page.return_value = mock_page
 
-        with (
-            unittest.mock.patch(
-                "my_lib.selenium_util.create_driver", return_value=mock_driver
-            ) as mock_create,
-            unittest.mock.patch("my_lib.selenium_util.clear_cache") as mock_clear,
-            unittest.mock.patch("selenium.webdriver.support.wait.WebDriverWait", return_value=mock_wait),
-        ):
-            driver, wait = handle.get_selenium_driver()
+        with unittest.mock.patch("my_lib.browser.factory.launch", return_value=mock_browser) as mock_launch:
+            page = handle.get_page()
 
-            mock_create.assert_called_once_with(
-                "Merhist", mock_config.selenium_data_dir_path, use_undetected=True, stealth_mode=True
-            )
-            mock_clear.assert_called_once_with(mock_driver)
-            assert driver == mock_driver
-            assert wait == mock_wait
-            assert handle._browser_manager.has_driver()
+            mock_launch.assert_called_once()
+            assert page is mock_page
+            assert handle.browser_manager.has_browser()
 
-    def test_get_selenium_driver_returns_existing(self, handle):
-        """既存のドライバーを返す"""
-        mock_driver = unittest.mock.MagicMock()
-        mock_wait = unittest.mock.MagicMock()
-        handle.get_selenium_driver = unittest.mock.MagicMock(return_value=(mock_driver, mock_wait))  # type: ignore[method-assign]
+    def test_get_page_returns_existing(self, handle):
+        """既にブラウザが起動済みなら再起動せず既存の Page を返す"""
+        mock_browser = unittest.mock.MagicMock()
+        mock_page = unittest.mock.MagicMock()
+        mock_browser.pages.return_value = [mock_page]
+        handle._browser_manager._browser = mock_browser
 
-        with unittest.mock.patch("my_lib.selenium_util.create_driver") as mock_create:
-            driver, wait = handle.get_selenium_driver()
+        with unittest.mock.patch("my_lib.browser.factory.launch") as mock_launch:
+            page = handle.get_page()
 
-            mock_create.assert_not_called()
-            assert driver == mock_driver
-            assert wait == mock_wait
+            mock_launch.assert_not_called()
+            assert page is mock_page
 
     def test_quit_selenium(self, handle):
-        """Selenium を終了"""
-        mock_driver = unittest.mock.MagicMock()
-        mock_wait = unittest.mock.MagicMock()
+        """ブラウザを終了する"""
+        mock_browser = unittest.mock.MagicMock()
+        handle._browser_manager._browser = mock_browser
 
-        # BrowserManager の内部状態を DriverInitialized に設定
-        handle._browser_manager._driver_state = my_lib.browser_manager.DriverInitialized(
-            driver=mock_driver,
-            wait=mock_wait,
-        )
+        handle.quit_selenium()
 
-        with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully") as mock_quit:
-            handle.quit_selenium()
-
-            mock_quit.assert_called_once_with(mock_driver, wait_sec=5)
-            assert not handle._browser_manager.has_driver()
+        mock_browser.close.assert_called_once()
+        assert not handle.browser_manager.has_browser()
 
     def test_quit_selenium_no_driver(self, handle):
-        """ドライバーがない場合は何もしない"""
-        # ドライバー未起動の状態（デフォルト）
+        """ブラウザがない場合は何もしない（例外にならない）"""
+        # ブラウザ未起動の状態（デフォルト）
+        handle.quit_selenium()
 
-        with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully") as mock_quit:
-            handle.quit_selenium()
-
-            mock_quit.assert_not_called()
+        assert not handle.browser_manager.has_browser()
 
     def test_finish(self, handle):
-        """finish で Selenium とプログレスマネージャーを終了"""
-        mock_driver = unittest.mock.MagicMock()
-        mock_wait = unittest.mock.MagicMock()
+        """finish でブラウザとプログレスマネージャーを終了"""
+        mock_browser = unittest.mock.MagicMock()
+        handle._browser_manager._browser = mock_browser
 
-        # BrowserManager の内部状態を DriverInitialized に設定
-        handle._browser_manager._driver_state = my_lib.browser_manager.DriverInitialized(
-            driver=mock_driver,
-            wait=mock_wait,
-        )
+        handle.finish()
 
-        with unittest.mock.patch("my_lib.selenium_util.quit_driver_gracefully"):
-            handle.finish()
-
-            assert not handle._browser_manager.has_driver()
+        mock_browser.close.assert_called_once()
+        assert not handle.browser_manager.has_browser()
 
 
 class TestHandleProgressBar:
@@ -600,8 +577,8 @@ class TestTradingState:
         assert state.bought_total_count == 50
 
 
-class TestHandleSeleniumError:
-    """Handle の Selenium エラー処理テスト"""
+class TestHandleBrowserError:
+    """Handle のブラウザ起動エラー処理テスト"""
 
     @pytest.fixture
     def mock_config(self, tmp_path):
@@ -615,43 +592,22 @@ class TestHandleSeleniumError:
         config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
         return config
 
-    def test_selenium_error_with_clear_profile(self, mock_config):
-        """Selenium 起動エラー時にプロファイルをクリア"""
-        import my_lib.selenium_util
+    def test_get_page_propagates_browser_error(self, mock_config):
+        """ブラウザ起動失敗時は BrowserError を送出する
 
+        プロファイル削除・リトライは cli 層の run_with_session_retry が
+        担うため、Handle は BrowserError をそのまま伝播させる。
+        """
         handle = merhist.handle.Handle(config=mock_config)
-        handle.clear_profile_on_browser_error = True
 
         with (
             unittest.mock.patch(
-                "my_lib.selenium_util.create_driver",
-                side_effect=Exception("起動失敗"),
+                "my_lib.browser.factory.launch",
+                side_effect=my_lib.browser.BrowserError("起動失敗"),
             ),
-            unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
-            pytest.raises(my_lib.selenium_util.SeleniumError),
+            pytest.raises(my_lib.browser.BrowserError),
         ):
-            handle.get_selenium_driver()
-            mock_delete.assert_called_once()
-
-        handle.finish()
-
-    def test_selenium_error_without_clear_profile(self, mock_config):
-        """Selenium 起動エラー時にプロファイルをクリアしない"""
-        import my_lib.selenium_util
-
-        handle = merhist.handle.Handle(config=mock_config)
-        handle.clear_profile_on_browser_error = False
-
-        with (
-            unittest.mock.patch(
-                "my_lib.selenium_util.create_driver",
-                side_effect=Exception("起動失敗"),
-            ),
-            unittest.mock.patch("my_lib.chrome_util.delete_profile") as mock_delete,
-            pytest.raises(my_lib.selenium_util.SeleniumError),
-        ):
-            handle.get_selenium_driver()
-            mock_delete.assert_not_called()
+            handle.get_page()
 
         handle.finish()
 

@@ -12,6 +12,202 @@ import unittest.mock
 
 import pytest
 
+import merhist.config
+import merhist.handle
+
+# === ブラウザ (my_lib.browser) モックヘルパー ===
+#
+# プロダクションコードは Selenium の (driver, wait) タプルから
+# my_lib.browser の Page 抽象へ移行済み。テストでは以下のヘルパーで
+# Page / Element のモックを組み立てる。
+#
+# - Page / Element の要素検索（find / find_all）は Locator を受け取る。
+#   XPath 文字列は locator.value に入るため、xpath ごとに返り値を出し
+#   分けたい場合は build_element / build_page の find/find_all に
+#   「値の部分文字列 -> 返り値」のマッピングか、値を受け取る関数を渡す。
+
+
+def _locator_dispatch(spec, default):
+    """Locator を受け取る side_effect を生成する。
+
+    spec:
+      - None            : 常に default を返す
+      - callable(value) : locator.value を渡して結果を得る
+      - dict / seq      : (部分文字列, 返り値) のマッピング（最初に一致したもの）
+    """
+    if spec is None:
+        return lambda *a, **k: default
+    if callable(spec):
+        return lambda locator, *a, **k: spec(locator.value)
+
+    pairs = list(spec.items()) if isinstance(spec, dict) else list(spec)
+
+    def _side_effect(locator, *a, **k):
+        for substr, result in pairs:
+            if substr in locator.value:
+                return result
+        return default
+
+    return _side_effect
+
+
+def build_element(*, text="", attrs=None, screenshot=b"\x89PNG\r\n", find=None, find_all=None, href=None):
+    """my_lib.browser.Element のモックを生成する。"""
+    element = unittest.mock.MagicMock(name="element")
+    element.text = text
+
+    attr_map = dict(attrs or {})
+    if href is not None:
+        attr_map.setdefault("href", href)
+    element.attr = unittest.mock.MagicMock(side_effect=lambda name: attr_map.get(name))
+
+    element.screenshot = unittest.mock.MagicMock(return_value=screenshot)
+    element.click = unittest.mock.MagicMock()
+    _set_finders(element, find, find_all)
+    return element
+
+
+def _set_finders(mock, find, find_all):
+    """find / find_all をモックに設定する。
+
+    spec が None のときは return_value を使い（テスト側で return_value を
+    上書きできる）、spec があるときは side_effect を使う。
+    """
+    if find is None:
+        mock.find = unittest.mock.MagicMock(return_value=None)
+    else:
+        mock.find = unittest.mock.MagicMock(side_effect=_locator_dispatch(find, None))
+    if find_all is None:
+        mock.find_all = unittest.mock.MagicMock(return_value=[])
+    else:
+        mock.find_all = unittest.mock.MagicMock(side_effect=_locator_dispatch(find_all, []))
+
+
+def build_page(
+    *,
+    url="https://jp.mercari.com/",
+    title="",
+    content="<html></html>",
+    find=None,
+    find_all=None,
+    exists=False,
+):
+    """my_lib.browser.Page のモックを生成する。"""
+    page = unittest.mock.MagicMock(name="page")
+    page.url = url
+    page.title = title
+    page.content = content
+
+    _set_finders(page, find, find_all)
+
+    if callable(exists):
+        page.exists = unittest.mock.MagicMock(side_effect=lambda locator, *a, **k: exists(locator.value))
+    else:
+        page.exists = unittest.mock.MagicMock(return_value=exists)
+
+    page.wait_visible = unittest.mock.MagicMock(return_value=build_element())
+    page.wait_clickable = unittest.mock.MagicMock(return_value=build_element())
+    page.wait_absent = unittest.mock.MagicMock(return_value=None)
+    page.wait_text = unittest.mock.MagicMock(return_value=None)
+    page.wait_until = unittest.mock.MagicMock(return_value=None)
+    page.goto = unittest.mock.MagicMock()
+    page.refresh = unittest.mock.MagicMock()
+    page.screenshot = unittest.mock.MagicMock(return_value=b"\x89PNG")
+    return page
+
+
+def attach_browser(handle, *, page=None, tab=None):
+    """Handle にブラウザモックを取り付ける。
+
+    - handle.get_page() が page モックを返すようにする。
+    - handle.browser_manager.get_browser().tab(url) が
+      context manager として tab モックを yield するようにする。
+
+    テストからは handle._test_page / handle._test_tab で参照できる。
+    """
+    if page is None:
+        page = build_page()
+    if tab is None:
+        tab = build_page()
+
+    handle.get_page = unittest.mock.MagicMock(return_value=page)
+
+    browser_manager = unittest.mock.MagicMock(name="browser_manager")
+    tab_cm = browser_manager.get_browser.return_value.tab.return_value
+    tab_cm.__enter__.return_value = tab
+    tab_cm.__exit__.return_value = False
+    handle._browser_manager = browser_manager
+
+    handle._test_page = page
+    handle._test_tab = tab
+    handle._test_browser_manager = browser_manager
+    return page, tab
+
+
+@pytest.fixture
+def make_element():
+    """Element モック生成関数を返すフィクスチャ。"""
+    return build_element
+
+
+@pytest.fixture
+def make_page():
+    """Page モック生成関数を返すフィクスチャ。"""
+    return build_page
+
+
+@pytest.fixture
+def browser_mocks():
+    """Handle にブラウザモックを取り付ける関数を返すフィクスチャ。"""
+    return attach_browser
+
+
+@pytest.fixture
+def by_value():
+    """値ベースの関数を Locator ベースの side_effect に変換するヘルパー。
+
+    使用例::
+
+        def find_by_value(value):
+            if merhist.xpath.SOLD_ITEM_LINK in value:
+                return link_element
+            return None
+
+        page.find.side_effect = by_value(find_by_value)
+    """
+
+    def _wrap(fn):
+        def _side_effect(locator, *a, **k):
+            return fn(locator.value)
+
+        return _side_effect
+
+    return _wrap
+
+
+@pytest.fixture
+def mock_config(tmp_path):
+    """共通のモック Config（全パスを tmp_path 配下に割り当てる）。"""
+    config = unittest.mock.MagicMock(spec=merhist.config.Config)
+    config.cache_file_path = tmp_path / "cache" / "cache.dat"
+    config.selenium_data_dir_path = tmp_path / "selenium"
+    config.debug_dir_path = tmp_path / "debug"
+    config.thumb_dir_path = tmp_path / "thumb"
+    config.captcha_file_path = tmp_path / "captcha.png"
+    config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
+    config.login = unittest.mock.MagicMock()
+    config.slack = unittest.mock.MagicMock()
+    return config
+
+
+@pytest.fixture
+def handle(mock_config):
+    """ブラウザモックを取り付けた Handle インスタンス。"""
+    h = merhist.handle.Handle(config=mock_config)
+    attach_browser(h)
+    yield h
+    h.finish()
+
 
 # === 環境モック ===
 @pytest.fixture(scope="session", autouse=True)
