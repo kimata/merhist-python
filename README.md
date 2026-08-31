@@ -89,13 +89,22 @@ wget -P /tmp https://dl.google.com/linux/direct/google-chrome-stable_current_amd
 sudo apt install -y /tmp/google-chrome-stable_current_amd64.deb
 ```
 
+> ⚠️ **重要**: メルカリのボット検出を回避するため、ブラウザは **headful（ヘッドレスではない）** で
+> 起動します。GUI の無いサーバー等では **仮想ディスプレイ（Xvfb）が必要**です。
+
 ```bash
 # uv のインストール（未インストールの場合）
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 依存関係のインストールと実行
+# 依存関係のインストール
 uv sync
+
+# 実行（GUI のある環境）
 uv run merhist
+
+# 実行（GUI の無いサーバー等 — Xvfb 経由）
+sudo apt install -y xvfb   # 未インストールの場合
+xvfb-run -a -s "-screen 0 1920x1080x24" uv run merhist
 ```
 
 ### Windows で実行する場合
@@ -140,7 +149,17 @@ uv run merhist -R
 
 ## 🔧 トラブルシューティング
 
-### 「Selenium の起動に失敗しました: Binary Location Must be a String」と表示される
+### 「Looks like you launched a headed browser without having a XServer running」と表示される
+
+ディスプレイ（X サーバー）が無い環境で headful ブラウザを起動しようとしています。`xvfb-run` 経由で実行してください：
+
+```bash
+xvfb-run -a -s "-screen 0 1920x1080x24" uv run merhist
+```
+
+（メルカリのボット検出回避のため headful 起動が必須です。ヘッドレスでは新規ログインが 403 で失敗します。）
+
+### ブラウザの起動に失敗する（Chrome が見つからない）
 
 Google Chrome がインストールされていません。「実行方法」セクションの手順に従って Google Chrome をインストールしてください。
 
