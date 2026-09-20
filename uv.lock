@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-08-24T00:28:09.856199239Z"
+exclude-newer = "2026-09-13T03:54:05.615386758Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -1314,7 +1314,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "docopt-ng", specifier = ">=0.9.0" },
-    { name = "my-lib", git = "https://github.com/kimata/my-py-lib?rev=8d9d29cf111997ff9b88c4ee979a9f71bfe85d79" },
+    { name = "my-lib", git = "https://github.com/kimata/my-py-lib?rev=2396a082d68e98ad807e06041293f5c364d100b6" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "patchright", specifier = ">=1.62.0" },
     { name = "pillow", specifier = ">=12.1.0" },
@@ -1468,7 +1468,7 @@ wheels = [
 [[package]]
 name = "my-lib"
 version = "0.2.0"
-source = { git = "https://github.com/kimata/my-py-lib?rev=8d9d29cf111997ff9b88c4ee979a9f71bfe85d79#8d9d29cf111997ff9b88c4ee979a9f71bfe85d79" }
+source = { git = "https://github.com/kimata/my-py-lib?rev=2396a082d68e98ad807e06041293f5c364d100b6#2396a082d68e98ad807e06041293f5c364d100b6" }
 dependencies = [
     { name = "coloredlogs" },
     { name = "dacite" },

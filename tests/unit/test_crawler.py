@@ -551,16 +551,22 @@ class TestFetchItemTransactionNormal:
     """fetch_item_transaction_normal のテスト"""
 
     def test_fetch_item_transaction_normal_page_error(self, handle):
-        """ページエラーの場合"""
+        """ページエラーの場合は失敗したタブをダンプして例外を送出"""
         item = merhist.item.BoughtItem(id="m123", shop="mercari.com")
         handle._test_page.url = "https://example.com/error"
         handle._test_page.exists.return_value = True
 
         with (
             unittest.mock.patch("merhist.crawler._visit_url"),
+            unittest.mock.patch("my_lib.browser.helpers.dump_page") as mock_dump,
             pytest.raises(merhist.exceptions.PageLoadError),
         ):
             merhist.crawler._fetch_item_transaction_normal(handle, item)
+
+        # ダンプはタブが閉じる前（スコープ内）に、失敗したタブに対して行われる
+        mock_dump.assert_called_once()
+        assert mock_dump.call_args[0][0] is handle._test_page
+        handle.page.return_value.__exit__.assert_called_once()
 
     def test_fetch_item_transaction_normal_no_purchase_date(self, handle, make_element):
         """購入日時がない場合"""
@@ -664,7 +670,9 @@ class TestGetBoughtItemInfoList:
         item_list: list[merhist.item.BoughtItem] = []
 
         with pytest.raises(merhist.exceptions.HistoryFetchError, match="読み込みが正常にできていません"):
-            merhist.crawler._get_bought_item_info_list(handle, page=1, offset=1, item_list=item_list)
+            merhist.crawler._get_bought_item_info_list(
+                handle, handle._test_page, page=1, offset=1, item_list=item_list
+            )
 
     def test_get_bought_item_info_list_empty(self, handle):
         """空リスト"""
@@ -672,7 +680,7 @@ class TestGetBoughtItemInfoList:
 
         item_list: list[merhist.item.BoughtItem] = []
         list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
-            handle, page=1, offset=0, item_list=item_list
+            handle, handle._test_page, page=1, offset=0, item_list=item_list
         )
 
         assert list_length == 0
@@ -701,7 +709,7 @@ class TestGetBoughtItemInfoList:
 
         item_list: list[merhist.item.BoughtItem] = []
         list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
-            handle, page=1, offset=0, item_list=item_list, continue_mode=True
+            handle, handle._test_page, page=1, offset=0, item_list=item_list, continue_mode=True
         )
 
         assert list_length == 1
@@ -736,7 +744,7 @@ class TestGetBoughtItemInfoList:
 
         item_list: list[merhist.item.BoughtItem] = []
         list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
-            handle, page=1, offset=0, item_list=item_list, continue_mode=True
+            handle, handle._test_page, page=1, offset=0, item_list=item_list, continue_mode=True
         )
 
         # キャッシュ済みなので is_found_new は False、リストにも追加されない
@@ -1335,6 +1343,7 @@ class TestGetBoughtItemInfoListForceMod:
         item_list: list[merhist.item.BoughtItem] = []
         list_length, is_found_new = merhist.crawler._get_bought_item_info_list(
             handle,
+            handle._test_page,
             page=1,
             offset=0,
             item_list=item_list,

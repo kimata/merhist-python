@@ -17,6 +17,7 @@ Options:
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
 import pathlib
@@ -24,6 +25,7 @@ import re
 import time
 import traceback
 import warnings
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import TypeAlias, TypeVar
 
@@ -123,18 +125,20 @@ def _text(scope: _Findable, xpath: str) -> str:
 def execute_login(handle: merhist.handle.Handle) -> None:
     handle.set_status("🔑 メルカリにログインします...")
 
-    page = handle.get_page()
-
-    try:
-        my_lib.store.mercari.login.execute(
-            page,
-            handle.config.login.mercari,
-            handle.config.login.line,
-            handle.config.slack,
-            handle.config.debug_dir_path,
-        )
-    except Exception as e:
-        raise my_lib.store.mercari.exceptions.LoginError(f"メルカリへのログインに失敗しました: {e}") from e
+    # NOTE: ログイン状態は Cookie としてブラウザコンテキストに残るため、専用タブで行ってよい
+    with handle.page() as page:
+        try:
+            my_lib.store.mercari.login.execute(
+                page,
+                handle.config.login.mercari,
+                handle.config.login.line,
+                handle.config.slack,
+                handle.config.debug_dir_path,
+            )
+        except Exception as e:
+            raise my_lib.store.mercari.exceptions.LoginError(
+                f"メルカリへのログインに失敗しました: {e}"
+            ) from e
 
 
 def _wait_for_loading(
@@ -183,6 +187,24 @@ def _set_item_id_from_order_url(item: merhist.item.ItemBase) -> None:
     else:
         logging.error("Unexpected URL format: %s", item.order_url)
         raise merhist.exceptions.InvalidURLFormatError("URL の形式が想定と異なります", item.order_url)
+
+
+@contextlib.contextmanager
+def _dump_page_on_error(handle: merhist.handle.Handle, page: Page) -> Iterator[None]:
+    """スコープ内で例外が起きたら、そのタブの状態をダンプして再送出する。
+
+    タブは with を抜けると閉じられるため、ダンプは失敗したタブのスコープ内で行う必要がある。
+    """
+    try:
+        yield
+    except Exception:
+        with contextlib.suppress(Exception):
+            my_lib.browser.helpers.dump_page(
+                page,
+                merhist.const.gen_debug_dump_id(),
+                handle.config.debug_dir_path,
+            )
+        raise
 
 
 def _visit_url(page: Page, url: str, xpath: str = merhist.xpath.NAVIGATION_TOP) -> None:
@@ -254,13 +276,18 @@ def _fetch_item_description(handle: merhist.handle.Handle, item: merhist.item.It
 
 
 def _fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.item.ItemBase) -> None:
+    with handle.page() as page, _dump_page_on_error(handle, page):
+        _fetch_item_transaction_normal_with_page(handle, page, item)
+
+
+def _fetch_item_transaction_normal_with_page(
+    handle: merhist.handle.Handle, page: Page, item: merhist.item.ItemBase
+) -> None:
     row_def_list = [
         _TransactionRowDef(title="購入日時", type="datetime", name="purchase_date"),
         _TransactionRowDef(title="商品代金", type="price", name="price"),
         _TransactionRowDef(title="配送料", type="price", name="postage"),
     ]
-
-    page = handle.get_page()
 
     _visit_url(page, gen_item_transaction_url(item), merhist.xpath.TRANSACTION_INFO_ROW)
 
@@ -312,8 +339,13 @@ def _fetch_item_transaction_normal(handle: merhist.handle.Handle, item: merhist.
 
 
 def _fetch_item_transaction_shop(handle: merhist.handle.Handle, item: merhist.item.BoughtItem) -> None:
-    page = handle.get_page()
+    with handle.page() as page, _dump_page_on_error(handle, page):
+        _fetch_item_transaction_shop_with_page(handle, page, item)
 
+
+def _fetch_item_transaction_shop_with_page(
+    handle: merhist.handle.Handle, page: Page, item: merhist.item.BoughtItem
+) -> None:
     _visit_url(page, gen_item_transaction_url(item), merhist.xpath.SHOP_TRANSACTION_PHOTO_NAME)
 
     info_xpath = merhist.xpath.SHOP_TRANSACTION_INFO
@@ -365,11 +397,7 @@ def _fetch_item_detail(handle: merhist.handle.Handle, item: _T) -> _T:
             error_message = str(e)
             logging.warning("%s: %s", type(e).__name__, error_message.rstrip())
             error_detail = traceback.format_exc()
-            my_lib.browser.helpers.dump_page(
-                handle.get_page(),
-                merhist.const.gen_debug_dump_id(),
-                handle.config.debug_dir_path,
-            )
+            # NOTE: ページのダンプは失敗したタブのスコープ内（_dump_page_on_error）で行う
 
         logging.warning("Failed to fetch %s", gen_item_transaction_url(item))
 
@@ -381,26 +409,10 @@ def _fetch_item_detail(handle: merhist.handle.Handle, item: _T) -> _T:
     return item
 
 
-def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, continue_mode: bool) -> bool:
-    col_def_list = [
-        _SoldColDef(index=1, type="text", name="name", link_name="order_url"),
-        _SoldColDef(index=2, type="price", name="price"),
-        _SoldColDef(index=3, type="price", name="commission"),
-        _SoldColDef(index=4, type="price", name="postage"),
-        _SoldColDef(index=6, type="rate", name="commission_rate"),
-        _SoldColDef(index=7, type="price", name="profit"),
-        _SoldColDef(index=9, type="date", name="completion_date"),
-    ]
-    browser_page = handle.get_page()
-
-    total_page = math.ceil(handle.trading.sold_total_count / merhist.const.SOLD_ITEM_PER_PAGE)
-
-    handle.set_status(f"販売履歴を解析しています... {page}/{total_page} ページ")
-
-    _visit_url(browser_page, _gen_sell_hist_url(page), merhist.xpath.SOLD_PAGING)
-
-    logging.info("Check sell history page %d/%d", page, total_page)
-
+def _parse_sold_item_list(
+    handle: merhist.handle.Handle, browser_page: Page, col_def_list: list[_SoldColDef]
+) -> list[merhist.item.SoldItem]:
+    """表示中の販売履歴一覧ページからアイテム一覧を抽出する。"""
     item_list: list[merhist.item.SoldItem] = []
     item_list_xpath = merhist.xpath.SOLD_LIST_ITEM
     for i in range(len(browser_page.find_all(Xpath(item_list_xpath)))):
@@ -429,6 +441,32 @@ def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, cont
 
         if handle.debug_mode:
             break
+
+    return item_list
+
+
+def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, continue_mode: bool) -> bool:
+    col_def_list = [
+        _SoldColDef(index=1, type="text", name="name", link_name="order_url"),
+        _SoldColDef(index=2, type="price", name="price"),
+        _SoldColDef(index=3, type="price", name="commission"),
+        _SoldColDef(index=4, type="price", name="postage"),
+        _SoldColDef(index=6, type="rate", name="commission_rate"),
+        _SoldColDef(index=7, type="price", name="profit"),
+        _SoldColDef(index=9, type="date", name="completion_date"),
+    ]
+    total_page = math.ceil(handle.trading.sold_total_count / merhist.const.SOLD_ITEM_PER_PAGE)
+
+    handle.set_status(f"販売履歴を解析しています... {page}/{total_page} ページ")
+
+    # NOTE: 一覧ページ 1 枚ごとにタブを開いて閉じる。一覧の解析が済めばタブは不要になる
+    #       （各アイテムの詳細取得は別タブで行う）。
+    with handle.page() as browser_page, _dump_page_on_error(handle, browser_page):
+        _visit_url(browser_page, _gen_sell_hist_url(page), merhist.xpath.SOLD_PAGING)
+
+        logging.info("Check sell history page %d/%d", page, total_page)
+
+        item_list = _parse_sold_item_list(handle, browser_page, col_def_list)
 
     is_found_new = False
     is_first_fetch = True
@@ -459,15 +497,14 @@ def _fetch_sold_item_list_by_page(handle: merhist.handle.Handle, page: int, cont
 
 
 def _fetch_sold_count(handle: merhist.handle.Handle) -> None:
-    page = handle.get_page()
-
     handle.set_status("🔍 販売件数を取得しています...")
 
     logging.info(_gen_sell_hist_url(0))
 
-    _visit_url(page, _gen_sell_hist_url(0), merhist.xpath.SOLD_PAGING)
+    with handle.page() as page, _dump_page_on_error(handle, page):
+        _visit_url(page, _gen_sell_hist_url(0), merhist.xpath.SOLD_PAGING)
 
-    paging_text = _text(page, merhist.xpath.SOLD_PAGING)
+        paging_text = _text(page, merhist.xpath.SOLD_PAGING)
     sold_count = merhist.parser.parse_sold_count(paging_text)
 
     logging.info("Total sold items: %s", f"{sold_count:,}")
@@ -530,13 +567,13 @@ def _fetch_sold_item_list(handle: merhist.handle.Handle, continue_mode: bool = T
 
 def _get_bought_item_info_list(
     handle: merhist.handle.Handle,
+    browser_page: Page,
     page: int,
     offset: int,
     item_list: list[merhist.item.BoughtItem],
     continue_mode: bool = True,
 ) -> tuple[int, bool]:
-    browser_page = handle.get_page()
-
+    """表示中の購入履歴一覧（browser_page）から offset 以降のアイテムを抽出する。"""
     item_list_xpath = merhist.xpath.BOUGHT_LIST_ITEM
     list_length = len(browser_page.find_all(Xpath(item_list_xpath)))
     prev_length = len(item_list)
@@ -576,15 +613,23 @@ def _get_bought_item_info_list(
 def _fetch_bought_item_info_list_impl(
     handle: merhist.handle.Handle, continue_mode: bool
 ) -> list[merhist.item.BoughtItem]:
-    page = handle.get_page()
+    # NOTE: 購入履歴一覧は「もっと見る」で同じページに追記されるため、一覧全体を 1 つのタブで読む
+    with handle.page() as page, _dump_page_on_error(handle, page):
+        return _fetch_bought_item_info_list_with_page(handle, page, continue_mode)
 
+
+def _fetch_bought_item_info_list_with_page(
+    handle: merhist.handle.Handle, page: Page, continue_mode: bool
+) -> list[merhist.item.BoughtItem]:
     _visit_url(page, merhist.const.BOUGHT_HIST_URL, merhist.xpath.BOUGHT_LIST)
 
     item_list: list[merhist.item.BoughtItem] = []
     page_num = 1
     offset = 0
     while True:
-        offset, is_found_new = _get_bought_item_info_list(handle, page_num, offset, item_list, continue_mode)
+        offset, is_found_new = _get_bought_item_info_list(
+            handle, page, page_num, offset, item_list, continue_mode
+        )
         page_num += 1
 
         if continue_mode and (not is_found_new):
@@ -611,23 +656,21 @@ def _fetch_bought_item_info_list_impl(
 def _fetch_bought_item_info_list(
     handle: merhist.handle.Handle, continue_mode: bool
 ) -> list[merhist.item.BoughtItem]:
-    page = handle.get_page()
-
     handle.set_status("🔍 購入履歴の件数を確認しています...")
 
     for i in range(_FETCH_RETRY_COUNT):
         if i != 0:
-            logging.info("Retry %s", page.url)
+            logging.info("Retry %s", merhist.const.BOUGHT_HIST_URL)
             time.sleep(_RETRY_WAIT_BASE)
 
         try:
             return _fetch_bought_item_info_list_impl(handle, continue_mode)
         except Exception:
             if i == _FETCH_RETRY_COUNT - 1:
-                logging.error("Give up to fetch %s", page.url)
+                logging.error("Give up to fetch %s", merhist.const.BOUGHT_HIST_URL)
                 raise
             else:
-                logging.exception("Failed to fetch %s", page.url)
+                logging.exception("Failed to fetch %s", merhist.const.BOUGHT_HIST_URL)
 
     return []  # pragma: no cover  # NOTE: ここには来ない
 
@@ -676,7 +719,7 @@ def _fetch_bought_item_list(handle: merhist.handle.Handle, continue_mode: bool =
 
 def fetch_order_item_list(handle: merhist.handle.Handle, continue_mode: ContinueMode) -> None:
     handle.set_status("🤖 巡回ロボットの準備をしています...")
-    handle.get_page()  # ブラウザを初期化
+    handle.ensure_browser()
 
     # シグナルハンドラを設定
     my_lib.graceful_shutdown.set_live_display(handle)
@@ -718,7 +761,7 @@ if __name__ == "__main__":
     config = merhist.config.Config.load(my_lib.config.load(config_file))
     handle = merhist.handle.Handle(config, debug_mode=debug_mode)
 
-    handle.get_page()  # ブラウザを初期化
+    handle.ensure_browser()
 
     try:
         execute_login(handle)
@@ -740,11 +783,7 @@ if __name__ == "__main__":
             logging.warning("No command found to execute")
 
     except Exception:
+        # NOTE: ページのダンプは失敗したタブのスコープ内で行われる
         logging.exception("Failed to fetch data")
-        my_lib.browser.helpers.dump_page(
-            handle.get_page(),
-            merhist.const.gen_debug_dump_id(),
-            handle.config.debug_dir_path,
-        )
     finally:
         handle.finish()

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import contextlib
 import logging
 import pathlib
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -96,11 +98,19 @@ class Handle:
         self._progress_manager.resume_live()
 
     # --- ブラウザ関連 ---
-    def get_page(self) -> Page:
-        """ブラウザページを取得（必要に応じて起動）"""
-        if self._browser_manager is None:
-            raise RuntimeError("BrowserManager is not initialized")
-        return self._browser_manager.get_page()
+    def ensure_browser(self) -> None:
+        """ブラウザを起動する（起動済みなら何もしない）"""
+        self.browser_manager.get_browser()
+
+    @contextlib.contextmanager
+    def page(self) -> Iterator[Page]:
+        """新しいタブを開いて返し、with を抜けると閉じる（必要に応じてブラウザを起動）
+
+        タブに紐づくリソースはタブを閉じるまで解放されないため、スコープは
+        「一覧ページ 1 枚」「取引詳細 1 件」といった作業単位にすること。
+        """
+        with self.browser_manager.page() as page:
+            yield page
 
     @property
     def browser_manager(self) -> my_lib.browser.BrowserManager:

@@ -32,8 +32,8 @@ class TestExecuteFetch:
             mock_login.assert_called_once_with(handle)
             mock_fetch.assert_called_once_with(handle, continue_mode)
 
-    def test_execute_fetch_error_dumps_page(self, handle):
-        """エラー時にページダンプして再送出"""
+    def test_execute_fetch_error_reraises(self, handle):
+        """エラー時は再送出する（ページダンプは失敗したタブのスコープ内で crawler 側が行う）"""
         continue_mode = merhist.crawler.ContinueMode(bought=True, sold=True)
 
         with (
@@ -43,7 +43,7 @@ class TestExecuteFetch:
             with pytest.raises(Exception, match="ログインエラー"):
                 app._execute_fetch(handle, continue_mode)
 
-            mock_dump.assert_called_once()
+            mock_dump.assert_not_called()
 
     def test_execute_fetch_session_error(self, handle):
         """SessionError は特別扱い（ダンプなしで再送出）"""
@@ -114,8 +114,6 @@ class TestExecute:
         with (
             unittest.mock.patch("merhist.history.generate_table_excel") as mock_excel,
             unittest.mock.patch("merhist.cli._execute_fetch", side_effect=Exception("フェッチエラー")),
-            # エラー時のログ出力で get_page().url を参照するためブラウザ起動をモック
-            unittest.mock.patch("my_lib.browser.factory.launch", return_value=unittest.mock.MagicMock()),
         ):
             app.execute(mock_config, continue_mode, export_mode=False, debug_mode=True)
 

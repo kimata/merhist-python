@@ -286,32 +286,43 @@ class TestHandleSelenium:
         yield h
         h.finish()
 
-    def test_get_page_creates_browser(self, handle):
-        """ブラウザ未起動なら factory.launch でブラウザを起動して Page を返す"""
+    def test_page_creates_browser_and_closes_tab(self, handle):
+        """ブラウザ未起動なら factory.launch で起動し、page() スコープでタブを開いて閉じる"""
         mock_browser = unittest.mock.MagicMock()
         mock_page = unittest.mock.MagicMock()
-        mock_browser.pages.return_value = []
-        mock_browser.new_page.return_value = mock_page
+        mock_scope = mock_browser.page.return_value
+        mock_scope.__enter__.return_value = mock_page
 
         with unittest.mock.patch("my_lib.browser.factory.launch", return_value=mock_browser) as mock_launch:
-            page = handle.get_page()
+            with handle.page() as page:
+                mock_launch.assert_called_once()
+                assert page is mock_page
+                mock_scope.__exit__.assert_not_called()
 
-            mock_launch.assert_called_once()
-            assert page is mock_page
+            mock_scope.__exit__.assert_called_once()
             assert handle.browser_manager.has_browser()
 
-    def test_get_page_returns_existing(self, handle):
-        """既にブラウザが起動済みなら再起動せず既存の Page を返す"""
+    def test_page_reuses_existing_browser(self, handle):
+        """既にブラウザが起動済みなら再起動せず、そのブラウザでタブを開く"""
         mock_browser = unittest.mock.MagicMock()
         mock_page = unittest.mock.MagicMock()
-        mock_browser.pages.return_value = [mock_page]
+        mock_browser.page.return_value.__enter__.return_value = mock_page
         handle._browser_manager._browser = mock_browser
 
-        with unittest.mock.patch("my_lib.browser.factory.launch") as mock_launch:
-            page = handle.get_page()
-
+        with unittest.mock.patch("my_lib.browser.factory.launch") as mock_launch, handle.page() as page:
             mock_launch.assert_not_called()
             assert page is mock_page
+
+    def test_ensure_browser_launches_once(self, handle):
+        """ensure_browser はブラウザを起動し、2 回目以降は何もしない"""
+        mock_browser = unittest.mock.MagicMock()
+
+        with unittest.mock.patch("my_lib.browser.factory.launch", return_value=mock_browser) as mock_launch:
+            handle.ensure_browser()
+            handle.ensure_browser()
+
+            mock_launch.assert_called_once()
+            assert handle.browser_manager.has_browser()
 
     def test_quit_selenium(self, handle):
         """ブラウザを終了する"""
@@ -592,7 +603,7 @@ class TestHandleBrowserError:
         config.excel_file_path = tmp_path / "output" / "mercari.xlsx"
         return config
 
-    def test_get_page_propagates_browser_error(self, mock_config):
+    def test_page_propagates_browser_error(self, mock_config):
         """ブラウザ起動失敗時は BrowserError を送出する
 
         プロファイル削除・リトライは cli 層の run_with_session_retry が
@@ -606,8 +617,9 @@ class TestHandleBrowserError:
                 side_effect=my_lib.browser.BrowserError("起動失敗"),
             ),
             pytest.raises(my_lib.browser.BrowserError),
+            handle.page(),
         ):
-            handle.get_page()
+            pass
 
         handle.finish()
 

@@ -51,13 +51,9 @@ def _execute_fetch(
         logging.warning("セッションエラーが発生しました（ブラウザがクラッシュした可能性があります）")
         raise
     except Exception:
-        # シャットダウン要求時はダンプをスキップ（ブラウザが既に閉じている可能性が高い）
+        # NOTE: ページのダンプは失敗したタブのスコープ内（crawler 側）で行われる
+        # シャットダウン要求時は正常終了扱い
         if not merhist.crawler.is_shutdown_requested():
-            my_lib.browser.helpers.dump_page(
-                handle.get_page(),
-                merhist.const.gen_debug_dump_id(),
-                handle.config.debug_dir_path,
-            )
             raise
 
 
@@ -109,7 +105,7 @@ def execute(
             except Exception:
                 # シャットダウン要求時は正常終了扱い（tracebackを出さない）
                 if not merhist.crawler.is_shutdown_requested():
-                    logging.exception("Failed to fetch data: %s", handle.get_page().url)
+                    logging.exception("Failed to fetch data")
                     handle.set_status("❌ データの収集中にエラーが発生しました", is_error=True)
                     exit_code = 1
             finally:

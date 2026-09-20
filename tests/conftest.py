@@ -119,7 +119,8 @@ def build_page(
 def attach_browser(handle, *, page=None, tab=None):
     """Handle にブラウザモックを取り付ける。
 
-    - handle.get_page() が page モックを返すようにする。
+    - handle.page() スコープが page モックを yield するようにする。
+    - handle.ensure_browser() を no-op にする。
     - handle.browser_manager.get_browser().tab(url) が
       context manager として tab モックを yield するようにする。
 
@@ -130,7 +131,10 @@ def attach_browser(handle, *, page=None, tab=None):
     if tab is None:
         tab = build_page()
 
-    handle.get_page = unittest.mock.MagicMock(return_value=page)
+    handle.page = unittest.mock.MagicMock(name="page_scope")
+    handle.page.return_value.__enter__.return_value = page
+    handle.page.return_value.__exit__.return_value = False
+    handle.ensure_browser = unittest.mock.MagicMock(name="ensure_browser")
 
     browser_manager = unittest.mock.MagicMock(name="browser_manager")
     tab_cm = browser_manager.get_browser.return_value.tab.return_value
